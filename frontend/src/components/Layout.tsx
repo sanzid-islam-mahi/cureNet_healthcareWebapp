@@ -44,11 +44,10 @@ export default function Layout() {
               <Link
                 key={item.to}
                 to={item.to}
-                className={`py-2 border-b-2 transition-colors ${
-                  isActive
-                    ? 'border-blue-600 text-blue-600'
-                    : 'border-transparent text-gray-600 hover:text-blue-600 hover:border-gray-300'
-                }`}
+                className={`py-2 border-b-2 transition-colors ${isActive
+                  ? 'border-blue-600 text-blue-600'
+                  : 'border-transparent text-gray-600 hover:text-blue-600 hover:border-gray-300'
+                  }`}
               >
                 {item.label}
               </Link>

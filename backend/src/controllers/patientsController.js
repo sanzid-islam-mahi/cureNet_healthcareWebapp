@@ -29,6 +29,7 @@ export async function getProfile(req, res) {
           emergencyPhone: patient.emergencyPhone,
           insuranceProvider: patient.insuranceProvider,
           insuranceNumber: patient.insuranceNumber,
+          profileImage: patient.profileImage,
           user: userSafe,
         },
       },
@@ -45,11 +46,21 @@ export async function updateProfile(req, res) {
     if (user.role !== 'patient' || !user.patientId) {
       return res.status(403).json({ success: false, message: 'Not a patient' });
     }
+
+    // Combine form fields
     const { bloodType, allergies, emergencyContact, emergencyPhone, insuranceProvider, insuranceNumber } = req.body;
+
+    // Check for uploaded file
+    let profileImage;
+    if (req.file) {
+      profileImage = `/uploads/${req.file.filename}`;
+    }
+
     const patient = await Patient.findByPk(user.patientId);
     if (!patient) {
       return res.status(404).json({ success: false, message: 'Patient profile not found' });
     }
+
     await patient.update({
       ...(bloodType !== undefined && { bloodType }),
       ...(allergies !== undefined && { allergies }),
@@ -57,12 +68,16 @@ export async function updateProfile(req, res) {
       ...(emergencyPhone !== undefined && { emergencyPhone }),
       ...(insuranceProvider !== undefined && { insuranceProvider }),
       ...(insuranceNumber !== undefined && { insuranceNumber }),
+      ...(profileImage !== undefined && { profileImage }),
     });
+
     const updated = await Patient.findByPk(patient.id, {
       include: [{ model: User, as: 'User', attributes: { exclude: ['password'] } }],
     });
+
     const u = updated.User ? updated.User.toJSON() : {};
     const { password: __, ...userSafe } = u;
+
     return res.json({
       success: true,
       data: {
@@ -75,6 +90,7 @@ export async function updateProfile(req, res) {
           emergencyPhone: updated.emergencyPhone,
           insuranceProvider: updated.insuranceProvider,
           insuranceNumber: updated.insuranceNumber,
+          profileImage: updated.profileImage,
           user: userSafe,
         },
       },

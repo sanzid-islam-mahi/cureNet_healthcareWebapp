@@ -17,6 +17,7 @@ const Patient = sequelize.define(
       references: { model: 'users', key: 'id' },
       onDelete: 'CASCADE',
     },
+    profileImage: { type: DataTypes.STRING(500), allowNull: true },
     bloodType: { type: DataTypes.STRING(10), allowNull: true },
     allergies: { type: DataTypes.TEXT, allowNull: true },
     emergencyContact: { type: DataTypes.STRING(100), allowNull: true },

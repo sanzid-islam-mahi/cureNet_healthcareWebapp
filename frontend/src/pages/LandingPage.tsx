@@ -19,8 +19,8 @@ const FEATURE_RIGHT = 'https://storage.googleapis.com/tagjs-prod.appspot.com/v1/
 
 const FEATURES = [
   { image: FEATURE_LEFT, title: 'Find a Doctor', description: 'Browse our list of trusted doctors and choose the right one for your needs.' },
-  { image: FEATURE_CENTER, title: 'View Doctor Profile', description: 'Learn about doctors\' experience, specialities and availability.' },
-  { image: FEATURE_RIGHT, title: 'Book Appointment', description: 'Schedule your consultation at a time that works for you.' },
+  { image: FEATURE_CENTER, title: 'Book Appointment', description: 'Schedule your consultation at a time that works for you.' },
+  { image: FEATURE_RIGHT, title: 'Track Appointments', description: 'Keep track of your upcoming and past medical consultations easily.' },
 ];
 
 const SPECIALTIES = [
@@ -75,156 +75,241 @@ export default function LandingPage() {
     enabled: doctors.length > 0,
   });
   return (
-    <div className="flex flex-col bg-white min-h-screen">
+    <div className="flex flex-col bg-slate-50 min-h-screen font-sans">
       {/* ================= HERO ================= */}
-      <section className="flex flex-wrap items-start justify-center gap-6 max-w-[1200px] w-full mx-auto px-4 mb-24 mt-6">
-        <div className="flex flex-col md:flex-row items-start self-stretch w-full rounded-[30px] border-[10px] border-[#3990D7] overflow-hidden bg-white">
-          <div className="flex flex-col mt-[55px] ml-[46px] mr-[45px] mb-8 md:mb-0">
-            <h1 className="text-[#3890D7] text-4xl md:text-[33px] font-bold max-w-[365px] mb-6 leading-tight">
-              Healthcare, Simplified for Everyone
-            </h1>
-            <p className="text-black text-lg max-w-[320px] mb-[38px]">
-              Simply browse through our extensive list of trusted doctors,
-              schedule your appointment hassle-free.
-            </p>
-            <Link
-              to={user ? (user.role === 'patient' ? '/app/dashboard' : user.role === 'doctor' ? '/app/doctor-dashboard' : '/app/admin-dashboard') : '/register'}
-              className="inline-flex justify-center bg-[#3990D7] text-white text-lg font-bold py-2.5 px-8 rounded-[47px] hover:bg-[#2d7ab8] transition-colors"
-            >
-              {user ? 'Go to Dashboard' : 'Explore now'}
-            </Link>
+      <section className="relative overflow-hidden bg-white pt-12 pb-16 md:pt-16 md:pb-20 border-b border-slate-200">
+        <div className="absolute inset-0 bg-blue-50/50 -skew-y-3 transform origin-top-left -z-10" />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-12">
+            <div className="flex-1 text-center md:text-left">
+              <span className="inline-block py-1 px-3 rounded-full bg-blue-100 text-blue-700 text-sm font-semibold tracking-wide mb-6">
+                Modern Healthcare Platform
+              </span>
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-slate-900 leading-tight mb-6">
+                Healthcare, <br className="hidden md:block" />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Simplified for Everyone</span>
+              </h1>
+              <p className="text-lg md:text-xl text-slate-600 mb-10 max-w-2xl mx-auto md:mx-0 leading-relaxed">
+                Connect with top-rated medical professionals. Browse profiles, check availability, and schedule your appointment hassle-free.
+              </p>
+              <div className="flex flex-col sm:flex-row items-center justify-center md:justify-start gap-4">
+                <Link
+                  to={user ? (user.role === 'patient' ? '/app/dashboard' : user.role === 'doctor' ? '/app/doctor-dashboard' : '/app/admin-dashboard') : '/register'}
+                  className="w-full sm:w-auto inline-flex items-center justify-center bg-blue-600 text-white text-lg font-semibold py-3 px-8 rounded-full shadow-lg hover:bg-blue-700 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300"
+                >
+                  {user ? 'Go to Dashboard' : 'Get Started Now'}
+                </Link>
+                <Link
+                  to="/doctors"
+                  className="w-full sm:w-auto inline-flex items-center justify-center bg-white text-slate-700 border border-slate-300 text-lg font-semibold py-3 px-8 rounded-full shadow-sm hover:bg-slate-50 hover:text-blue-600 transition-all duration-300"
+                >
+                  Find a Doctor
+                </Link>
+              </div>
+            </div>
+            <div className="flex-1 w-full max-w-lg md:max-w-none relative">
+              <div className="absolute inset-0 bg-gradient-to-tr from-blue-200 to-indigo-100 rounded-[3rem] transform rotate-3 scale-105 -z-10 opacity-70" />
+              <img
+                src={HERO_IMAGE}
+                className="w-full h-auto rounded-[3rem] shadow-2xl object-cover bg-white"
+                alt="Healthcare professionals"
+              />
+            </div>
           </div>
-          <img
-            src={HERO_IMAGE}
-            className="flex-1 min-w-[280px] max-w-full h-auto md:h-[400px] mt-6 object-contain"
-            alt="Healthcare professionals"
-          />
         </div>
       </section>
 
       {/* ================= PROVIDING THE BEST MEDICAL SERVICES ================= */}
-      <section className="flex flex-col items-center mb-16 px-4">
-        <h2 className="text-[#3990D7] text-1xl md:text-[44px] font-bold text-center mb-4">
-          Providing the best medical services
-        </h2>
-        <p className="text-gray-600 text-xl md:text-2xl text-center max-w-[528px] mb-12">
-          Simply browse through our extensive list of trusted doctors,
-          schedule your appointment hassle-free.
-        </p>
-        <div className="flex flex-col md:flex-row justify-center items-stretch gap-8 max-w-[1200px] w-full">
-          {FEATURES.map(({ image, title, description }) => (
-            <div
-              key={title}
-              className="flex flex-col items-center rounded-2xl border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-shadow"
-            >
-              <img src={image} alt={title} className="w-full max-w-[284px] h-[200px] md:h-[240px] object-contain" />
-              <h3 className="text-[#3990D7] font-bold text-lg mt-4 mb-2">{title}</h3>
-              <p className="text-gray-600 text-sm text-center">{description}</p>
-            </div>
-          ))}
+      <section className="relative py-12 md:py-16 bg-gradient-to-b from-slate-50 to-white overflow-hidden">
+        {/* Decorative background elements */}
+        <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
+          <div className="absolute -top-24 -left-24 w-96 h-96 rounded-full bg-blue-100/50 blur-3xl opacity-60"></div>
+          <div className="absolute top-1/2 right-0 transform translate-x-1/3 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-indigo-50/50 blur-3xl opacity-60"></div>
+        </div>
+
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-3xl mx-auto mb-12 fade-in-up">
+            <span className="inline-block py-1 px-3 rounded-full bg-indigo-50 text-indigo-600 text-sm font-bold tracking-widest uppercase mb-4">
+              Our Process
+            </span>
+            <h2 className="text-4xl md:text-5xl font-extrabold text-slate-900 mb-6 tracking-tight">
+              Providing the Best <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Medical Services</span>
+            </h2>
+            <p className="text-xl text-slate-600 leading-relaxed">
+              We streamline your healthcare journey with a seamless experience from finding the right specialist to successful consultations.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12 relative">
+            {/* Connecting line for desktop */}
+            <div className="hidden md:block absolute top-[120px] left-[16%] right-[16%] h-0.5 bg-gradient-to-r from-blue-100 via-indigo-200 to-blue-100 -z-10"></div>
+
+            {FEATURES.map(({ image, title, description }, idx) => (
+              <div
+                key={title}
+                className="group relative flex flex-col items-center"
+              >
+                {/* Step Number Badge */}
+                <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 w-10 h-10 rounded-full bg-white shadow-md border-2 border-blue-500 flex items-center justify-center text-blue-600 font-bold z-20">
+                  {idx + 1}
+                </div>
+
+                <div className="bg-white rounded-3xl p-8 shadow-lg shadow-slate-200/50 border border-slate-100/80 hover:shadow-2xl hover:border-blue-200/60 hover:-translate-y-2 transition-all duration-500 w-full flex-1 flex flex-col items-center pt-10">
+                  <div className="relative h-48 w-full flex items-center justify-center mb-8 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50/30 overflow-hidden group-hover:from-blue-100/50 group-hover:to-indigo-100/30 transition-colors duration-500">
+                    <div className="absolute inset-0 bg-white/40 group-hover:bg-transparent transition-colors duration-500 backdrop-blur-[1px] group-hover:backdrop-blur-none"></div>
+                    <img src={image} alt={title} className="relative z-10 max-h-[85%] w-auto object-contain group-hover:scale-110 drop-shadow-md transition-transform duration-700 ease-out" />
+                  </div>
+                  <h3 className="text-2xl font-bold text-slate-900 mb-4 text-center group-hover:text-blue-600 transition-colors duration-300">{title}</h3>
+                  <p className="text-slate-600 text-center leading-relaxed text-lg">{description}</p>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
       {/* ================= FIND BY SPECIALITY ================= */}
-      <section className="flex flex-col items-center bg-white py-8 mb-16 px-4">
-        <h2 className="text-[#2196F3] text-3xl md:text-[44px] font-bold text-center mb-2">
-          Find by Speciality
-        </h2>
-        <p className="text-[#495565] text-xl md:text-[27px] mb-8 text-center">
-          Browse through our list of specialized doctors
-        </p>
-        <div className="flex  justify-center gap-4 mb-8 max-w-5xl">
-          {SPECIALTIES.map(({ name, icon: Icon }) => (
-            <div
-              key={name}
-              className="flex flex-col items-center justify-center rounded-2xl border border-gray-200 bg-white px-8 py-6 min-w-[140px] shadow-sm hover:shadow-md hover:border-[#3990D7] transition-all"
-            >
-              <Icon className="w-12 h-12 text-[#3990D7] mb-2" />
-              <span className="text-gray-700 font-medium text-center text-sm md:text-base">{name}</span>
+      <section className="py-12 md:py-16 bg-white relative">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row items-end justify-between mb-10 gap-8">
+            <div className="max-w-2xl">
+              <span className="inline-block py-1 px-3 rounded-full bg-blue-50 text-blue-600 text-sm font-bold tracking-widest uppercase mb-4">
+                Departments
+              </span>
+              <h2 className="text-4xl md:text-5xl font-extrabold text-slate-900 mb-6 tracking-tight">
+                Explore by Speciality
+              </h2>
+              <p className="text-xl text-slate-600 leading-relaxed">
+                Browse through our comprehensive list of specialized medical departments and find the exact care you need.
+              </p>
             </div>
-          ))}
+            <Link
+              to="/doctors"
+              className="group inline-flex items-center gap-2 bg-slate-50 hover:bg-blue-50 text-blue-600 font-semibold py-3 px-6 rounded-2xl border border-slate-200 hover:border-blue-200 transition-all duration-300 whitespace-nowrap"
+            >
+              View all specialities
+              <span className="inline-block w-6 h-6 rounded-full bg-white shadow-sm flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                <span className="transform group-hover:translate-x-0.5 transition-transform text-sm leading-none">→</span>
+              </span>
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
+            {SPECIALTIES.map(({ name, icon: Icon }) => (
+              <Link
+                to={`/doctors?specialty=${name}`}
+                key={name}
+                className="group relative overflow-hidden flex flex-col items-center justify-center gap-5 bg-white rounded-[2rem] p-8 border border-slate-100 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_30px_-4px_rgba(57,144,215,0.15)] hover:border-blue-100 hover:-translate-y-1.5 transition-all duration-500"
+              >
+                {/* Abstract background shape on hover */}
+                <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-blue-50 to-indigo-50/50 rounded-bl-[100px] -z-10 translate-x-12 -translate-y-12 group-hover:translate-x-0 group-hover:-translate-y-0 transition-transform duration-500 ease-out"></div>
+
+                <div className="relative w-16 h-16 flex items-center justify-center rounded-2xl bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white group-hover:shadow-lg group-hover:shadow-blue-200 transition-all duration-500">
+                  <Icon className="w-8 h-8 relative z-10" />
+                  {/* Pulse ring on hover */}
+                  <div className="absolute inset-0 rounded-2xl border-2 border-blue-600 opacity-0 group-hover:animate-[ping_1.5s_cubic-bezier(0,0,0.2,1)_infinite]"></div>
+                </div>
+
+                <span className="text-slate-800 font-bold text-base md:text-lg text-center group-hover:text-blue-600 transition-colors">{name}</span>
+              </Link>
+            ))}
+          </div>
         </div>
-        <Link
-          to="/doctors"
-          className="bg-[#EAEFFF] text-gray-700 text-xl font-medium py-[17px] px-[84px] rounded-[50px] hover:bg-[#d5dcff] transition-colors"
-        >
-          more
-        </Link>
       </section>
 
       {/* ================= TOP DOCTORS TO BOOK ================= */}
-      <section className="flex flex-col items-center py-8 mb-16 px-4">
-        {/* Section header */}
-        <div className="text-center mb-10">
-          <span className="text-xs font-semibold tracking-widest text-[#3990D7] uppercase">Our Specialists</span>
-          <h2 className="text-3xl md:text-[42px] font-bold text-gray-900 mt-1">
-            Top Doctors to Book
-          </h2>
-          <p className="text-gray-500 text-base md:text-lg mt-2 max-w-md mx-auto">
-            Simply browse through our extensive list of trusted doctors.
-          </p>
-        </div>
-
-        {loadingDoctors ? (
-          <p className="text-gray-500">Loading doctors...</p>
-        ) : doctors.length === 0 ? (
-          <p className="text-gray-500">No doctors listed yet.</p>
-        ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 w-full max-w-6xl mb-10">
-            {doctors.map((doc) => {
-              const name = doc.user ? `Dr. ${doc.user.firstName} ${doc.user.lastName}` : 'Doctor';
-              const rating = ratingsMap[doc.id] ?? { averageRating: 0, totalRatings: 0 };
-              const imgSrc = doc.profileImage
-                ? (doc.profileImage.startsWith('http') ? doc.profileImage : `${API_BASE}${doc.profileImage}`)
-                : null;
-              return (
-                <DoctorCard
-                  key={doc.id}
-                  id={doc.id}
-                  name={name}
-                  department={doc.department}
-                  imgSrc={imgSrc}
-                  averageRating={rating.averageRating}
-                  totalRatings={rating.totalRatings}
-                  consultationFee={doc.consultationFee}
-                  isPatient={false}
-                />
-              );
-            })}
+      <section className="py-12 md:py-16 bg-slate-50 border-t border-slate-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-10">
+            <span className="text-sm font-bold tracking-wider text-blue-600 uppercase mb-2 block">Our Specialists</span>
+            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
+              Top Rated Doctors
+            </h2>
+            <p className="text-lg text-slate-600 max-w-2xl mx-auto">
+              Book appointments with highly qualified and experienced medical professionals.
+            </p>
           </div>
-        )}
 
-        <Link
-          to="/doctors"
-          className="inline-flex items-center gap-2 bg-gradient-to-r from-[#3990D7] to-indigo-500
-                     text-white font-semibold py-3 px-10 rounded-full shadow-md
-                     hover:from-[#2d7ab8] hover:to-indigo-600 hover:shadow-lg
-                     transition-all duration-200"
-        >
-          Browse all doctors
-        </Link>
+          {loadingDoctors ? (
+            <div className="flex justify-center items-center py-20">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            </div>
+          ) : doctors.length === 0 ? (
+            <div className="text-center py-20 bg-white rounded-3xl border border-slate-200 shadow-sm">
+              <p className="text-slate-500 text-lg">No doctors listed yet.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6 mb-12">
+              {doctors.map((doc) => {
+                const name = doc.user ? `Dr. ${doc.user.firstName} ${doc.user.lastName}` : 'Doctor';
+                const rating = ratingsMap[doc.id] ?? { averageRating: 0, totalRatings: 0 };
+                const imgSrc = doc.profileImage
+                  ? (doc.profileImage.startsWith('http') ? doc.profileImage : `${API_BASE}${doc.profileImage}`)
+                  : null;
+                return (
+                  <DoctorCard
+                    key={doc.id}
+                    id={doc.id}
+                    name={name}
+                    department={doc.department}
+                    imgSrc={imgSrc}
+                    averageRating={rating.averageRating}
+                    totalRatings={rating.totalRatings}
+                    consultationFee={doc.consultationFee}
+                    isPatient={false}
+                  />
+                );
+              })}
+            </div>
+          )}
+
+          <div className="text-center">
+            <Link
+              to="/doctors"
+              className="inline-flex items-center gap-2 bg-blue-600 text-white font-semibold py-3.5 px-10 rounded-full shadow-lg hover:bg-blue-700 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300"
+            >
+              Browse All Doctors
+            </Link>
+          </div>
+        </div>
       </section>
 
       {/* ================= CTA BANNER ================= */}
-      <section className="flex flex-col items-center bg-[#3990D7] py-12 md:py-16 gap-8 mx-4 mb-20 rounded-xl ">
-        <h2 className="text-white text-3xl md:text-[52px] font-bold text-center px-4">
-          Book Appointment With 100+ Trusted Doctors
-        </h2>
-        {user ? (
-          <Link
-            to={user.role === 'patient' ? '/app/dashboard' : user.role === 'doctor' ? '/app/doctor-dashboard' : '/app/admin-dashboard'}
-            className="bg-white text-gray-700 text-xl font-medium py-[17px] px-10 rounded-[50px] hover:bg-gray-100 transition-colors"
-          >
-            Go to Dashboard
-          </Link>
-        ) : (
-          <Link
-            to="/register"
-            className="bg-white text-gray-700 text-xl font-medium py-[17px] px-10 rounded-[50px] hover:bg-gray-100 transition-colors"
-          >
-            Create account
-          </Link>
-        )}
+      <section className="py-12 md:py-16 bg-white">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="relative rounded-[2.5rem] overflow-hidden bg-gradient-to-br from-blue-600 to-indigo-700 shadow-2xl py-12 px-6 md:px-12 text-center lg:text-left flex flex-col lg:flex-row items-center justify-between gap-10">
+            {/* Background decorative bubbles */}
+            <div className="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 rounded-full bg-white opacity-10 blur-3xl"></div>
+            <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-80 h-80 rounded-full bg-blue-400 opacity-20 blur-3xl"></div>
+
+            <div className="relative z-10 max-w-2xl">
+              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-6 leading-tight">
+                Ready to take control of your health?
+              </h2>
+              <p className="text-blue-100 text-lg md:text-xl mb-0">
+                Join thousands of patients who have already simplified their healthcare journey. Book your first appointment today.
+              </p>
+            </div>
+
+            <div className="relative z-10 shrink-0">
+              {user ? (
+                <Link
+                  to={user.role === 'patient' ? '/app/dashboard' : user.role === 'doctor' ? '/app/doctor-dashboard' : '/app/admin-dashboard'}
+                  className="inline-flex items-center justify-center bg-white text-blue-700 text-lg font-bold py-4 px-10 rounded-full shadow-xl hover:bg-slate-50 hover:scale-105 transition-all duration-300 whitespace-nowrap"
+                >
+                  Go to Dashboard
+                </Link>
+              ) : (
+                <Link
+                  to="/register"
+                  className="inline-flex items-center justify-center bg-white text-blue-700 text-lg font-bold py-4 px-10 rounded-full shadow-xl hover:bg-slate-50 hover:scale-105 transition-all duration-300 whitespace-nowrap"
+                >
+                  Create Free Account
+                </Link>
+              )}
+            </div>
+          </div>
+        </div>
       </section>
     </div>
   );
