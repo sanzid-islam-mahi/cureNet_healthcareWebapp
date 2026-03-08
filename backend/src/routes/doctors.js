@@ -18,5 +18,7 @@ router.get('/:id', doctorsController.getPublicProfile);
 
 router.get('/:id/dashboard/stats', authenticateToken, authorizeRoles('doctor'), doctorsController.getDashboardStats);
 router.get('/:id/appointments', authenticateToken, authorizeRoles('doctor'), doctorsController.getAppointments);
+router.get('/:id/patients', authenticateToken, authorizeRoles('doctor'), doctorsController.getPatients);
+router.get('/:id/patients/:patientId/context', authenticateToken, authorizeRoles('doctor'), doctorsController.getPatientContext);
 
 export default router;

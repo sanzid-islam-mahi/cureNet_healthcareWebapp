@@ -4,7 +4,7 @@ import { fileURLToPath } from 'url';
 import { Op } from 'sequelize';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const { User, Doctor, Appointment, Rating, Prescription } = db;
+const { User, Doctor, Appointment, Rating, Prescription, Patient } = db;
 
 const WEEKDAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 function getWeekday(dateStr) {
@@ -22,6 +22,15 @@ function formatDoctorResponse(doctor, user) {
   const { password: _, ...userSafe } = u;
   const d = doctor ? (doctor.toJSON ? doctor.toJSON() : doctor) : {};
   return { ...d, user: userSafe };
+}
+
+function ensureDoctorAccess(req, res, doctorId) {
+  const user = req.user;
+  if (user.role !== 'doctor' || user.doctorId !== doctorId) {
+    res.status(403).json({ success: false, message: 'Unauthorized' });
+    return false;
+  }
+  return true;
 }
 
 export async function list(req, res) {
@@ -189,10 +198,7 @@ export async function getDashboardStats(req, res) {
 export async function getAppointments(req, res) {
   try {
     const doctorId = parseInt(req.params.id, 10);
-    const user = req.user;
-    if (user.role !== 'doctor' || user.doctorId !== doctorId) {
-      return res.status(403).json({ success: false, message: 'Unauthorized' });
-    }
+    if (!ensureDoctorAccess(req, res, doctorId)) return;
     const { date, status, limit = 20, page = 1 } = req.query;
     const where = { doctorId };
     if (date) where.appointmentDate = date;
@@ -234,6 +240,163 @@ export async function getAppointments(req, res) {
     });
   } catch (err) {
     console.error('Get doctor appointments error:', err);
+    return res.status(500).json({ success: false, message: err.message || 'Failed' });
+  }
+}
+
+export async function getPatients(req, res) {
+  try {
+    const doctorId = parseInt(req.params.id, 10);
+    if (!ensureDoctorAccess(req, res, doctorId)) return;
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit, 10) || 10));
+    const offset = (page - 1) * limit;
+    const search = typeof req.query.search === 'string' ? req.query.search.trim() : '';
+
+    const where = { doctorId };
+    const include = [{
+      model: Patient,
+      as: 'Patient',
+      include: [{
+        model: User,
+        as: 'User',
+        attributes: ['id', 'firstName', 'lastName', 'email', 'phone', 'dateOfBirth', 'gender'],
+        ...(search ? {
+          where: {
+            [Op.or]: [
+              { firstName: { [Op.like]: `%${search}%` } },
+              { lastName: { [Op.like]: `%${search}%` } },
+              { email: { [Op.like]: `%${search}%` } },
+            ],
+          },
+        } : {}),
+      }],
+    }];
+
+    const { rows, count } = await Appointment.findAndCountAll({
+      where,
+      include,
+      order: [['appointment_date', 'DESC'], ['created_at', 'DESC']],
+      limit: limit * 5,
+      offset: 0,
+    });
+
+    const grouped = new Map();
+    for (const row of rows) {
+      const plain = row.get({ plain: true });
+      const pid = plain.patientId;
+      if (!pid || !plain.Patient?.User) continue;
+      if (!grouped.has(pid)) {
+        grouped.set(pid, {
+          patientId: pid,
+          user: plain.Patient.User,
+          profile: {
+            bloodType: plain.Patient.bloodType,
+            allergies: plain.Patient.allergies,
+            emergencyContact: plain.Patient.emergencyContact,
+            emergencyPhone: plain.Patient.emergencyPhone,
+          },
+          totalVisits: 0,
+          lastVisitDate: null,
+          nextVisitDate: null,
+        });
+      }
+      const g = grouped.get(pid);
+      g.totalVisits += 1;
+      const date = plain.appointmentDate;
+      if (!g.lastVisitDate || date > g.lastVisitDate) g.lastVisitDate = date;
+      if (
+        ['requested', 'approved', 'in_progress'].includes(plain.status)
+        && (!g.nextVisitDate || date < g.nextVisitDate)
+      ) {
+        g.nextVisitDate = date;
+      }
+    }
+
+    const all = Array.from(grouped.values())
+      .sort((a, b) => (b.lastVisitDate || '').localeCompare(a.lastVisitDate || ''));
+    const paged = all.slice(offset, offset + limit);
+    return res.json({
+      success: true,
+      data: {
+        patients: paged,
+        total: search ? all.length : Math.max(all.length, count),
+        page,
+        limit,
+      },
+    });
+  } catch (err) {
+    console.error('Get doctor patients error:', err);
+    return res.status(500).json({ success: false, message: err.message || 'Failed' });
+  }
+}
+
+export async function getPatientContext(req, res) {
+  try {
+    const doctorId = parseInt(req.params.id, 10);
+    const patientId = parseInt(req.params.patientId, 10);
+    if (!ensureDoctorAccess(req, res, doctorId)) return;
+
+    const relationCount = await Appointment.count({ where: { doctorId, patientId } });
+    if (!relationCount) {
+      return res.status(404).json({ success: false, message: 'Patient not found for this doctor' });
+    }
+
+    const patient = await Patient.findByPk(patientId, {
+      include: [{ model: User, as: 'User', attributes: ['id', 'firstName', 'lastName', 'email', 'phone', 'dateOfBirth', 'gender', 'address'] }],
+    });
+    if (!patient || !patient.User) {
+      return res.status(404).json({ success: false, message: 'Patient not found' });
+    }
+
+    const recentAppointments = await Appointment.findAll({
+      where: { doctorId, patientId },
+      include: [{ model: Prescription, as: 'Prescription', required: false }],
+      order: [['appointment_date', 'DESC'], ['created_at', 'DESC']],
+      limit: 8,
+    });
+
+    const appointments = recentAppointments.map((a) => {
+      const p = a.get({ plain: true });
+      return {
+        id: p.id,
+        appointmentDate: p.appointmentDate,
+        status: p.status,
+        type: p.type,
+        window: p.window,
+        serial: p.serial,
+        reason: p.reason,
+        symptoms: p.symptoms,
+        hasPrescription: Boolean(p.Prescription),
+        diagnosis: p.Prescription?.diagnosis || null,
+      };
+    });
+
+    const pj = patient.get({ plain: true });
+    return res.json({
+      success: true,
+      data: {
+        patient: {
+          id: pj.id,
+          user: pj.User,
+          medical: {
+            bloodType: pj.bloodType,
+            allergies: pj.allergies,
+            emergencyContact: pj.emergencyContact,
+            emergencyPhone: pj.emergencyPhone,
+            insuranceProvider: pj.insuranceProvider,
+            insuranceNumber: pj.insuranceNumber,
+            profileImage: pj.profileImage,
+          },
+          summary: {
+            totalVisitsWithDoctor: relationCount,
+            recentAppointments: appointments,
+          },
+        },
+      },
+    });
+  } catch (err) {
+    console.error('Get patient context error:', err);
     return res.status(500).json({ success: false, message: err.message || 'Failed' });
   }
 }

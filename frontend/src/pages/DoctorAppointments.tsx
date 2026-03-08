@@ -1,28 +1,35 @@
-/* eslint-disable react-hooks/set-state-in-effect */
-import { useState, useEffect } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMemo, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { api, useAuth } from '../context/AuthContext';
-
-interface AppointmentItem {
-  id: number;
-  appointmentDate: string;
-  timeBlock: string;
-  type: string;
-  status: string;
-  reason?: string;
-  window?: string;
-  serial?: number;
-  patient?: { id: number; user?: { firstName: string; lastName: string } };
-}
+import PatientContextModal from './doctorAppointments/PatientContextModal';
+import PrescriptionFormModal from './doctorAppointments/PrescriptionFormModal';
+import QueueCard from './doctorAppointments/QueueCard';
+import { STATUS_FILTERS, type AppointmentAction, type AppointmentItem, type DoctorPatientRow } from './doctorAppointments/types';
+import { formatDate } from './doctorAppointments/utils';
 
 export default function DoctorAppointments() {
   const { user } = useAuth();
   const doctorId = user?.doctorId;
   const queryClient = useQueryClient();
+
   const [dateFilter, setDateFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [patientSearch, setPatientSearch] = useState('');
   const [prescriptionFor, setPrescriptionFor] = useState<number | null>(null);
+  const [patientContextFor, setPatientContextFor] = useState<number | null>(null);
+
+  const { data: patientsData } = useQuery({
+    queryKey: ['doctor-patients', doctorId],
+    queryFn: async () => {
+      const { data: res } = await api.get<{ success: boolean; data: { patients: DoctorPatientRow[] } }>(
+        `/doctors/${doctorId}/patients`,
+        { params: { limit: 8 } }
+      );
+      return res.data?.patients ?? [];
+    },
+    enabled: !!doctorId,
+  });
 
   const { data, isLoading } = useQuery({
     queryKey: ['doctor-appointments', doctorId, dateFilter, statusFilter],
@@ -40,142 +47,231 @@ export default function DoctorAppointments() {
   });
 
   const actionMutation = useMutation({
-    mutationFn: ({ id, action }: { id: number; action: 'approve' | 'reject' | 'start' | 'complete' }) =>
-      api.put(`/appointments/${id}/${action}`),
+    mutationFn: ({ id, action }: { id: number; action: AppointmentAction }) => api.put(`/appointments/${id}/${action}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['doctor-appointments'] });
       queryClient.invalidateQueries({ queryKey: ['doctors'] });
-      toast.success('Updated');
+      toast.success('Appointment updated');
     },
     onError: (err: { response?: { data?: { message?: string } } }) => {
-      toast.error(err.response?.data?.message ?? 'Failed');
+      toast.error(err.response?.data?.message ?? 'Failed to update appointment');
     },
   });
 
   const appointments = (data ?? []) as AppointmentItem[];
+  const requested = appointments.filter((a) => a.status === 'requested');
+  const approved = appointments.filter((a) => a.status === 'approved');
+  const active = appointments.filter((a) => a.status === 'in_progress');
+  const history = appointments.filter((a) => ['completed', 'rejected', 'cancelled'].includes(a.status));
+  const queueCount = requested.length + approved.length;
+
+  const filteredPatients = useMemo(() => {
+    const list = patientsData ?? [];
+    const search = patientSearch.trim().toLowerCase();
+    if (!search) return list;
+    return list.filter((p) => {
+      const fullName = `${p.user.firstName} ${p.user.lastName}`.toLowerCase();
+      return (
+        fullName.includes(search)
+        || (p.user.email || '').toLowerCase().includes(search)
+        || (p.user.phone || '').toLowerCase().includes(search)
+      );
+    });
+  }, [patientsData, patientSearch]);
+
+  async function hasPrescription(appointmentId: number): Promise<boolean> {
+    try {
+      await api.get(`/prescriptions/appointment/${appointmentId}`);
+      return true;
+    } catch (error: unknown) {
+      if (
+        typeof error === 'object'
+        && error !== null
+        && 'response' in error
+        && (error as { response?: { status?: number } }).response?.status === 404
+      ) {
+        return false;
+      }
+      throw error;
+    }
+  }
+
+  async function handleAppointmentAction(id: number, action: AppointmentAction) {
+    if (action === 'complete') {
+      try {
+        const hasExistingPrescription = await hasPrescription(id);
+        if (!hasExistingPrescription) {
+          const shouldContinue = window.confirm('No prescription exists for this consultation. Complete appointment anyway?');
+          if (!shouldContinue) return;
+        }
+      } catch {
+        toast.error('Could not verify prescription status. Try again.');
+        return;
+      }
+    }
+
+    try {
+      await actionMutation.mutateAsync({ id, action });
+    } catch {
+      // Error feedback is handled by mutation onError toast.
+    }
+  }
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h2 className="text-2xl font-bold text-gray-900">Appointments</h2>
-        <div className="flex gap-2 flex-wrap">
-          <input
-            type="date"
-            value={dateFilter}
-            onChange={(e) => setDateFilter(e.target.value)}
-            className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
-          />
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
-          >
-            <option value="">All statuses</option>
-            <option value="requested">Requested</option>
-            <option value="approved">Approved</option>
-            <option value="in_progress">In progress</option>
-            <option value="completed">Completed</option>
-            <option value="rejected">Rejected</option>
-            <option value="cancelled">Cancelled</option>
-          </select>
+      <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Doctor Appointment Desk</h2>
+            <p className="text-sm text-gray-600">
+              Manage triage, consultation flow, patient context, and prescriptions from a single workspace.
+            </p>
+          </div>
+
+          <div className="grid w-full gap-2 sm:grid-cols-2 lg:w-auto">
+            <input
+              type="date"
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value)}
+              className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+            />
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
+            >
+              {STATUS_FILTERS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
-      </div>
+
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="rounded-lg border border-amber-100 bg-amber-50 px-4 py-3">
+            <p className="text-xs font-medium uppercase tracking-wide text-amber-700">Triage Queue</p>
+            <p className="mt-1 text-2xl font-bold text-amber-900">{queueCount}</p>
+          </div>
+          <div className="rounded-lg border border-indigo-100 bg-indigo-50 px-4 py-3">
+            <p className="text-xs font-medium uppercase tracking-wide text-indigo-700">In Consultation</p>
+            <p className="mt-1 text-2xl font-bold text-indigo-900">{active.length}</p>
+          </div>
+          <div className="rounded-lg border border-emerald-100 bg-emerald-50 px-4 py-3">
+            <p className="text-xs font-medium uppercase tracking-wide text-emerald-700">Completed</p>
+            <p className="mt-1 text-2xl font-bold text-emerald-900">
+              {appointments.filter((a) => a.status === 'completed').length}
+            </p>
+          </div>
+          <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+            <p className="text-xs font-medium uppercase tracking-wide text-slate-700">Total Loaded</p>
+            <p className="mt-1 text-2xl font-bold text-slate-900">{appointments.length}</p>
+          </div>
+        </div>
+      </section>
 
       {isLoading ? (
-        <p className="text-gray-500">Loading...</p>
+        <div className="rounded-xl border border-gray-200 bg-white p-8 text-center text-sm text-gray-500 shadow-sm">
+          Loading appointment data...
+        </div>
       ) : appointments.length === 0 ? (
-        <div className="rounded-lg bg-white p-8 shadow-sm border border-gray-200 text-center text-gray-500">
-          No appointments.
+        <div className="rounded-xl border border-gray-200 bg-white p-8 text-center text-sm text-gray-500 shadow-sm">
+          No appointments for the selected filters.
         </div>
       ) : (
-        <div className="space-y-3">
-          {appointments.map((apt) => {
-            const patientName = apt.patient?.user
-              ? `${apt.patient.user.firstName} ${apt.patient.user.lastName}`
-              : `Patient #${apt.patient?.id ?? ''}`;
-            const isRequested = apt.status === 'requested';
-            const isApproved = apt.status === 'approved';
-            const isInProgress = apt.status === 'in_progress';
-            return (
-              <div
-                key={apt.id}
-                className="rounded-lg bg-white shadow-sm border border-gray-200 p-4 flex flex-wrap items-center justify-between gap-3"
-              >
-                <div>
-                  <p className="font-medium text-gray-900">{patientName}</p>
-                  <p className="text-sm text-gray-500">
-                    {apt.appointmentDate} at {apt.window} serial: {apt.serial} · {apt.type?.replace('_', ' ')} ·{' '}
-                    <span className="capitalize">{apt.status?.replace('_', ' ')}</span>
-                  </p>
-                  {apt.reason && <p className="text-sm text-gray-600 mt-1">{apt.reason}</p>}
-                </div>
-                <div className="flex gap-2 flex-wrap">
-                  {isRequested && (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => actionMutation.mutate({ id: apt.id, action: 'approve' })}
-                        disabled={actionMutation.isPending}
-                        className="rounded-lg bg-green-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-green-500 disabled:opacity-50"
-                      >
-                        Approve
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => actionMutation.mutate({ id: apt.id, action: 'reject' })}
-                        disabled={actionMutation.isPending}
-                        className="rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-500 disabled:opacity-50"
-                      >
-                        Reject
-                      </button>
-                    </>
-                  )}
-                  {isApproved && (
-                    <button
-                      type="button"
-                      onClick={() => actionMutation.mutate({ id: apt.id, action: 'start' })}
-                      disabled={actionMutation.isPending}
-                      className="rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
-                    >
-                      Start
-                    </button>
-                  )}
-                  {isInProgress && (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => actionMutation.mutate({ id: apt.id, action: 'complete' })}
-                        disabled={actionMutation.isPending}
-                        className="rounded-lg bg-green-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-green-500 disabled:opacity-50"
-                      >
-                        Complete
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setPrescriptionFor(apt.id)}
-                        className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                      >
-                        Add prescription
-                      </button>
-                    </>
-                  )}
-                  {apt.status === 'completed' && (
-                    <button
-                      type="button"
-                      onClick={() => setPrescriptionFor(apt.id)}
-                      className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                    >
-                      View / Edit prescription
-                    </button>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+        <div className="space-y-5">
+          {queueCount > 0 ? (
+            <QueueCard
+              title="Triage Queue"
+              subtitle="Requests awaiting action and approved patients waiting to start consultation"
+              items={[...requested, ...approved]}
+              emptyMessage="No patients currently waiting in triage."
+              onOpenPatient={(patientId) => setPatientContextFor(patientId)}
+              onOpenPrescription={(appointmentId) => setPrescriptionFor(appointmentId)}
+              onAction={handleAppointmentAction}
+              actionPending={actionMutation.isPending}
+            />
+          ) : null}
+
+          {active.length > 0 ? (
+            <QueueCard
+              title="Active Consultations"
+              subtitle="Patients currently in-progress; complete visit with prescription before closure"
+              items={active}
+              emptyMessage="No consultations are currently active."
+              onOpenPatient={(patientId) => setPatientContextFor(patientId)}
+              onOpenPrescription={(appointmentId) => setPrescriptionFor(appointmentId)}
+              onAction={handleAppointmentAction}
+              actionPending={actionMutation.isPending}
+            />
+          ) : null}
+
+          <QueueCard
+            title="Visit History"
+            subtitle="Completed and closed visits for audit and follow-up"
+            items={history}
+            emptyMessage="No historical visits match your selected filters."
+            onOpenPatient={(patientId) => setPatientContextFor(patientId)}
+            onOpenPrescription={(appointmentId) => setPrescriptionFor(appointmentId)}
+            onAction={handleAppointmentAction}
+            actionPending={actionMutation.isPending}
+          />
         </div>
       )}
 
-      {prescriptionFor != null && (
+      <section className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+        <header className="border-b border-gray-200 px-5 py-4 flex items-center justify-between gap-3">
+          <div>
+            <h3 className="text-base font-semibold text-gray-900">Patient Panel</h3>
+            <p className="text-sm text-gray-500">Recently seen patients and continuity-of-care quick access</p>
+          </div>
+          <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
+            {(patientsData ?? []).length} records
+          </span>
+        </header>
+
+        <div className="border-b border-gray-100 px-5 py-3">
+          <input
+            type="search"
+            value={patientSearch}
+            onChange={(e) => setPatientSearch(e.target.value)}
+            placeholder="Search patient by name, email, or phone"
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          />
+        </div>
+
+        <div className="divide-y divide-gray-100">
+          {(patientsData ?? []).length === 0 ? (
+            <p className="px-5 py-6 text-sm text-gray-500">No patient history available yet.</p>
+          ) : filteredPatients.length === 0 ? (
+            <p className="px-5 py-6 text-sm text-gray-500">No matching patients found.</p>
+          ) : (
+            filteredPatients.map((p) => (
+              <article key={p.patientId} className="px-5 py-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="font-semibold text-gray-900">
+                    {p.user.firstName} {p.user.lastName}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    Visits: {p.totalVisits} • Last: {formatDate(p.lastVisitDate)}
+                    {p.nextVisitDate ? ` • Next: ${formatDate(p.nextVisitDate)}` : ''}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setPatientContextFor(p.patientId)}
+                  className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  Open context
+                </button>
+              </article>
+            ))
+          )}
+        </div>
+      </section>
+
+      {prescriptionFor != null ? (
         <PrescriptionFormModal
           appointmentId={prescriptionFor}
           onClose={() => {
@@ -183,283 +279,15 @@ export default function DoctorAppointments() {
             queryClient.invalidateQueries({ queryKey: ['doctor-appointments'] });
           }}
         />
-      )}
-    </div>
-  );
-}
+      ) : null}
 
-interface PrescriptionFormModalProps {
-  appointmentId: number;
-  onClose: () => void;
-}
-
-interface PrescriptionData {
-  id: number;
-  diagnosis?: string;
-  medicines?: MedicineEntry[];
-  notes?: string;
-}
-
-interface MedicineEntry {
-  name: string;
-  dosage?: string;
-  frequency?: string;
-  duration?: string;
-  instructions?: string;
-}
-
-function emptyMedicine(): MedicineEntry {
-  return { name: '', dosage: '', frequency: '', duration: '', instructions: '' };
-}
-
-function normalizeMedicine(m: MedicineEntry): MedicineEntry {
-  return {
-    name: m.name || '',
-    dosage: m.dosage || '',
-    frequency: m.frequency || '',
-    duration: m.duration || '',
-    instructions: m.instructions || '',
-  };
-}
-
-function formatMedicineForDisplay(m: MedicineEntry): string {
-  const details = [m.dosage, m.frequency, m.duration].filter(Boolean).join(' | ');
-  const extra = m.instructions ? ` (${m.instructions})` : '';
-  return `${m.name}${details ? ` — ${details}` : ''}${extra}`;
-}
-
-function PrescriptionFormModal({ appointmentId, onClose }: PrescriptionFormModalProps) {
-  const queryClient = useQueryClient();
-  const [diagnosis, setDiagnosis] = useState('');
-  const [medicines, setMedicines] = useState<MedicineEntry[]>([emptyMedicine()]);
-  const [notes, setNotes] = useState('');
-  const [isEditing, setIsEditing] = useState(false);
-
-  const { data: existing, isLoading: loadingExisting } = useQuery<PrescriptionData | null>({
-    queryKey: ['prescription', appointmentId],
-    queryFn: async () => {
-      try {
-        const { data: res } = await api.get<{ success: boolean; data: { prescription: PrescriptionData } }>(
-          `/prescriptions/appointment/${appointmentId}`
-        );
-        return res.data?.prescription;
-      } catch (error: unknown) {
-        if (
-          typeof error === 'object'
-          && error !== null
-          && 'response' in error
-          && (error as { response?: { status?: number } }).response?.status === 404
-        ) {
-          return null; // No existing prescription
-        }
-        throw error; // Re-throw other errors
-      }
-    },
-    enabled: !!appointmentId,
-    staleTime: Infinity,
-  });
-
-  useEffect(() => {
-    if (loadingExisting) return;
-    if (existing) {
-      setDiagnosis(existing.diagnosis || '');
-      setNotes(existing.notes || '');
-      setMedicines(existing.medicines?.length ? existing.medicines.map(normalizeMedicine) : [emptyMedicine()]);
-      setIsEditing(false);
-    } else {
-      setDiagnosis('');
-      setNotes('');
-      setMedicines([emptyMedicine()]);
-      setIsEditing(true);
-    }
-  }, [existing, loadingExisting]);
-
-  const createMutation = useMutation({
-    mutationFn: (body: { appointmentId: number; diagnosis?: string; medicines?: MedicineEntry[]; notes?: string }) =>
-      api.post('/prescriptions', body),
-    onSuccess: () => {
-      toast.success('Prescription saved');
-      queryClient.invalidateQueries({ queryKey: ['prescription', appointmentId] });
-      onClose();
-    },
-    onError: (err: { response?: { data?: { message?: string } } }) => {
-      toast.error(err.response?.data?.message ?? 'Failed to save');
-    },
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: (body: { id: number; diagnosis?: string; medicines?: MedicineEntry[]; notes?: string }) =>
-      api.put(`/prescriptions/${body.id}`, body),
-    onSuccess: () => {
-      toast.success('Prescription updated');
-      queryClient.invalidateQueries({ queryKey: ['prescription', appointmentId] });
-      onClose();
-    },
-    onError: (err: { response?: { data?: { message?: string } } }) => {
-      toast.error(err.response?.data?.message ?? 'Failed to update');
-    },
-  });
-
-  const addRow = () => setMedicines((m) => [...m, emptyMedicine()]);
-  const removeRow = (indexToRemove: number) => {
-    setMedicines((m) => m.filter((_, i) => i !== indexToRemove));
-  };
-  const updateRow = (i: number, field: keyof MedicineEntry, value: string) => {
-    setMedicines((m) => m.map((row, j) => (j === i ? { ...row, [field]: value } : row)));
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const meds = medicines.map(normalizeMedicine).filter((m) => m.name.trim());
-    const payload = {
-      diagnosis: diagnosis || undefined,
-      medicines: meds.length ? meds : undefined,
-      notes: notes || undefined,
-    };
-
-    if (existing && existing.id && isEditing) {
-      updateMutation.mutate({ id: existing.id, ...payload });
-    } else {
-      createMutation.mutate({ appointmentId, ...payload });
-    }
-  };
-
-  const hasExisting = existing != null;
-  const isSubmitting = createMutation.isPending || updateMutation.isPending;
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="bg-white rounded-xl shadow-lg max-w-lg w-full max-h-[90vh] overflow-y-auto">
-        <div className="p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            {hasExisting ? (isEditing ? 'Edit Prescription' : 'Prescription Details') : 'Add Prescription'}
-          </h3>
-          {loadingExisting && <p className="text-gray-500">Loading...</p>}
-
-          {!loadingExisting && hasExisting && !isEditing && (
-            <div className="mb-4 p-3 bg-gray-50 rounded-lg text-sm space-y-2">
-              {existing.diagnosis && <p><span className="font-medium">Diagnosis:</span> {existing.diagnosis}</p>}
-              {existing.medicines?.length ? (
-                <div>
-                  <p className="font-medium">Medicines:</p>
-                  <ul className="list-disc list-inside ml-4">
-                    {existing.medicines.map((m, i) => (
-                      <li key={i}>{formatMedicineForDisplay(m)}</li>
-                    ))}
-                  </ul>
-                </div>
-              ) : null}
-              {existing.notes && <p><span className="font-medium">Notes:</span> {existing.notes}</p>}
-            </div>
-          )}
-
-          {!loadingExisting && (isEditing || !hasExisting) && (
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Diagnosis</label>
-                <textarea
-                  value={diagnosis}
-                  onChange={(e) => setDiagnosis(e.target.value)}
-                  rows={2}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                />
-              </div>
-              <div>
-                <div className="flex justify-between items-center mb-1">
-                  <label className="block text-sm font-medium text-gray-700">Medicines</label>
-                  <button type="button" onClick={addRow} className="text-sm text-indigo-600 hover:text-indigo-500">
-                    + Add
-                  </button>
-                </div>
-                <div className="space-y-2">
-                  {medicines.map((m, i) => (
-                    <div key={i} className="space-y-2 rounded-lg border border-gray-200 p-2">
-                      <div className="grid grid-cols-[1fr_1fr_auto] gap-2 items-center">
-                        <input
-                          placeholder="Medicine name *"
-                          value={m.name}
-                          onChange={(e) => updateRow(i, 'name', e.target.value)}
-                          className="rounded-lg border border-gray-300 px-2 py-1.5 text-sm"
-                        />
-                        <input
-                          placeholder="Dosage (e.g. 1 tab / 500mg)"
-                          value={m.dosage || ''}
-                          onChange={(e) => updateRow(i, 'dosage', e.target.value)}
-                          className="rounded-lg border border-gray-300 px-2 py-1.5 text-sm"
-                        />
-                        {medicines.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => removeRow(i)}
-                            className="text-red-600 hover:text-red-800 text-sm p-1"
-                          >
-                            &times;
-                          </button>
-                        )}
-                      </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        <input
-                          placeholder="Frequency (e.g. BID)"
-                          value={m.frequency || ''}
-                          onChange={(e) => updateRow(i, 'frequency', e.target.value)}
-                          className="rounded-lg border border-gray-300 px-2 py-1.5 text-sm"
-                        />
-                        <input
-                          placeholder="Duration (e.g. 5 days)"
-                          value={m.duration || ''}
-                          onChange={(e) => updateRow(i, 'duration', e.target.value)}
-                          className="rounded-lg border border-gray-300 px-2 py-1.5 text-sm"
-                        />
-                      </div>
-                      <input
-                        placeholder="Instructions (optional)"
-                        value={m.instructions || ''}
-                        onChange={(e) => updateRow(i, 'instructions', e.target.value)}
-                        className="rounded-lg border border-gray-300 px-2 py-1.5 text-sm"
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
-                <textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  rows={2}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-                />
-              </div>
-              <div className="flex gap-2 pt-2">
-                {hasExisting && isEditing && (
-                  <button type="button" onClick={() => setIsEditing(false)} className="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
-                    Cancel
-                  </button>
-                )}
-                <button type="submit" disabled={isSubmitting} className="flex-1 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50">
-                  {isSubmitting ? 'Saving...' : 'Save'}
-                </button>
-              </div>
-            </form>
-          )}
-
-          {!loadingExisting && hasExisting && !isEditing && (
-            <div className="flex gap-2 pt-2">
-              <button type="button" onClick={onClose} className="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
-                Close
-              </button>
-              <button type="button" onClick={() => setIsEditing(true)} className="flex-1 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500">
-                Edit
-              </button>
-            </div>
-          )}
-          {!loadingExisting && !hasExisting && !isEditing && ( // This case should not happen if !hasExisting implies isEditing=true
-            <button type="button" onClick={onClose} className="w-full rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
-              Close
-            </button>
-          )}
-        </div>
-      </div>
+      {patientContextFor != null && doctorId != null ? (
+        <PatientContextModal
+          doctorId={doctorId}
+          patientId={patientContextFor}
+          onClose={() => setPatientContextFor(null)}
+        />
+      ) : null}
     </div>
   );
 }
