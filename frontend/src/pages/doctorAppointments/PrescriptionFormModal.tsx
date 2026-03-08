@@ -237,17 +237,44 @@ export default function PrescriptionFormModal({ appointmentId, onClose }: Prescr
                           className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm"
                         />
                         <input
-                          placeholder="Frequency (e.g. BID)"
-                          value={m.frequency || ''}
-                          onChange={(e) => updateRow(i, 'frequency', e.target.value)}
+                          type="number"
+                          min={1}
+                          max={12}
+                          placeholder="Pills per day *"
+                          value={m.timesPerDay ?? ''}
+                          onChange={(e) => updateRow(i, 'timesPerDay', e.target.value)}
                           className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm"
                         />
                         <input
-                          placeholder="Duration (e.g. 5 days)"
-                          value={m.duration || ''}
-                          onChange={(e) => updateRow(i, 'duration', e.target.value)}
+                          type="number"
+                          min={1}
+                          max={365}
+                          placeholder="Duration days *"
+                          value={m.durationDays ?? ''}
+                          onChange={(e) => updateRow(i, 'durationDays', e.target.value)}
                           className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm"
                         />
+                      </div>
+                      <div className="mt-2">
+                        <p className="mb-1 text-xs font-medium text-gray-600">Meal timing *</p>
+                        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                          {[
+                            { value: 'before_meal', label: 'Before meal' },
+                            { value: 'after_meal', label: 'After meal' },
+                            { value: 'with_meal', label: 'With meal' },
+                            { value: 'any', label: 'Any time' },
+                          ].map((option) => (
+                            <label key={option.value} className="flex items-center gap-2 rounded border border-gray-200 bg-white px-2 py-1.5 text-xs text-gray-700">
+                              <input
+                                type="radio"
+                                name={`meal-timing-${i}`}
+                                checked={(m.mealTiming || 'any') === option.value}
+                                onChange={() => updateRow(i, 'mealTiming', option.value)}
+                              />
+                              <span>{option.label}</span>
+                            </label>
+                          ))}
+                        </div>
                       </div>
 
                       <input

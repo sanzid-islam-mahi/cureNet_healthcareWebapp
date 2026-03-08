@@ -11,6 +11,9 @@ interface MedicineEntry {
   dosage?: string;
   frequency?: string;
   duration?: string;
+  timesPerDay?: number;
+  mealTiming?: 'before_meal' | 'after_meal' | 'with_meal' | 'any';
+  durationDays?: number;
   instructions?: string;
   // Backward compatibility with structured schema
   strength?: string;
@@ -48,7 +51,10 @@ interface PrescriptionDetail {
 
 function formatMedicine(m: MedicineEntry): string {
   const dosage = m.dosage || [m.dose, m.unit].filter(Boolean).join(' ');
-  const details = [dosage, m.frequency, m.duration].filter(Boolean).join(' | ');
+  const frequency = m.frequency || (m.timesPerDay ? `${m.timesPerDay} times/day` : '');
+  const duration = m.duration || (m.durationDays ? `${m.durationDays} days` : '');
+  const meal = m.mealTiming ? m.mealTiming.replace('_', ' ') : '';
+  const details = [dosage, frequency, duration, meal].filter(Boolean).join(' | ');
   const legacy = [m.strength, m.route].filter(Boolean).join(' | ');
   const extra = m.instructions ? ` (${m.instructions})` : '';
   const core = `${m.name || 'Medicine'}${details ? ` — ${details}` : ''}${extra}`;
@@ -99,8 +105,9 @@ export default function PrescriptionView({ appointmentId, onClose }: Prescriptio
         <td>${index + 1}</td>
         <td>${escapeHtml(m.name || 'Medicine')}</td>
         <td>${escapeHtml(m.dosage || [m.dose, m.unit].filter(Boolean).join(' ') || '—')}</td>
-        <td>${escapeHtml(m.frequency || '—')}</td>
-        <td>${escapeHtml(m.duration || '—')}</td>
+        <td>${escapeHtml(m.frequency || (m.timesPerDay ? `${m.timesPerDay} times/day` : '—'))}</td>
+        <td>${escapeHtml(m.mealTiming ? m.mealTiming.replace('_', ' ') : '—')}</td>
+        <td>${escapeHtml(m.duration || (m.durationDays ? `${m.durationDays} days` : '—'))}</td>
         <td>${escapeHtml(m.instructions || '—')}</td>
       </tr>`)
       .join('');
@@ -161,7 +168,7 @@ export default function PrescriptionView({ appointmentId, onClose }: Prescriptio
       <div class="title">Medicines</div>
       ${prescription.medicines?.length ? `<table>
         <thead>
-          <tr><th>#</th><th>Medicine</th><th>Dosage</th><th>Frequency</th><th>Duration</th><th>Instructions</th></tr>
+          <tr><th>#</th><th>Medicine</th><th>Dosage</th><th>Times/day</th><th>Meal</th><th>Duration</th><th>Instructions</th></tr>
         </thead>
         <tbody>${medicineRows}</tbody>
       </table>` : '<div class="text">No medicines recorded.</div>'}

@@ -31,21 +31,41 @@ export function patientNameFromAppointment(apt: AppointmentItem): string {
 }
 
 export function emptyMedicine(): MedicineEntry {
-  return { name: '', dosage: '', frequency: '', duration: '', instructions: '' };
+  return {
+    name: '',
+    dosage: '',
+    frequency: '',
+    duration: '',
+    timesPerDay: 1,
+    mealTiming: 'any',
+    durationDays: 5,
+    instructions: '',
+  };
 }
 
 export function normalizeMedicine(m: MedicineEntry): MedicineEntry {
+  const timesPerDay = Number.isFinite(Number(m.timesPerDay)) ? Number(m.timesPerDay) : undefined;
+  const durationDays = Number.isFinite(Number(m.durationDays)) ? Number(m.durationDays) : undefined;
+  const mealTiming = ['before_meal', 'after_meal', 'with_meal', 'any'].includes(String(m.mealTiming))
+    ? m.mealTiming
+    : undefined;
   return {
     name: m.name || '',
     dosage: m.dosage || '',
-    frequency: m.frequency || '',
-    duration: m.duration || '',
+    frequency: m.frequency || (timesPerDay ? `${timesPerDay} times/day` : ''),
+    duration: m.duration || (durationDays ? `${durationDays} days` : ''),
+    timesPerDay,
+    mealTiming,
+    durationDays,
     instructions: m.instructions || '',
   };
 }
 
 export function formatMedicineForDisplay(m: MedicineEntry): string {
-  const details = [m.dosage, m.frequency, m.duration].filter(Boolean).join(' | ');
+  const frequency = m.frequency || (m.timesPerDay ? `${m.timesPerDay} times/day` : '');
+  const duration = m.duration || (m.durationDays ? `${m.durationDays} days` : '');
+  const meal = m.mealTiming ? m.mealTiming.replace('_', ' ') : '';
+  const details = [m.dosage, frequency, duration, meal].filter(Boolean).join(' | ');
   const extra = m.instructions ? ` (${m.instructions})` : '';
   return `${m.name}${details ? ` - ${details}` : ''}${extra}`;
 }
