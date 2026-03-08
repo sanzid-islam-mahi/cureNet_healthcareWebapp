@@ -21,6 +21,8 @@ export default function RatingModal({ appointmentId, doctorId, onClose }: Rating
       toast.success('Thank you for your rating!');
       onClose();
       queryClient.invalidateQueries({ queryKey: ['ratings'] });
+      queryClient.invalidateQueries({ queryKey: ['my-ratings'] });
+      queryClient.invalidateQueries({ queryKey: ['appointments'] });
     },
     onError: (err: { response?: { data?: { message?: string } } }) => {
       toast.error(err.response?.data?.message ?? 'Failed to submit rating');

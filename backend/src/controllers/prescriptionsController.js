@@ -18,13 +18,65 @@ export async function getByAppointment(req, res) {
     }
     const prescription = await Prescription.findOne({
       where: { appointmentId },
+      include: [
+        {
+          model: Appointment,
+          as: 'Appointment',
+          include: [
+            {
+              model: db.Doctor,
+              as: 'Doctor',
+              include: [{ model: db.User, as: 'User', attributes: ['id', 'firstName', 'lastName'] }],
+            },
+            {
+              model: db.Patient,
+              as: 'Patient',
+              include: [{ model: db.User, as: 'User', attributes: ['id', 'firstName', 'lastName', 'dateOfBirth', 'gender'] }],
+            },
+          ],
+        },
+      ],
     });
     if (!prescription) {
       return res.status(404).json({ success: false, message: 'No prescription for this appointment' });
     }
+    const plain = prescription.get({ plain: true });
+    const appointmentCtx = plain.Appointment || {};
+    const doctorUser = appointmentCtx.Doctor?.User || null;
+    const patientUser = appointmentCtx.Patient?.User || null;
     return res.json({
       success: true,
-      data: { prescription: prescription.get({ plain: true }) },
+      data: {
+        prescription: {
+          id: plain.id,
+          appointmentId: plain.appointmentId,
+          diagnosis: plain.diagnosis,
+          medicines: plain.medicines,
+          notes: plain.notes,
+          createdAt: plain.createdAt,
+          updatedAt: plain.updatedAt,
+          appointment: appointmentCtx.id ? {
+            id: appointmentCtx.id,
+            appointmentDate: appointmentCtx.appointmentDate,
+            type: appointmentCtx.type,
+            window: appointmentCtx.window,
+            serial: appointmentCtx.serial,
+            timeBlock: appointmentCtx.timeBlock,
+            doctor: doctorUser ? {
+              id: appointmentCtx.Doctor?.id,
+              firstName: doctorUser.firstName,
+              lastName: doctorUser.lastName,
+            } : null,
+            patient: patientUser ? {
+              id: appointmentCtx.Patient?.id,
+              firstName: patientUser.firstName,
+              lastName: patientUser.lastName,
+              dateOfBirth: patientUser.dateOfBirth,
+              gender: patientUser.gender,
+            } : null,
+          } : null,
+        },
+      },
     });
   } catch (err) {
     console.error('Get prescription error:', err);
