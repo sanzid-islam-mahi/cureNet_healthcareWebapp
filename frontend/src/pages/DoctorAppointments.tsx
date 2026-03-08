@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
@@ -214,8 +215,13 @@ function PrescriptionFormModal({ appointmentId, onClose }: PrescriptionFormModal
           `/prescriptions/appointment/${appointmentId}`
         );
         return res.data?.prescription;
-      } catch (error: any) {
-        if (error.response?.status === 404) {
+      } catch (error: unknown) {
+        if (
+          typeof error === 'object'
+          && error !== null
+          && 'response' in error
+          && (error as { response?: { status?: number } }).response?.status === 404
+        ) {
           return null; // No existing prescription
         }
         throw error; // Re-throw other errors
@@ -238,7 +244,6 @@ function PrescriptionFormModal({ appointmentId, onClose }: PrescriptionFormModal
       setMedicines([{ name: '', dosage: '', duration: '' }]);
       setIsEditing(true);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [existing, loadingExisting]);
 
   const createMutation = useMutation({

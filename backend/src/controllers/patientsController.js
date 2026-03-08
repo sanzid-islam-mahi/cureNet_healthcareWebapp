@@ -143,11 +143,14 @@ export async function getAppointments(req, res) {
     }
     const { limit = 10, sortBy = 'appointmentDate', sortOrder = 'DESC' } = req.query;
     const limitNum = Math.min(parseInt(limit, 10) || 10, 100);
+    const allowedSortFields = new Set(['appointmentDate', 'createdAt', 'status', 'type']);
+    const safeSortBy = allowedSortFields.has(sortBy) ? sortBy : 'appointmentDate';
+    const safeSortOrder = String(sortOrder || 'DESC').toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
     const { Doctor } = db;
     const { rows, count } = await Appointment.findAndCountAll({
       where: { patientId },
       limit: limitNum,
-      order: [[sortBy || 'appointmentDate', (sortOrder || 'DESC').toUpperCase()]],
+      order: [[safeSortBy, safeSortOrder]],
       include: [
         { model: Doctor, as: 'Doctor', include: [{ model: User, as: 'User', attributes: { exclude: ['password'] } }] },
       ],

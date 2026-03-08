@@ -1,7 +1,9 @@
 import jwt from 'jsonwebtoken';
 import db from '../models/index.js';
+import { getJwtSecret } from '../config/security.js';
 
 const { User, Doctor, Patient } = db;
+const JWT_SECRET = getJwtSecret();
 
 export const authenticateToken = async (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -12,7 +14,7 @@ export const authenticateToken = async (req, res, next) => {
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret');
+    const decoded = jwt.verify(token, JWT_SECRET);
     const user = await User.findByPk(decoded.userId, {
       attributes: { exclude: ['password'] },
       include: [

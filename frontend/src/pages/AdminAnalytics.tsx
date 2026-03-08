@@ -30,6 +30,17 @@ function formatLabel(str: string) {
   return str.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+function formatPieLabel({ name, percent }: { name?: string; percent?: number }) {
+  const safeName = name ?? '';
+  const safePercent = percent ?? 0;
+  return `${safeName} ${(safePercent * 100).toFixed(0)}%`;
+}
+
+function formatCountTooltip(value: number | string | undefined) {
+  const safeValue = typeof value === 'number' ? value : Number(value || 0);
+  return [safeValue, 'Count'] as [number, string];
+}
+
 export default function AdminAnalytics() {
   const [period, setPeriod] = useState(14);
 
@@ -107,13 +118,13 @@ export default function AdminAnalytics() {
                         cx="50%"
                         cy="50%"
                         outerRadius="70%"
-                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                        label={formatPieLabel}
                       >
                         {statusData.map((_, i) => (
                           <Cell key={i} fill={STATUS_COLORS[i % STATUS_COLORS.length]} />
                         ))}
                       </Pie>
-                      <Tooltip formatter={(value: number) => [value, 'Count']} />
+                      <Tooltip formatter={formatCountTooltip} />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
@@ -149,13 +160,13 @@ export default function AdminAnalytics() {
                         cx="50%"
                         cy="50%"
                         outerRadius="70%"
-                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                        label={formatPieLabel}
                       >
                         {typeData.map((_, i) => (
                           <Cell key={i} fill={TYPE_COLORS[i % TYPE_COLORS.length]} />
                         ))}
                       </Pie>
-                      <Tooltip formatter={(value: number) => [value, 'Count']} />
+                      <Tooltip formatter={formatCountTooltip} />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>

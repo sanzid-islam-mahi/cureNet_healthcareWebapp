@@ -34,7 +34,19 @@ export default function Register() {
   const onSubmit = async (data: RegisterForm) => {
     setLoading(true);
     try {
-      const { confirmPassword, ...payload } = data;
+      const payload: RegisterData = {
+        email: data.email,
+        password: data.password,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        phone: data.phone,
+        dateOfBirth: data.dateOfBirth,
+        gender: data.gender,
+        address: data.address,
+        bmdcRegistrationNumber: data.bmdcRegistrationNumber,
+        department: data.department,
+        experience: data.experience,
+      };
       await doRegister({ ...payload, role });
       toast.success('Account created. You can sign in now.');
       navigate('/login', { replace: true });

@@ -1,12 +1,33 @@
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 import db from '../models/index.js';
 import PasswordResetToken from '../models/PasswordResetToken.js';
 import { logAudit } from '../lib/auditLog.js';
+import { getJwtSecret } from '../config/security.js';
 
 const { User, Doctor, Patient } = db;
 
-const JWT_SECRET = process.env.JWT_SECRET || 'secret';
+const JWT_SECRET = getJwtSecret();
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
+
+const PASSWORD_POLICY = {
+  minLength: 8,
+  hasUpper: /[A-Z]/,
+  hasLower: /[a-z]/,
+  hasNumber: /\d/,
+};
+
+function validatePasswordStrength(password) {
+  if (typeof password !== 'string' || password.length < PASSWORD_POLICY.minLength) return false;
+  if (!PASSWORD_POLICY.hasUpper.test(password)) return false;
+  if (!PASSWORD_POLICY.hasLower.test(password)) return false;
+  if (!PASSWORD_POLICY.hasNumber.test(password)) return false;
+  return true;
+}
+
+function hashResetToken(token) {
+  return crypto.createHash('sha256').update(token).digest('hex');
+}
 
 function signToken(userId) {
   return jwt.sign({ userId }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
@@ -42,6 +63,12 @@ export async function register(req, res) {
       return res.status(400).json({
         success: false,
         message: 'Email, password, first name and last name are required',
+      });
+    }
+    if (!validatePasswordStrength(password)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must be 8+ chars and include uppercase, lowercase, and a number',
       });
     }
 
@@ -203,9 +230,10 @@ export async function forgotPassword(req, res) {
     }
 
     const token = PasswordResetToken.generateToken();
+    const tokenHash = hashResetToken(token);
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
     await PasswordResetToken.destroy({ where: { userId: user.id } });
-    await PasswordResetToken.create({ userId: user.id, token, expiresAt });
+    await PasswordResetToken.create({ userId: user.id, token: tokenHash, expiresAt });
 
     // TODO: send email with reset link (e.g. FRONTEND_URL/reset-password?token=...)
     // Never expose the reset token in the API response; send it only via email.
@@ -226,7 +254,7 @@ export async function verifyResetToken(req, res) {
       return res.status(400).json({ success: false, message: 'Token is required' });
     }
 
-    const record = await PasswordResetToken.findOne({ where: { token } });
+    const record = await PasswordResetToken.findOne({ where: { token: hashResetToken(token) } });
 
     if (!record || record.expiresAt < new Date()) {
       return res.status(400).json({ success: false, message: 'Invalid or expired token' });
@@ -245,8 +273,14 @@ export async function resetPassword(req, res) {
     if (!token || !password) {
       return res.status(400).json({ success: false, message: 'Token and new password required' });
     }
+    if (!validatePasswordStrength(password)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must be 8+ chars and include uppercase, lowercase, and a number',
+      });
+    }
 
-    const record = await PasswordResetToken.findOne({ where: { token } });
+    const record = await PasswordResetToken.findOne({ where: { token: hashResetToken(token) } });
     if (!record || record.expiresAt < new Date()) {
       return res.status(400).json({ success: false, message: 'Invalid or expired token' });
     }

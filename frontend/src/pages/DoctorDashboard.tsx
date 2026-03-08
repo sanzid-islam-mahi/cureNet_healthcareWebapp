@@ -156,12 +156,6 @@ function timeAgo(iso?: string) {
   return `${Math.floor(days / 30)}mo ago`;
 }
 
-function patientInitials(apt: Appointment) {
-  const first = apt.patient?.user?.firstName?.[0] ?? '?';
-  const last = apt.patient?.user?.lastName?.[0] ?? '';
-  return (first + last).toUpperCase();
-}
-
 function patientName(apt: Appointment) {
   const f = apt.patient?.user?.firstName;
   const l = apt.patient?.user?.lastName;

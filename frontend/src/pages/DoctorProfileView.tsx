@@ -36,18 +36,6 @@ interface DoctorProfileData {
   user?: { firstName: string; lastName: string; email?: string; phone?: string };
 }
 
-function formatDate(dateStr: string) {
-  const d = new Date(dateStr + 'T12:00:00');
-  return d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', year: 'numeric' });
-}
-
-function formatTime(t: string) {
-  const [h, m] = t.split(':').map(Number);
-  const period = h >= 12 ? 'PM' : 'AM';
-  const h12 = h % 12 || 12;
-  return `${h12}:${m.toString().padStart(2, '0')} ${period}`;
-}
-
 function todayStr() {
   return new Date().toISOString().slice(0, 10);
 }

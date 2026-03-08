@@ -1,6 +1,7 @@
 import db from '../models/index.js';
 import { Op } from 'sequelize';
 import { logAudit } from '../lib/auditLog.js';
+import sequelize from '../config/database.js';
 
 const { Appointment, Doctor, Patient, User } = db;
 
@@ -29,27 +30,33 @@ export async function create(req, res) {
     }
     
     const docId = parseInt(doctorId, 10);
-    const doctor = await Doctor.findByPk(docId);
-    if (!doctor) {
-      return res.status(404).json({ success: false, message: 'Doctor not found' });
+    if (!Number.isInteger(docId) || docId <= 0) {
+      return res.status(400).json({ success: false, message: 'Valid doctorId required' });
     }
-    
-    let windowName = null;
-    let serialNum = null;
-    
-    if (window) {
-      // New window-based booking
-      const weekday = getWeekday(appointmentDate);
-      const chamberWindows = doctor.chamberWindows || {};
-      const dayWindows = chamberWindows[weekday] || {};
-      const winConfig = dayWindows[window];
-      
-      if (!winConfig || !winConfig.enabled) {
-        return res.status(400).json({ success: false, message: `Window "${window}" is not available for this doctor on this day` });
-      }
-      
-      const maxPatients = winConfig.maxPatients || 0;
-      if (maxPatients > 0) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(appointmentDate)) {
+      return res.status(400).json({ success: false, message: 'Valid appointmentDate (YYYY-MM-DD) required' });
+    }
+
+    const appointment = await sequelize.transaction(async (transaction) => {
+      // Lock the doctor row to serialize booking operations per doctor.
+      const doctor = await Doctor.findByPk(docId, {
+        transaction,
+        lock: transaction.LOCK.UPDATE,
+      });
+      if (!doctor) return { error: { status: 404, message: 'Doctor not found' } };
+
+      let windowName = null;
+      let serialNum = null;
+
+      if (window) {
+        const weekday = getWeekday(appointmentDate);
+        const chamberWindows = doctor.chamberWindows || {};
+        const dayWindows = chamberWindows[weekday] || {};
+        const winConfig = dayWindows[window];
+        if (!winConfig || !winConfig.enabled) {
+          return { error: { status: 400, message: `Window "${window}" is not available for this doctor on this day` } };
+        }
+
         const bookedCount = await Appointment.count({
           where: {
             doctorId: docId,
@@ -57,66 +64,64 @@ export async function create(req, res) {
             window,
             status: { [Op.notIn]: ['cancelled', 'rejected'] },
           },
+          transaction,
         });
-        if (bookedCount >= maxPatients) {
-          return res.status(409).json({ success: false, message: 'Window is full' });
+        const maxPatients = winConfig.maxPatients || 0;
+        if (maxPatients > 0 && bookedCount >= maxPatients) {
+          return { error: { status: 409, message: 'Window is full' } };
         }
         serialNum = bookedCount + 1;
-      } else {
-        serialNum = await Appointment.count({
+        windowName = window;
+      } else if (timeBlock) {
+        const chamberTimes = doctor.chamberTimes || {};
+        const weekday = getWeekday(appointmentDate);
+        const daySlots = Array.isArray(chamberTimes[weekday]) ? chamberTimes[weekday] : [];
+        if (!daySlots.includes(timeBlock)) {
+          return { error: { status: 400, message: 'Time slot not available for this doctor on this day' } };
+        }
+        const existing = await Appointment.findOne({
           where: {
             doctorId: docId,
             appointmentDate,
-            window,
+            timeBlock,
             status: { [Op.notIn]: ['cancelled', 'rejected'] },
           },
-        }) + 1;
+          transaction,
+        });
+        if (existing) {
+          return { error: { status: 409, message: 'Slot already booked' } };
+        }
+      } else {
+        return { error: { status: 400, message: 'Either window or timeBlock required' } };
       }
-      windowName = window;
-    } else if (timeBlock) {
-      // Legacy timeBlock booking (backward compatibility)
-      const chamberTimes = doctor.chamberTimes || {};
-      const weekday = getWeekday(appointmentDate);
-      const daySlots = Array.isArray(chamberTimes[weekday]) ? chamberTimes[weekday] : [];
-      if (!daySlots.includes(timeBlock)) {
-        return res.status(400).json({ success: false, message: 'Time slot not available for this doctor on this day' });
-      }
-      const existing = await Appointment.findOne({
-        where: {
-          doctorId: docId,
-          appointmentDate,
-          timeBlock,
-          status: { [Op.notIn]: ['cancelled', 'rejected'] },
-        },
-      });
-      if (existing) {
-        return res.status(409).json({ success: false, message: 'Slot already booked' });
-      }
-    } else {
-      return res.status(400).json({ success: false, message: 'Either window or timeBlock required' });
-    }
-    
-    const appointment = await Appointment.create({
-      patientId: user.patientId,
-      doctorId: docId,
-      appointmentDate,
-      window: windowName,
-      serial: serialNum,
-      timeBlock: timeBlock || null,
-      type: type || 'in_person',
-      reason: reason || null,
-      symptoms: symptoms || null,
-      status: 'requested',
+
+      const created = await Appointment.create({
+        patientId: user.patientId,
+        doctorId: docId,
+        appointmentDate,
+        window: windowName,
+        serial: serialNum,
+        timeBlock: timeBlock || null,
+        type: type || 'in_person',
+        reason: reason || null,
+        symptoms: symptoms || null,
+        status: 'requested',
+      }, { transaction });
+
+      return { created, windowName, serialNum };
     });
+    if (appointment.error) {
+      return res.status(appointment.error.status).json({ success: false, message: appointment.error.message });
+    }
     logAudit({
       action: 'appointment_created',
       userId: user.id,
       entityType: 'appointment',
-      entityId: String(appointment.id),
-      details: { appointmentId: appointment.id, doctorId: docId, appointmentDate, window: windowName, serial: serialNum, timeBlock, status: 'requested' },
+      entityId: String(appointment.created.id),
+      details: { appointmentId: appointment.created.id, doctorId: docId, appointmentDate, window: appointment.windowName, serial: appointment.serialNum, timeBlock, status: 'requested' },
       ip: getClientIp(req),
     }).catch(() => {});
-    const withAssocs = await Appointment.findByPk(appointment.id, {
+    const withAssocs = await Appointment.findByPk(appointment.created.id, {
       include: [
         { model: Doctor, as: 'Doctor', include: [{ model: User, as: 'User', attributes: ['id', 'firstName', 'lastName'] }] },
         { model: Patient, as: 'Patient', include: [{ model: User, as: 'User', attributes: ['id', 'firstName', 'lastName'] }] },
@@ -163,7 +168,10 @@ export async function listForPatient(req, res) {
     if (status) where.status = status;
     const limitNum = Math.min(parseInt(limit, 10) || 20, 100);
     const offset = (Math.max(1, parseInt(page, 10)) - 1) * limitNum;
-    const order = [[sortBy, (sortOrder || 'DESC').toUpperCase()]];
+    const allowedSortFields = new Set(['appointmentDate', 'createdAt', 'status', 'type']);
+    const safeSortBy = allowedSortFields.has(sortBy) ? sortBy : 'appointmentDate';
+    const safeSortOrder = String(sortOrder || 'DESC').toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+    const order = [[safeSortBy, safeSortOrder]];
     const { rows, count } = await Appointment.findAndCountAll({
       where,
       limit: limitNum,

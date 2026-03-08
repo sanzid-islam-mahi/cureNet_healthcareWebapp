@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import axios from 'axios';
 
@@ -79,29 +80,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loading: true,
   });
 
-  const loadProfile = useCallback(async () => {
-    const token = localStorage.getItem(TOKEN_KEY);
-    if (!token) {
-      setState((s) => ({ ...s, user: null, loading: false }));
-      return;
-    }
-    try {
-      const { data } = await api.get<{ success: boolean; data: { user: User } }>('/auth/profile');
-      if (data.success && data.data.user) {
-        setState((s) => ({ ...s, user: data.data.user, token, loading: false }));
-      } else {
+  useEffect(() => {
+    let cancelled = false;
+    async function loadProfile() {
+      const token = localStorage.getItem(TOKEN_KEY);
+      if (!token) {
+        if (!cancelled) setState((s) => ({ ...s, user: null, loading: false }));
+        return;
+      }
+      try {
+        const { data } = await api.get<{ success: boolean; data: { user: User } }>('/auth/profile');
+        if (cancelled) return;
+        if (data.success && data.data.user) {
+          setState((s) => ({ ...s, user: data.data.user, token, loading: false }));
+        } else {
+          setState((s) => ({ ...s, user: null, token: null, loading: false }));
+          localStorage.removeItem(TOKEN_KEY);
+        }
+      } catch {
+        if (cancelled) return;
         setState((s) => ({ ...s, user: null, token: null, loading: false }));
         localStorage.removeItem(TOKEN_KEY);
       }
-    } catch {
-      setState((s) => ({ ...s, user: null, token: null, loading: false }));
-      localStorage.removeItem(TOKEN_KEY);
     }
+    void loadProfile();
+    return () => {
+      cancelled = true;
+    };
   }, []);
-
-  useEffect(() => {
-    loadProfile();
-  }, [loadProfile]);
 
   useEffect(() => {
     const onLogout = () => setState((s) => ({ ...s, user: null, token: null }));

@@ -15,6 +15,9 @@ import ratingsRoutes from './routes/ratings.js';
 import appointmentsRoutes from './routes/appointments.js';
 import prescriptionsRoutes from './routes/prescriptions.js';
 import { buildAdminRouter } from './adminjs.js';
+import { securityHeaders } from './middleware/securityHeaders.js';
+import { createRateLimiter } from './middleware/rateLimit.js';
+import { getAdminSessionSecret, getJwtSecret } from './config/security.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -26,14 +29,32 @@ const openApiSpec = JSON.parse(fs.readFileSync(openApiPath, 'utf8'));
 const corsOrigins = process.env.CORS_ORIGIN
   ? process.env.CORS_ORIGIN.split(',').map((o) => o.trim()).filter(Boolean)
   : ['http://localhost:5173', 'http://localhost:3000'];
-app.use(cors({ origin: corsOrigins, credentials: true }));
-app.use(express.json());
+const corsOptions = {
+  credentials: true,
+  origin(origin, callback) {
+    if (!origin || corsOrigins.includes(origin)) {
+      callback(null, true);
+      return;
+    }
+    callback(new Error('CORS origin not allowed'));
+  },
+};
+
+const authLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, limit: 120 });
+const adminLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, limit: 100 });
+
+getJwtSecret();
+getAdminSessionSecret();
+
+app.use(securityHeaders);
+app.use(cors(corsOptions));
+app.use(express.json({ limit: '100kb' }));
 
 const uploadsDir = path.join(__dirname, '../uploads');
 fs.mkdirSync(uploadsDir, { recursive: true });
 app.use('/uploads', express.static(uploadsDir));
 
-app.use('/api/auth', authRoutes);
+app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/patients', patientsRoutes);
 app.use('/api/doctors', doctorsRoutes);
 app.use('/api/admin', adminRoutes);
@@ -60,7 +81,15 @@ app.get('/admin-simple.css', (_req, res) => {
 });
 
 const { admin, router: adminRouter } = buildAdminRouter();
+app.use('/admin', adminLimiter);
 app.use(admin.options.rootPath, adminRouter);
+
+app.use((err, req, res, next) => {
+  if (err && /CORS/.test(err.message || '')) {
+    return res.status(403).json({ success: false, message: 'Origin is not allowed' });
+  }
+  return next(err);
+});
 
 async function start() {
   try {

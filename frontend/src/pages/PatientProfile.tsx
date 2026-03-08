@@ -42,7 +42,7 @@ export default function PatientProfile() {
   const [editingMedical, setEditingMedical] = useState(false);
 
   // Image states
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [localPreviewUrl, setLocalPreviewUrl] = useState<string | null>(null);
 
   const { data: profileData } = useQuery({
     queryKey: ['patients', 'profile'],
@@ -57,6 +57,10 @@ export default function PatientProfile() {
 
   const patient = profileData;
   const personal = patient?.user ?? user;
+  const profileImageUrl = patient?.profileImage
+    ? (patient.profileImage.startsWith('http') ? patient.profileImage : `${API_BASE}${patient.profileImage}`)
+    : null;
+  const previewUrl = localPreviewUrl ?? profileImageUrl;
 
   const personalForm = useForm<PersonalForm>({
     defaultValues: {
@@ -103,20 +107,17 @@ export default function PatientProfile() {
         insuranceProvider: patient.insuranceProvider ?? '',
         insuranceNumber: patient.insuranceNumber ?? '',
       });
-      if (patient.profileImage) {
-        setPreviewUrl(patient.profileImage.startsWith('http') ? patient.profileImage : `${API_BASE}${patient.profileImage}`);
-      }
     }
   }, [patient, medicalForm]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      setPreviewUrl(URL.createObjectURL(file));
+      setLocalPreviewUrl(URL.createObjectURL(file));
       // Automatically trigger upload when file is selected
       const formData = new FormData();
       formData.append('profileImage', file);
-      updateMedicalMutation.mutate(formData as any); // Cast as any because type expects PatientData
+      updateMedicalMutation.mutate(formData);
     }
   };
 
@@ -144,6 +145,7 @@ export default function PatientProfile() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['patients', 'profile'] });
+      setLocalPreviewUrl(null);
       setEditingMedical(false);
       toast.success('Medical info updated');
     },

@@ -1,4 +1,4 @@
-import { Link, Outlet, useMatch } from 'react-router-dom';
+import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const patientNav = [
@@ -38,21 +38,18 @@ export default function ProfileLayout() {
     <div className="min-h-screen flex flex-col bg-gray-50">
       <div className="bg-white border-b border-gray-200 px-6 py-3">
         <div className="max-w-7xl mx-auto flex gap-6 text-sm font-medium">
-          {nav.map((item) => {
-            const isActive = !!useMatch({ path: item.to, end: true });
-            return (
-              <Link
-                key={item.to}
-                to={item.to}
-                className={`py-2 border-b-2 transition-colors ${isActive
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-600 hover:text-blue-600 hover:border-gray-300'
-                  }`}
-              >
-                {item.label}
-              </Link>
-            );
-          })}
+          {nav.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              className={({ isActive }) => `py-2 border-b-2 transition-colors ${isActive
+                ? 'border-blue-600 text-blue-600'
+                : 'border-transparent text-gray-600 hover:text-blue-600 hover:border-gray-300'
+                }`}
+            >
+              {item.label}
+            </NavLink>
+          ))}
         </div>
       </div>
       <main className="flex-1 overflow-auto">

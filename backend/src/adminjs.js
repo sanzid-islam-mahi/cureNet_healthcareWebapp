@@ -7,6 +7,7 @@ import AdminJSExpress from '@adminjs/express';
 import * as AdminJSSequelize from '@adminjs/sequelize';
 import db from './models/index.js';
 import { dashboardHandler } from './adminjs-dashboard-handler.js';
+import { getAdminSessionSecret } from './config/security.js';
 
 const { User, Doctor, Patient, Appointment, Prescription, Rating, AuditLog } = db;
 
@@ -29,7 +30,7 @@ async function authenticate(email, password) {
   return { email: user.email, id: user.id };
 }
 
-const sessionSecret = process.env.ADMIN_SESSION_SECRET || process.env.JWT_SECRET || 'admin-session-secret-change-me';
+const sessionSecret = getAdminSessionSecret();
 
 const sessionOptions = {
   resave: false,

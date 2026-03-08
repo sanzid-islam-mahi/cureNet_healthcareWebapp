@@ -4,6 +4,21 @@ import { logAudit } from '../lib/auditLog.js';
 
 const { User, Doctor, Patient, Appointment, AuditLog } = db;
 
+const PASSWORD_POLICY = {
+  minLength: 8,
+  hasUpper: /[A-Z]/,
+  hasLower: /[a-z]/,
+  hasNumber: /\d/,
+};
+
+function validatePasswordStrength(password) {
+  if (typeof password !== 'string' || password.length < PASSWORD_POLICY.minLength) return false;
+  if (!PASSWORD_POLICY.hasUpper.test(password)) return false;
+  if (!PASSWORD_POLICY.hasLower.test(password)) return false;
+  if (!PASSWORD_POLICY.hasNumber.test(password)) return false;
+  return true;
+}
+
 function getClientIp(req) {
   return req.ip || req.headers['x-forwarded-for']?.split(',')[0]?.trim() || null;
 }
@@ -349,6 +364,12 @@ export async function createUser(req, res) {
         message: 'Email, password, first name and last name are required',
       });
     }
+    if (!validatePasswordStrength(password)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must be 8+ chars and include uppercase, lowercase, and a number',
+      });
+    }
     const allowedRoles = ['admin', 'patient', 'doctor'];
     const resolvedRole = allowedRoles.includes(role) ? role : 'patient';
 
@@ -445,6 +466,12 @@ export async function updateUser(req, res) {
 
     if (updates.role && !['admin', 'patient', 'doctor'].includes(updates.role)) {
       delete updates.role;
+    }
+    if (updates.password && !validatePasswordStrength(updates.password)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must be 8+ chars and include uppercase, lowercase, and a number',
+      });
     }
     if (updates.isActive !== undefined) {
       updates.isActive = !!updates.isActive;

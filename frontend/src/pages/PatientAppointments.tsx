@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
@@ -25,14 +25,10 @@ export default function PatientAppointments() {
   const [searchParams, setSearchParams] = useSearchParams();
   const bookDoctorId = searchParams.get('book');
   const [statusFilter, setStatusFilter] = useState('');
-  const [showBookModal, setShowBookModal] = useState(false);
+  const [showBookModal, setShowBookModal] = useState(Boolean(bookDoctorId));
   const [prescriptionAppointmentId, setPrescriptionAppointmentId] = useState<number | null>(null);
   const [ratingFor, setRatingFor] = useState<{ appointmentId: number; doctorId: number } | null>(null);
   const queryClient = useQueryClient();
-
-  useEffect(() => {
-    if (bookDoctorId) setShowBookModal(true);
-  }, [bookDoctorId]);
 
   const { data, isLoading } = useQuery({
     queryKey: ['appointments', statusFilter],

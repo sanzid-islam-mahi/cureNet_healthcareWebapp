@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { api, useAuth } from '../context/AuthContext';
@@ -258,8 +258,6 @@ export default function DoctorProfile() {
       </div>
     );
   };
-
-  const isProfileComplete = doctor?.department && doctor?.experience && doctor?.hospital;
 
   return (
     <div className="max-w-7xl mx-auto space-y-8">
