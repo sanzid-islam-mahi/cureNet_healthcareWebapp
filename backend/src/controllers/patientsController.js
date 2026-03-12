@@ -1,7 +1,15 @@
 import db from '../models/index.js';
 import { Op } from 'sequelize';
+import { regenerateFutureDosesForTracker } from '../services/medicationScheduleService.js';
 
-const { User, Patient, Appointment, Doctor, Prescription, PatientMedicationTracker } = db;
+const {
+  User,
+  Patient,
+  Appointment,
+  Doctor,
+  Prescription,
+  PatientMedicationTracker,
+} = db;
 
 function parseReminderTimes(reminderTimes) {
   if (!Array.isArray(reminderTimes)) return null;
@@ -56,7 +64,7 @@ async function syncMedicationTrackers(patientId) {
     for (let i = 0; i < meds.length; i += 1) {
       const normalized = normalizePrescriptionMedicine(meds[i], i);
       if (!normalized) continue;
-      await PatientMedicationTracker.findOrCreate({
+      const [tracker, created] = await PatientMedicationTracker.findOrCreate({
         where: {
           patientId,
           prescriptionId: prescription.id,
@@ -75,6 +83,22 @@ async function syncMedicationTrackers(patientId) {
           status: 'active',
         },
       });
+      if (!created) {
+        const patch = {};
+        if (tracker.timesPerDay !== normalized.timesPerDay) {
+          patch.timesPerDay = normalized.timesPerDay;
+        }
+        if (tracker.mealTiming !== normalized.mealTiming) {
+          patch.mealTiming = normalized.mealTiming;
+        }
+        if (tracker.durationDays !== normalized.durationDays) {
+          patch.durationDays = normalized.durationDays;
+        }
+        if (Object.keys(patch).length > 0) {
+          await tracker.update(patch);
+        }
+      }
+      await regenerateFutureDosesForTracker(tracker.id, { includeToday: created });
     }
   }
 }
@@ -331,6 +355,9 @@ export async function updateMedicationTracker(req, res) {
       }
       patch.reminderTimes = reminderTimes;
     }
+    if (patch.remindersEnabled && (!patch.reminderTimes || patch.reminderTimes.length === 0)) {
+      return res.status(400).json({ success: false, message: 'At least one reminder time is required when remindersEnabled is true' });
+    }
     if (req.body.status && ['active', 'paused', 'completed'].includes(String(req.body.status))) {
       patch.status = String(req.body.status);
       if (patch.status === 'completed') {
@@ -341,6 +368,7 @@ export async function updateMedicationTracker(req, res) {
     }
 
     await tracker.update(patch);
+    await regenerateFutureDosesForTracker(tracker.id);
     return res.json({ success: true, data: { medication: tracker.get({ plain: true }) } });
   } catch (err) {
     console.error('Update medication tracker error:', err);

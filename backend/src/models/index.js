@@ -8,6 +8,8 @@ import Prescription from './Prescription.js';
 import Rating from './Rating.js';
 import AuditLog from './AuditLog.js';
 import PatientMedicationTracker from './PatientMedicationTracker.js';
+import MedicationDose from './MedicationDose.js';
+import Notification from './Notification.js';
 
 const db = {
   sequelize,
@@ -19,6 +21,8 @@ const db = {
   Rating,
   AuditLog,
   PatientMedicationTracker,
+  MedicationDose,
+  Notification,
 };
 
 export default db;
