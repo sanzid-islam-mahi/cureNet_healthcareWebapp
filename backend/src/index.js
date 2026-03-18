@@ -14,7 +14,6 @@ import adminRoutes from './routes/admin.js';
 import ratingsRoutes from './routes/ratings.js';
 import appointmentsRoutes from './routes/appointments.js';
 import prescriptionsRoutes from './routes/prescriptions.js';
-import { runMedicationReminderTick } from './jobs/medicationReminderJob.js';
 import { buildAdminRouter } from './adminjs.js';
 import { securityHeaders } from './middleware/securityHeaders.js';
 import { createRateLimiter } from './middleware/rateLimit.js';
@@ -106,14 +105,6 @@ async function start() {
     console.log(`Server running at http://localhost:${PORT}`);
     console.log(`Admin panel: http://localhost:${PORT}/admin`);
   });
-
-  // Fire-and-forget medication reminder scheduler (web-only notifications)
-  setInterval(() => {
-    runMedicationReminderTick().catch((err) => {
-      // eslint-disable-next-line no-console
-      console.error('Medication reminder tick failed:', err);
-    });
-  }, 60 * 1000);
 }
 
 start().catch(console.error);

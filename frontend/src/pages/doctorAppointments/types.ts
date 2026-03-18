@@ -45,9 +45,6 @@ export interface MedicineEntry {
   dosage?: string;
   frequency?: string;
   duration?: string;
-  timesPerDay?: number;
-  mealTiming?: 'before_meal' | 'after_meal' | 'with_meal' | 'any';
-  durationDays?: number;
   instructions?: string;
 }
 
