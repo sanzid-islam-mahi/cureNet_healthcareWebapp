@@ -39,9 +39,15 @@ interface DoctorProfileData {
 interface UpcomingSlot {
   date: string;
   dayName: string;
-  timeRange: string;
-  timeBlocks: string[];
-  booked: Array<{ timeBlock: string; booked: boolean }>;
+  windows: Array<{
+    window: string;
+    label: string;
+    timeRange: string;
+    maxPatients: number | null;
+    booked: number;
+    spotsLeft: number | null;
+    available: boolean;
+  }>;
 }
 
 export default function PatientDoctorProfile() {
@@ -324,8 +330,7 @@ export default function PatientDoctorProfile() {
           <div className="xl:pl-1">
             <div className="sticky top-5 rounded-[28px] border border-slate-200 bg-white p-5 shadow-[0_14px_40px_rgba(15,23,42,0.08)]">
               <div className="mb-6">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Appointment</p>
-                <h2 className="mt-2 text-lg font-semibold text-slate-950">Availability</h2>
+                <h2 className="text-lg font-semibold text-slate-950">Available times</h2>
               </div>
 
               {isPatient ? (
@@ -333,26 +338,27 @@ export default function PatientDoctorProfile() {
                   <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
                     <div className="flex items-center gap-2">
                       <CalendarDaysIcon className="h-5 w-5 text-sky-600" />
-                      <p className="text-sm font-semibold text-slate-900">Next available sessions</p>
+                      <p className="text-sm font-semibold text-slate-900">Upcoming schedule</p>
                     </div>
                     {availabilityPreview.length > 0 ? (
-                      <div className="mt-3 space-y-2">
+                      <div className="mt-3 grid gap-2 sm:grid-cols-2">
                         {availabilityPreview.map((slot) => (
                           <div key={slot.date} className="rounded-xl border border-slate-200 bg-white px-3 py-3">
-                            <div className="flex items-center justify-between gap-3">
-                              <p className="text-sm font-semibold text-slate-900">
-                                {slot.dayName}, {slot.date}
-                              </p>
-                              <span className="rounded-full bg-sky-100 px-2 py-1 text-[11px] font-semibold text-sky-700">
-                                {slot.timeBlocks.length} slots
-                              </span>
+                            <p className="text-sm font-semibold text-slate-900">
+                              {slot.dayName}, {slot.date}
+                            </p>
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              {slot.windows.map((window) => (
+                                <span key={`${slot.date}-${window.window}`} className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">
+                                  {window.label}
+                                </span>
+                              ))}
                             </div>
-                            <p className="mt-1 text-sm text-slate-600">{slot.timeRange}</p>
                           </div>
                         ))}
                       </div>
                     ) : (
-                      <p className="mt-3 text-sm text-slate-500">No upcoming availability has been published yet.</p>
+                      <p className="mt-3 text-sm text-slate-500">Schedule updates soon.</p>
                     )}
                   </div>
 

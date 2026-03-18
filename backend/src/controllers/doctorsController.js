@@ -519,8 +519,13 @@ export async function getUpcomingSlots(req, res) {
       return res.status(404).json({ success: false, message: 'Doctor not found' });
     }
     const unavailableDates = new Set(normalizeUnavailableDates(doctor.unavailableDates));
-    const chamberTimes = doctor.chamberTimes || {};
+    const chamberWindows = doctor.chamberWindows || {};
     const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    const windows = [
+      { key: 'morning', label: 'Morning', timeRange: '09:00–13:00' },
+      { key: 'noon', label: 'Noon', timeRange: '13:00–17:00' },
+      { key: 'evening', label: 'Evening', timeRange: '17:00–18:00' },
+    ];
     const slots = [];
     const today = new Date();
     for (let i = 0; i < days; i++) {
@@ -529,25 +534,45 @@ export async function getUpcomingSlots(req, res) {
       const dateStr = d.toISOString().slice(0, 10);
       if (unavailableDates.has(dateStr)) continue;
       const weekday = dayNames[d.getDay()];
-      const timeBlocks = Array.isArray(chamberTimes[weekday]) ? chamberTimes[weekday] : [];
-      if (timeBlocks.length === 0) continue;
+      const dayWindows = chamberWindows[weekday] || {};
       const booked = await Appointment.findAll({
         where: {
           doctorId,
           appointmentDate: dateStr,
           status: { [Op.notIn]: ['cancelled', 'rejected'] },
         },
-        attributes: ['timeBlock'],
+        attributes: ['window', 'serial'],
       });
-      const bookedSet = new Set(booked.map((a) => a.timeBlock));
-      const minTime = timeBlocks[0];
-      const maxTime = timeBlocks[timeBlocks.length - 1];
+
+      const upcomingWindows = windows
+        .map((window) => {
+          const config = dayWindows[window.key] || {};
+          const enabled = config.enabled === true;
+          const maxPatients = config.maxPatients || 0;
+          const bookedCount = booked.filter((appointment) => appointment.window === window.key).length;
+          const spotsLeft = enabled && maxPatients > 0
+            ? Math.max(0, maxPatients - bookedCount)
+            : (enabled ? null : 0);
+
+          return {
+            window: window.key,
+            label: window.label,
+            timeRange: window.timeRange,
+            enabled,
+            maxPatients: maxPatients || null,
+            booked: bookedCount,
+            spotsLeft,
+            available: enabled && (maxPatients === 0 || bookedCount < maxPatients),
+          };
+        })
+        .filter((window) => window.available);
+
+      if (upcomingWindows.length === 0) continue;
+
       slots.push({
         date: dateStr,
         dayName: weekday.charAt(0).toUpperCase() + weekday.slice(1),
-        timeRange: `${minTime} - ${maxTime}`,
-        timeBlocks,
-        booked: timeBlocks.map((t) => ({ timeBlock: t, booked: bookedSet.has(t) })),
+        windows: upcomingWindows,
       });
     }
     return res.json({ success: true, data: { slots } });
