@@ -26,8 +26,8 @@ const Navbar = () => {
         ? '/app/doctor-dashboard'
         : '/app/admin-dashboard';
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     navigate('/login');
     setMobileMenuOpen(false);
   };

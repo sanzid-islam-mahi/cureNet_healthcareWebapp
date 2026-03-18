@@ -9,6 +9,8 @@ const { User, Doctor, Patient } = db;
 
 const JWT_SECRET = getJwtSecret();
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
+const AUTH_COOKIE_NAME = process.env.AUTH_COOKIE_NAME || 'curenet_auth';
+const AUTH_COOKIE_MAX_AGE_MS = parseInt(process.env.AUTH_COOKIE_MAX_AGE_MS, 10) || 7 * 24 * 60 * 60 * 1000;
 
 const PASSWORD_POLICY = {
   minLength: 8,
@@ -31,6 +33,26 @@ function hashResetToken(token) {
 
 function signToken(userId) {
   return jwt.sign({ userId }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+}
+
+function getAuthCookieOptions() {
+  const isProduction = process.env.NODE_ENV === 'production';
+  return {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? 'strict' : 'lax',
+    maxAge: AUTH_COOKIE_MAX_AGE_MS,
+    path: '/',
+  };
+}
+
+function setAuthCookie(res, token) {
+  res.cookie(AUTH_COOKIE_NAME, token, getAuthCookieOptions());
+}
+
+function clearAuthCookie(res) {
+  const { maxAge: _maxAge, ...cookieOptions } = getAuthCookieOptions();
+  res.clearCookie(AUTH_COOKIE_NAME, cookieOptions);
 }
 
 function formatUserResponse(user) {
@@ -120,9 +142,10 @@ export async function register(req, res) {
       ],
     });
 
+    setAuthCookie(res, token);
     return res.status(201).json({
       success: true,
-      data: { user: formatUserResponse(fullUser), token },
+      data: { user: formatUserResponse(fullUser) },
     });
   } catch (err) {
     console.error('Register error:', err);
@@ -162,9 +185,10 @@ export async function login(req, res) {
     logAudit({ action: 'user_login', userId: user.id, entityType: 'user', entityId: user.id, details: { email: user.email }, ip }).catch(() => {});
 
     const token = signToken(user.id);
+    setAuthCookie(res, token);
     return res.json({
       success: true,
-      data: { user: formatUserResponse(user), token },
+      data: { user: formatUserResponse(user) },
     });
   } catch (err) {
     console.error('Login error:', err);
@@ -299,4 +323,9 @@ export async function resetPassword(req, res) {
     console.error('Reset password error:', err);
     return res.status(500).json({ success: false, message: err.message || 'Reset failed' });
   }
+}
+
+export async function logout(_req, res) {
+  clearAuthCookie(res);
+  return res.json({ success: true, message: 'Logged out successfully' });
 }

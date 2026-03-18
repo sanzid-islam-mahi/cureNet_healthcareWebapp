@@ -3,7 +3,6 @@ import React, { createContext, useCallback, useContext, useEffect, useState } fr
 import axios from 'axios';
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-const TOKEN_KEY = 'token';
 
 export interface User {
   id: number;
@@ -21,14 +20,14 @@ export interface User {
 
 interface AuthState {
   user: User | null;
-  token: string | null;
+  isAuthenticated: boolean;
   loading: boolean;
 }
 
 interface AuthContextValue extends AuthState {
   login: (emailOrPhone: string, password: string) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   updateProfile: (user: User) => void;
 }
 
@@ -51,20 +50,14 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 const api = axios.create({
   baseURL: API_BASE,
+  withCredentials: true,
   headers: { 'Content-Type': 'application/json' },
-});
-
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem(TOKEN_KEY);
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
 });
 
 api.interceptors.response.use(
   (res) => res,
   (err) => {
     if (err.response?.status === 401) {
-      localStorage.removeItem(TOKEN_KEY);
       window.dispatchEvent(new Event('auth-logout'));
     }
     return Promise.reject(err);
@@ -76,31 +69,24 @@ export { api };
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AuthState>({
     user: null,
-    token: localStorage.getItem(TOKEN_KEY),
+    isAuthenticated: false,
     loading: true,
   });
 
   useEffect(() => {
     let cancelled = false;
     async function loadProfile() {
-      const token = localStorage.getItem(TOKEN_KEY);
-      if (!token) {
-        if (!cancelled) setState((s) => ({ ...s, user: null, loading: false }));
-        return;
-      }
       try {
         const { data } = await api.get<{ success: boolean; data: { user: User } }>('/auth/profile');
         if (cancelled) return;
         if (data.success && data.data.user) {
-          setState((s) => ({ ...s, user: data.data.user, token, loading: false }));
+          setState({ user: data.data.user, isAuthenticated: true, loading: false });
         } else {
-          setState((s) => ({ ...s, user: null, token: null, loading: false }));
-          localStorage.removeItem(TOKEN_KEY);
+          setState({ user: null, isAuthenticated: false, loading: false });
         }
       } catch {
         if (cancelled) return;
-        setState((s) => ({ ...s, user: null, token: null, loading: false }));
-        localStorage.removeItem(TOKEN_KEY);
+        setState({ user: null, isAuthenticated: false, loading: false });
       }
     }
     void loadProfile();
@@ -110,7 +96,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    const onLogout = () => setState((s) => ({ ...s, user: null, token: null }));
+    const onLogout = () => setState({ user: null, isAuthenticated: false, loading: false });
     window.addEventListener('auth-logout', onLogout);
     return () => window.removeEventListener('auth-logout', onLogout);
   }, []);
@@ -118,22 +104,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = useCallback(async (emailOrPhone: string, password: string) => {
     const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailOrPhone);
     const payload = isEmail ? { email: emailOrPhone, password } : { phone: emailOrPhone, password };
-    const { data } = await api.post<{ success: boolean; data: { user: User; token: string } }>('/auth/login', payload);
-    if (!data.success || !data.data.token) throw new Error('Login failed');
-    localStorage.setItem(TOKEN_KEY, data.data.token);
-    setState({ user: data.data.user, token: data.data.token, loading: false });
+    const { data } = await api.post<{ success: boolean; data: { user: User } }>('/auth/login', payload);
+    if (!data.success || !data.data.user) throw new Error('Login failed');
+    setState({ user: data.data.user, isAuthenticated: true, loading: false });
   }, []);
 
   const register = useCallback(async (formData: RegisterData) => {
-    const { data } = await api.post<{ success: boolean; data: { user: User; token: string } }>('/auth/register', formData);
-    if (!data.success || !data.data.token) throw new Error('Registration failed');
-    localStorage.setItem(TOKEN_KEY, data.data.token);
-    setState({ user: data.data.user, token: data.data.token, loading: false });
+    const { data } = await api.post<{ success: boolean; data: { user: User } }>('/auth/register', formData);
+    if (!data.success || !data.data.user) throw new Error('Registration failed');
+    setState({ user: data.data.user, isAuthenticated: true, loading: false });
   }, []);
 
-  const logout = useCallback(() => {
-    localStorage.removeItem(TOKEN_KEY);
-    setState({ user: null, token: null, loading: false });
+  const logout = useCallback(async () => {
+    try {
+      await api.post('/auth/logout');
+    } catch {
+      // Clear local auth state even if the server request fails.
+    }
+    setState({ user: null, isAuthenticated: false, loading: false });
   }, []);
 
   const updateProfile = useCallback((user: User) => {

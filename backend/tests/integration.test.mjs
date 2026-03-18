@@ -15,6 +15,12 @@ async function request(path, options = {}) {
   return { response, body };
 }
 
+function getCookieHeader(response) {
+  const setCookie = response.headers.get('set-cookie');
+  if (!setCookie) return null;
+  return setCookie.split(';')[0];
+}
+
 test('health endpoint responds', async (t) => {
   if (!RUN_INTEGRATION) return t.skip('Set RUN_BACKEND_INTEGRATION=1 to run integration tests');
   const { response, body } = await request('/api/health');
@@ -40,7 +46,8 @@ test('auth register/login/profile/forgot/reset-invalid flow', async (t) => {
   });
   assert.equal(registerRes.response.status, 201);
   assert.equal(registerRes.body?.success, true);
-  assert.ok(registerRes.body?.data?.token);
+  const registerCookie = getCookieHeader(registerRes.response);
+  assert.ok(registerCookie);
 
   const loginRes = await request('/api/auth/login', {
     method: 'POST',
@@ -49,14 +56,29 @@ test('auth register/login/profile/forgot/reset-invalid flow', async (t) => {
   });
   assert.equal(loginRes.response.status, 200);
   assert.equal(loginRes.body?.success, true);
-  const token = loginRes.body?.data?.token;
-  assert.ok(token);
+  const authCookie = getCookieHeader(loginRes.response);
+  assert.ok(authCookie);
 
   const profileRes = await request('/api/auth/profile', {
-    headers: { Authorization: `Bearer ${token}` },
+    headers: { Cookie: authCookie },
   });
   assert.equal(profileRes.response.status, 200);
   assert.equal(profileRes.body?.success, true);
+
+  const logoutRes = await request('/api/auth/logout', {
+    method: 'POST',
+    headers: { Cookie: authCookie },
+  });
+  assert.equal(logoutRes.response.status, 200);
+  const clearedCookie = logoutRes.response.headers.get('set-cookie');
+  assert.ok(clearedCookie?.includes('Max-Age=0') || clearedCookie?.includes('Expires=Thu, 01 Jan 1970'));
+  const clearedCookieHeader = getCookieHeader(logoutRes.response);
+  assert.ok(clearedCookieHeader);
+
+  const profileAfterLogoutRes = await request('/api/auth/profile', {
+    headers: { Cookie: clearedCookieHeader },
+  });
+  assert.equal(profileAfterLogoutRes.response.status, 401);
 
   const forgotRes = await request('/api/auth/forgot-password', {
     method: 'POST',
@@ -164,4 +186,3 @@ test('duplicate booking prevention scenario', async (t) => {
   assert.equal(statuses[1], 201);
   assert.ok([400, 409].includes(statuses[0]));
 });
-

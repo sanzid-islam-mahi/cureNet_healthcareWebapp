@@ -48,8 +48,8 @@ export default function Register() {
         experience: data.experience,
       };
       await doRegister({ ...payload, role });
-      toast.success('Account created. You can sign in now.');
-      navigate('/login', { replace: true });
+      toast.success('Account created successfully');
+      navigate('/app', { replace: true });
     } catch (err: unknown) {
       const message = err && typeof err === 'object' && 'response' in err
         ? (err as { response?: { data?: { message?: string } } }).response?.data?.message

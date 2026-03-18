@@ -58,6 +58,7 @@
       "post": {
         "tags": ["Authentication"],
         "summary": "Login",
+        "description": "Authenticates the user and sets an HTTP-only session cookie.",
         "requestBody": {
           "required": true,
           "content": {
@@ -78,6 +79,16 @@
           "200": { "description": "Success" },
           "401": { "description": "Invalid credentials" },
           "403": { "description": "Account deactivated" }
+        }
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Logout",
+        "description": "Clears the HTTP-only auth cookie for the current browser session.",
+        "responses": {
+          "200": { "description": "Logged out" }
         }
       }
     },
@@ -493,7 +504,7 @@
         "type": "http",
         "scheme": "bearer",
         "bearerFormat": "JWT",
-        "description": "JWT from login/register"
+        "description": "JWT used internally for auth. Browser clients use the HTTP-only auth cookie set by login/register."
       }
     }
   }

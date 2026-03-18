@@ -4,10 +4,27 @@ import { getJwtSecret } from '../config/security.js';
 
 const { User, Doctor, Patient } = db;
 const JWT_SECRET = getJwtSecret();
+const AUTH_COOKIE_NAME = process.env.AUTH_COOKIE_NAME || 'curenet_auth';
+
+function getCookieValue(req, name) {
+  const cookieHeader = req.headers.cookie;
+  if (!cookieHeader) return null;
+
+  const cookies = cookieHeader.split(';');
+  for (const cookie of cookies) {
+    const [rawName, ...rest] = cookie.trim().split('=');
+    if (rawName === name) {
+      return decodeURIComponent(rest.join('='));
+    }
+  }
+
+  return null;
+}
 
 export const authenticateToken = async (req, res, next) => {
   const authHeader = req.headers.authorization;
-  const token = authHeader && authHeader.split(' ')[1];
+  const bearerToken = authHeader && authHeader.split(' ')[1];
+  const token = bearerToken || getCookieValue(req, AUTH_COOKIE_NAME);
 
   if (!token) {
     return res.status(401).json({ success: false, message: 'Access token required' });
