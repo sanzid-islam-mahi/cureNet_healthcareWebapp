@@ -26,8 +26,10 @@ const AdminLogs = lazy(() => import('./pages/AdminLogs'));
 const PatientProfile = lazy(() => import('./pages/PatientProfile'));
 const DoctorProfile = lazy(() => import('./pages/DoctorProfile'));
 const PatientAppointments = lazy(() => import('./pages/PatientAppointments'));
+const PatientPrescriptionHistory = lazy(() => import('./pages/PatientPrescriptionHistory'));
 const DoctorAppointments = lazy(() => import('./pages/DoctorAppointments'));
 const DoctorMyPatients = lazy(() => import('./pages/DoctorMyPatients'));
+const DoctorContinuity = lazy(() => import('./pages/DoctorContinuity'));
 const Doctors = lazy(() => import('./pages/Doctors'));
 const PatientDoctorProfile = lazy(() => import('./pages/PatientDoctorProfile'));
 
@@ -75,9 +77,11 @@ export default function App() {
                     <Route path="patient-profile" element={<ProtectedRoute requiredRole="patient"><PatientProfile /></ProtectedRoute>} />
                     <Route path="doctor-profile" element={<ProtectedRoute requiredRole="doctor"><DoctorProfile /></ProtectedRoute>} />
                     <Route path="patient-appointments" element={<ProtectedRoute requiredRole="patient"><PatientAppointments /></ProtectedRoute>} />
+                    <Route path="patient-prescriptions" element={<ProtectedRoute requiredRole="patient"><PatientPrescriptionHistory /></ProtectedRoute>} />
                     <Route path="doctor-appointments" element={<ProtectedRoute requiredRole="doctor"><DoctorAppointments /></ProtectedRoute>} />
                     <Route path="doctors" element={<Doctors />} />
                     <Route path="doctor-my-patients" element={<ProtectedRoute requiredRole="doctor"><DoctorMyPatients /></ProtectedRoute>} />
+                    <Route path="doctor-continuity" element={<ProtectedRoute requiredRole="doctor"><DoctorContinuity /></ProtectedRoute>} />
                     <Route path="users" element={<ProtectedRoute requiredRole="admin"><AdminUsers /></ProtectedRoute>} />
                     <Route path="admin-analytics" element={<ProtectedRoute requiredRole="admin"><AdminAnalytics /></ProtectedRoute>} />
                     <Route path="admin-logs" element={<ProtectedRoute requiredRole="admin"><AdminLogs /></ProtectedRoute>} />

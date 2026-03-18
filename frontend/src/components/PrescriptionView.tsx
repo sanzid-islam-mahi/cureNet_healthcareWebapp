@@ -195,7 +195,7 @@ export default function PrescriptionView({ appointmentId, onClose }: Prescriptio
       <div className="flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-xl bg-white shadow-xl">
         <header className="border-b border-gray-200 px-6 py-4">
           <h3 className="text-lg font-semibold text-gray-900">Prescription Record</h3>
-          <p className="text-sm text-gray-500">Clinical summary shared by your doctor for this appointment.</p>
+          <p className="text-sm text-gray-500">Clinical prescription details linked to this appointment.</p>
         </header>
 
         <div className="flex-1 overflow-y-auto px-6 py-5">

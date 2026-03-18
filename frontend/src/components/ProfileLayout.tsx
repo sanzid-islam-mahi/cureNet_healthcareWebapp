@@ -5,6 +5,7 @@ const patientNav = [
   { to: '/app/patient-dashboard', label: 'Dashboard' },
   { to: '/app/patient-profile', label: 'Profile' },
   { to: '/app/patient-appointments', label: 'Appointments' },
+  { to: '/app/patient-prescriptions', label: 'Prescriptions' },
   // { to: '/app/doctors', label: 'Find doctors' },
 ];
 
@@ -13,6 +14,7 @@ const doctorNav = [
   { to: '/app/doctor-profile', label: 'Profile' },
   { to: '/app/doctor-appointments', label: 'Appointments' },
   { to: '/app/doctor-my-patients', label: 'My Patients' },
+  { to: '/app/doctor-continuity', label: 'Continuity' },
 ];
 
 const adminNav = [

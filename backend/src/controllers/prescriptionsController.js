@@ -3,6 +3,48 @@ import { validatePrescriptionPayload } from '../lib/prescriptionValidation.js';
 
 const { Prescription, Appointment } = db;
 
+function buildPrescriptionRecord(prescription) {
+  const plain = prescription.get ? prescription.get({ plain: true }) : prescription;
+  const appointmentCtx = plain.Appointment || {};
+  const doctorUser = appointmentCtx.Doctor?.User || null;
+  const patientUser = appointmentCtx.Patient?.User || null;
+
+  return {
+    id: plain.id,
+    appointmentId: plain.appointmentId,
+    diagnosis: plain.diagnosis,
+    medicines: plain.medicines,
+    notes: plain.notes,
+    createdAt: plain.createdAt,
+    updatedAt: plain.updatedAt,
+    appointment: appointmentCtx.id ? {
+      id: appointmentCtx.id,
+      appointmentDate: appointmentCtx.appointmentDate,
+      status: appointmentCtx.status,
+      type: appointmentCtx.type,
+      window: appointmentCtx.window,
+      serial: appointmentCtx.serial,
+      timeBlock: appointmentCtx.timeBlock,
+      reason: appointmentCtx.reason,
+      symptoms: appointmentCtx.symptoms,
+      doctor: doctorUser ? {
+        id: appointmentCtx.Doctor?.id,
+        firstName: doctorUser.firstName,
+        lastName: doctorUser.lastName,
+      } : null,
+      patient: patientUser ? {
+        id: appointmentCtx.Patient?.id,
+        firstName: patientUser.firstName,
+        lastName: patientUser.lastName,
+        email: patientUser.email,
+        phone: patientUser.phone,
+        dateOfBirth: patientUser.dateOfBirth,
+        gender: patientUser.gender,
+      } : null,
+    } : null,
+  };
+}
+
 export async function getByAppointment(req, res) {
   try {
     const appointmentId = parseInt(req.params.id, 10);
@@ -40,46 +82,104 @@ export async function getByAppointment(req, res) {
     if (!prescription) {
       return res.status(404).json({ success: false, message: 'No prescription for this appointment' });
     }
-    const plain = prescription.get({ plain: true });
-    const appointmentCtx = plain.Appointment || {};
-    const doctorUser = appointmentCtx.Doctor?.User || null;
-    const patientUser = appointmentCtx.Patient?.User || null;
     return res.json({
       success: true,
       data: {
-        prescription: {
-          id: plain.id,
-          appointmentId: plain.appointmentId,
-          diagnosis: plain.diagnosis,
-          medicines: plain.medicines,
-          notes: plain.notes,
-          createdAt: plain.createdAt,
-          updatedAt: plain.updatedAt,
-          appointment: appointmentCtx.id ? {
-            id: appointmentCtx.id,
-            appointmentDate: appointmentCtx.appointmentDate,
-            type: appointmentCtx.type,
-            window: appointmentCtx.window,
-            serial: appointmentCtx.serial,
-            timeBlock: appointmentCtx.timeBlock,
-            doctor: doctorUser ? {
-              id: appointmentCtx.Doctor?.id,
-              firstName: doctorUser.firstName,
-              lastName: doctorUser.lastName,
-            } : null,
-            patient: patientUser ? {
-              id: appointmentCtx.Patient?.id,
-              firstName: patientUser.firstName,
-              lastName: patientUser.lastName,
-              dateOfBirth: patientUser.dateOfBirth,
-              gender: patientUser.gender,
-            } : null,
-          } : null,
-        },
+        prescription: buildPrescriptionRecord(prescription),
       },
     });
   } catch (err) {
     console.error('Get prescription error:', err);
+    return res.status(500).json({ success: false, message: err.message || 'Failed' });
+  }
+}
+
+export async function getPatientHistory(req, res) {
+  try {
+    const user = req.user;
+    if (user.role !== 'patient' || !user.patientId) {
+      return res.status(403).json({ success: false, message: 'Not a patient' });
+    }
+
+    const prescriptions = await Prescription.findAll({
+      include: [
+        {
+          model: Appointment,
+          as: 'Appointment',
+          where: { patientId: user.patientId },
+          include: [
+            {
+              model: db.Doctor,
+              as: 'Doctor',
+              include: [{ model: db.User, as: 'User', attributes: ['id', 'firstName', 'lastName'] }],
+            },
+            {
+              model: db.Patient,
+              as: 'Patient',
+              include: [{ model: db.User, as: 'User', attributes: ['id', 'firstName', 'lastName', 'dateOfBirth', 'gender'] }],
+            },
+          ],
+        },
+      ],
+      order: [
+        [{ model: Appointment, as: 'Appointment' }, 'appointmentDate', 'DESC'],
+        ['createdAt', 'DESC'],
+      ],
+    });
+
+    return res.json({
+      success: true,
+      data: {
+        prescriptions: prescriptions.map(buildPrescriptionRecord),
+      },
+    });
+  } catch (err) {
+    console.error('Get patient prescription history error:', err);
+    return res.status(500).json({ success: false, message: err.message || 'Failed' });
+  }
+}
+
+export async function getDoctorContinuity(req, res) {
+  try {
+    const user = req.user;
+    if (user.role !== 'doctor' || !user.doctorId) {
+      return res.status(403).json({ success: false, message: 'Not a doctor' });
+    }
+
+    const prescriptions = await Prescription.findAll({
+      include: [
+        {
+          model: Appointment,
+          as: 'Appointment',
+          where: { doctorId: user.doctorId },
+          include: [
+            {
+              model: db.Doctor,
+              as: 'Doctor',
+              include: [{ model: db.User, as: 'User', attributes: ['id', 'firstName', 'lastName'] }],
+            },
+            {
+              model: db.Patient,
+              as: 'Patient',
+              include: [{ model: db.User, as: 'User', attributes: ['id', 'firstName', 'lastName', 'email', 'phone', 'dateOfBirth', 'gender'] }],
+            },
+          ],
+        },
+      ],
+      order: [
+        [{ model: Appointment, as: 'Appointment' }, 'appointmentDate', 'DESC'],
+        ['createdAt', 'DESC'],
+      ],
+    });
+
+    return res.json({
+      success: true,
+      data: {
+        prescriptions: prescriptions.map(buildPrescriptionRecord),
+      },
+    });
+  } catch (err) {
+    console.error('Get doctor continuity prescriptions error:', err);
     return res.status(500).json({ success: false, message: err.message || 'Failed' });
   }
 }
