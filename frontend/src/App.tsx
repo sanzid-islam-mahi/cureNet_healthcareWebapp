@@ -29,7 +29,7 @@ const PatientAppointments = lazy(() => import('./pages/PatientAppointments'));
 const DoctorAppointments = lazy(() => import('./pages/DoctorAppointments'));
 const DoctorMyPatients = lazy(() => import('./pages/DoctorMyPatients'));
 const Doctors = lazy(() => import('./pages/Doctors'));
-const DoctorProfileView = lazy(() => import('./pages/DoctorProfileView'));
+const PatientDoctorProfile = lazy(() => import('./pages/PatientDoctorProfile'));
 
 const queryClient = new QueryClient();
 
@@ -59,7 +59,7 @@ export default function App() {
                   <Route path="/forgot-password" element={<ForgotPassword />} />
                   <Route path="/reset-password" element={<ResetPassword />} />
                   <Route path="/doctors" element={<Doctors />} />
-                  <Route path="/doctors/:id" element={<DoctorProfileView />} />
+                  <Route path="/doctors/:id" element={<PatientDoctorProfile />} />
                   <Route
                     path="/app"
                     element={
