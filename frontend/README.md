@@ -1,73 +1,93 @@
-# React + TypeScript + Vite
+# CureNet Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This application is the React frontend for CureNet. It provides the public website, authentication flows, and role-based app experiences for patients, doctors, and administrators.
 
-Currently, two official plugins are available:
+## Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- React 19
+- TypeScript
+- Vite
+- Tailwind CSS
+- React Router
+- React Query
+- Axios
 
-## React Compiler
+## Development
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+cp .env.example .env
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Default local URL:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+- `http://localhost:5173`
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+## Environment
+
+Optional environment variables:
+
+- `VITE_API_URL` to override the default API base URL of `http://localhost:5000/api`
+
+## Available Commands
+
+```bash
+npm run dev
+npm run build
+npm run lint
+npm run preview
 ```
+
+## Application Areas
+
+### Public
+
+- Landing page
+- About and contact pages
+- Login and registration
+- Forgot password and reset password
+- Doctor discovery and doctor profile view
+
+### Authenticated
+
+- Patient dashboard, profile, and appointments
+- Doctor dashboard, profile, appointments, and patient context views
+- Admin dashboard, user management, doctor management, patient management, analytics, and logs
+
+## Routing
+
+### Public Routes
+
+- `/`
+- `/about`
+- `/contact`
+- `/login`
+- `/register`
+- `/forgot-password`
+- `/reset-password`
+- `/doctors`
+- `/doctors/:id`
+
+### App Routes
+
+- `/app`
+- `/app/patient-dashboard`
+- `/app/doctor-dashboard`
+- `/app/admin-dashboard`
+- `/app/patient-profile`
+- `/app/doctor-profile`
+- `/app/patient-appointments`
+- `/app/doctor-appointments`
+- `/app/doctors`
+- `/app/users`
+- `/app/admin-doctors`
+- `/app/admin-patients`
+- `/app/admin-analytics`
+- `/app/admin-logs`
+
+## Notes
+
+- Authentication state is managed through the shared auth context in `src/context/AuthContext.tsx`.
+- API calls are made against the backend through Axios and React Query.
+- Production verification should include at least `npm run build` and `npm run lint`.
