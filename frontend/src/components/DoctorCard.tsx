@@ -11,6 +11,7 @@ interface DoctorCardProps {
     totalRatings?: number;
     consultationFee?: number;
     isPatient?: boolean;
+    onBookNow?: (doctorId: number) => void;
 }
 
 export default function DoctorCard({
@@ -21,6 +22,7 @@ export default function DoctorCard({
     averageRating = 0,
     totalRatings = 0,
     isPatient = false,
+    onBookNow,
 }: DoctorCardProps) {
     const navigate = useNavigate();
 
@@ -99,18 +101,21 @@ export default function DoctorCard({
                 {/* CTA button */}
                 <div className="mt-auto pt-3" onClick={(e) => e.stopPropagation()}>
                     {isPatient ? (
-                        <Link
-                            to={`/app/appointments?book=${id}`}
+                        <button
+                            type="button"
                             className="flex items-center justify-center gap-1.5 w-full text-center
                          rounded-full bg-gradient-to-r from-[#3990D7] to-indigo-500
                          py-2 px-3 text-xs font-semibold text-white
                          hover:from-[#2d7ab8] hover:to-indigo-600
                          shadow-sm hover:shadow-md transition-all duration-200"
-                            onClick={(e) => e.stopPropagation()}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onBookNow?.(id);
+                            }}
                         >
                             <CalendarDaysIcon className="w-3.5 h-3.5" />
                             Book Now
-                        </Link>
+                        </button>
                     ) : (
                         <Link
                             to="/login?redirect=/doctors"

@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { api, useAuth } from '../context/AuthContext';
 import { MEDICAL_DEPARTMENTS } from '../utils/departments';
 import DoctorCard from '../components/DoctorCard';
+import BookAppointmentModal from '../components/BookAppointmentModal';
 import { MagnifyingGlassIcon, FunnelIcon } from '@heroicons/react/24/outline';
 import { Link } from 'react-router-dom';
 
@@ -26,6 +27,7 @@ export default function Doctors() {
 
   const [department, setDepartment] = useState<string>(initialSpecialty);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [bookDoctorId, setBookDoctorId] = useState<number | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ['doctors', department],
@@ -224,6 +226,7 @@ export default function Doctors() {
                     totalRatings={rating.totalRatings}
                     consultationFee={doc.consultationFee}
                     isPatient={isPatient}
+                    onBookNow={(doctorId) => setBookDoctorId(doctorId)}
                   />
                 );
               })}
@@ -231,6 +234,14 @@ export default function Doctors() {
           )}
         </div>
       </section>
+
+      {bookDoctorId != null ? (
+        <BookAppointmentModal
+          prefilledDoctorId={bookDoctorId}
+          lockDoctor
+          onClose={() => setBookDoctorId(null)}
+        />
+      ) : null}
     </div>
   );
 }
