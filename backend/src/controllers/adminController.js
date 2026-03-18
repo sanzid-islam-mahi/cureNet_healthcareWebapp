@@ -293,9 +293,14 @@ export async function unverifyDoctor(req, res) {
 
 // ----- Users (admin CRUD) -----
 
-function formatUserForAdmin(user, doctorId = null, patientId = null) {
+function formatUserForAdmin(user, doctorId = null, patientId = null, doctorDetails = null) {
   const u = user.toJSON ? user.toJSON() : user;
-  return { ...u, doctorId: doctorId ?? u.doctorId ?? null, patientId: patientId ?? u.patientId ?? null };
+  return {
+    ...u,
+    doctorId: doctorId ?? u.doctorId ?? null,
+    patientId: patientId ?? u.patientId ?? null,
+    doctorProfile: doctorDetails ?? u.doctorProfile ?? null,
+  };
 }
 
 export async function listUsers(req, res) {
@@ -303,7 +308,7 @@ export async function listUsers(req, res) {
     const page = Math.max(1, parseInt(req.query.page, 10) || 1);
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 20));
     const offset = (page - 1) * limit;
-    const { role, search, isActive } = req.query;
+    const { role, search, isActive, verified } = req.query;
 
     const where = {};
     if (role && ['admin', 'patient', 'doctor'].includes(role)) where.role = role;
@@ -319,11 +324,22 @@ export async function listUsers(req, res) {
       ];
     }
 
+    const doctorInclude = {
+      model: Doctor,
+      as: 'Doctor',
+      required: false,
+      attributes: ['id', 'department', 'verified', 'bmdcRegistrationNumber', 'experience'],
+    };
+    if (typeof verified !== 'undefined' && verified !== '') {
+      doctorInclude.required = true;
+      doctorInclude.where = { verified: verified === 'true' || verified === true };
+    }
+
     const { count, rows } = await User.findAndCountAll({
       where,
       attributes: { exclude: ['password'] },
       include: [
-        { model: Doctor, as: 'Doctor', required: false, attributes: ['id'] },
+        doctorInclude,
         { model: Patient, as: 'Patient', required: false, attributes: ['id'] },
       ],
       order: [['id', 'ASC']],
@@ -335,7 +351,19 @@ export async function listUsers(req, res) {
       const doctorId = u.Doctor ? u.Doctor.id : null;
       const patientId = u.Patient ? u.Patient.id : null;
       const { Doctor: _d, Patient: _p, ...rest } = u.toJSON();
-      return formatUserForAdmin({ ...rest }, doctorId, patientId);
+      return formatUserForAdmin(
+        { ...rest },
+        doctorId,
+        patientId,
+        u.Doctor
+          ? {
+            department: u.Doctor.department,
+            verified: u.Doctor.verified,
+            bmdcRegistrationNumber: u.Doctor.bmdcRegistrationNumber,
+            experience: u.Doctor.experience,
+          }
+          : null
+      );
     });
 
     return res.json({
@@ -413,7 +441,7 @@ export async function createUser(req, res) {
     const full = await User.findByPk(user.id, {
       attributes: { exclude: ['password'] },
       include: [
-        { model: Doctor, as: 'Doctor', required: false, attributes: ['id'] },
+        { model: Doctor, as: 'Doctor', required: false, attributes: ['id', 'department', 'verified', 'bmdcRegistrationNumber', 'experience'] },
         { model: Patient, as: 'Patient', required: false, attributes: ['id'] },
       ],
     });
@@ -430,7 +458,21 @@ export async function createUser(req, res) {
     });
     return res.status(201).json({
       success: true,
-      data: { user: formatUserForAdmin({ ...rest }, doctorId, patientId) },
+      data: {
+        user: formatUserForAdmin(
+          { ...rest },
+          doctorId,
+          patientId,
+          full.Doctor
+            ? {
+              department: full.Doctor.department,
+              verified: full.Doctor.verified,
+              bmdcRegistrationNumber: full.Doctor.bmdcRegistrationNumber,
+              experience: full.Doctor.experience,
+            }
+            : null
+        ),
+      },
     });
   } catch (err) {
     console.error('Create user error:', err);
@@ -462,6 +504,10 @@ export async function updateUser(req, res) {
       'role',
       'isActive',
       'password',
+      'bmdcRegistrationNumber',
+      'department',
+      'experience',
+      'verified',
     ];
     const updates = {};
     for (const key of allowed) {
@@ -474,6 +520,17 @@ export async function updateUser(req, res) {
     if (updates.role && !['admin', 'patient', 'doctor'].includes(updates.role)) {
       delete updates.role;
     }
+    if (updates.email) {
+      const existing = await User.findOne({
+        where: {
+          email: updates.email,
+          id: { [Op.ne]: user.id },
+        },
+      });
+      if (existing) {
+        return res.status(400).json({ success: false, message: 'Email already registered' });
+      }
+    }
     if (updates.password && !validatePasswordStrength(updates.password)) {
       return res.status(400).json({
         success: false,
@@ -482,6 +539,18 @@ export async function updateUser(req, res) {
     }
     if (updates.isActive !== undefined) {
       updates.isActive = !!updates.isActive;
+    }
+    if (updates.verified !== undefined) {
+      updates.verified = !!updates.verified;
+    }
+
+    if (req.user?.id === user.id) {
+      if (updates.isActive === false) {
+        return res.status(400).json({ success: false, message: 'You cannot deactivate your own account' });
+      }
+      if (updates.role && updates.role !== 'admin') {
+        return res.status(400).json({ success: false, message: 'You cannot change your own admin role' });
+      }
     }
 
     // Role change: create/remove Doctor or Patient
@@ -495,19 +564,51 @@ export async function updateUser(req, res) {
         await user.Patient.destroy();
       }
       if (newRole === 'doctor') {
-        await Doctor.create({ userId: user.id, verified: false });
+        await Doctor.create({
+          userId: user.id,
+          verified: updates.verified ?? false,
+          bmdcRegistrationNumber: updates.bmdcRegistrationNumber || null,
+          department: updates.department || null,
+          experience: updates.experience != null ? parseInt(updates.experience, 10) : null,
+        });
       }
       if (newRole === 'patient') {
         await Patient.create({ userId: user.id });
       }
     }
 
+    const doctorFieldUpdates = {};
+    if (newRole === 'doctor') {
+      if (updates.bmdcRegistrationNumber !== undefined) doctorFieldUpdates.bmdcRegistrationNumber = updates.bmdcRegistrationNumber || null;
+      if (updates.department !== undefined) doctorFieldUpdates.department = updates.department || null;
+      if (updates.experience !== undefined) {
+        doctorFieldUpdates.experience = updates.experience === '' || updates.experience == null
+          ? null
+          : parseInt(updates.experience, 10);
+      }
+      if (updates.verified !== undefined) doctorFieldUpdates.verified = updates.verified;
+    }
+
+    delete updates.bmdcRegistrationNumber;
+    delete updates.department;
+    delete updates.experience;
+    delete updates.verified;
+
     await user.update(updates);
+    if (newRole === 'doctor' && user.Doctor && Object.keys(doctorFieldUpdates).length > 0) {
+      await user.Doctor.update(doctorFieldUpdates);
+    }
+    if (newRole === 'doctor' && !user.Doctor) {
+      const doctorProfile = await Doctor.findOne({ where: { userId: user.id } });
+      if (doctorProfile && Object.keys(doctorFieldUpdates).length > 0) {
+        await doctorProfile.update(doctorFieldUpdates);
+      }
+    }
 
     const full = await User.findByPk(user.id, {
       attributes: { exclude: ['password'] },
       include: [
-        { model: Doctor, as: 'Doctor', required: false, attributes: ['id'] },
+        { model: Doctor, as: 'Doctor', required: false, attributes: ['id', 'department', 'verified', 'bmdcRegistrationNumber', 'experience'] },
         { model: Patient, as: 'Patient', required: false, attributes: ['id'] },
       ],
     });
@@ -524,7 +625,21 @@ export async function updateUser(req, res) {
     });
     return res.json({
       success: true,
-      data: { user: formatUserForAdmin({ ...rest }, doctorId, patientId) },
+      data: {
+        user: formatUserForAdmin(
+          { ...rest },
+          doctorId,
+          patientId,
+          full.Doctor
+            ? {
+              department: full.Doctor.department,
+              verified: full.Doctor.verified,
+              bmdcRegistrationNumber: full.Doctor.bmdcRegistrationNumber,
+              experience: full.Doctor.experience,
+            }
+            : null
+        ),
+      },
     });
   } catch (err) {
     console.error('Update user error:', err);

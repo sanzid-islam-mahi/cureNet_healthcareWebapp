@@ -82,8 +82,6 @@ npm run preview
 - `/app/doctor-my-patients`
 - `/app/doctors`
 - `/app/users`
-- `/app/admin-doctors`
-- `/app/admin-patients`
 - `/app/admin-analytics`
 - `/app/admin-logs`
 

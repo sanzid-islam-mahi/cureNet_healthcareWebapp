@@ -21,8 +21,6 @@ const PatientDashboard = lazy(() => import('./pages/PatientDashboard'));
 const DoctorDashboard = lazy(() => import('./pages/DoctorDashboard'));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 const AdminUsers = lazy(() => import('./pages/AdminUsers'));
-const AdminDoctors = lazy(() => import('./pages/AdminDoctors'));
-const AdminPatients = lazy(() => import('./pages/AdminPatients'));
 const AdminAnalytics = lazy(() => import('./pages/AdminAnalytics'));
 const AdminLogs = lazy(() => import('./pages/AdminLogs'));
 const PatientProfile = lazy(() => import('./pages/PatientProfile'));
@@ -81,8 +79,6 @@ export default function App() {
                     <Route path="doctors" element={<Doctors />} />
                     <Route path="doctor-my-patients" element={<ProtectedRoute requiredRole="doctor"><DoctorMyPatients /></ProtectedRoute>} />
                     <Route path="users" element={<ProtectedRoute requiredRole="admin"><AdminUsers /></ProtectedRoute>} />
-                    <Route path="admin-doctors" element={<ProtectedRoute requiredRole="admin"><AdminDoctors /></ProtectedRoute>} />
-                    <Route path="admin-patients" element={<ProtectedRoute requiredRole="admin"><AdminPatients /></ProtectedRoute>} />
                     <Route path="admin-analytics" element={<ProtectedRoute requiredRole="admin"><AdminAnalytics /></ProtectedRoute>} />
                     <Route path="admin-logs" element={<ProtectedRoute requiredRole="admin"><AdminLogs /></ProtectedRoute>} />
                   </Route>

@@ -258,7 +258,7 @@ export default function AdminDashboard() {
             title="Pending Doctor Verifications"
             value={stats.queue.pendingDoctorVerifications ?? 0}
             actionLabel="Review doctors"
-            actionTo="/app/admin-doctors?pending=true"
+            actionTo="/app/users?role=doctor&verified=false"
           />
           <QueueCard
             title="Pending Appointment Approvals"
@@ -285,7 +285,7 @@ export default function AdminDashboard() {
           Add User
         </Link>
         <Link
-          to="/app/admin-doctors?pending=true"
+          to="/app/users?role=doctor&verified=false"
           className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
         >
           <CheckIcon className="h-5 w-5" />
@@ -396,7 +396,7 @@ export default function AdminDashboard() {
                             <CheckIcon className="h-4 w-4" />
                           </button>
                         )}
-                        <Link to={`/app/admin-doctors?edit=${d.id}`} className="p-1.5 text-gray-500 hover:bg-gray-100 rounded">
+                        <Link to={`/app/users?role=doctor&search=${encodeURIComponent(d.user?.email || '')}`} className="p-1.5 text-gray-500 hover:bg-gray-100 rounded">
                           <PencilSquareIcon className="h-4 w-4" />
                         </Link>
                       </div>
@@ -453,10 +453,10 @@ export default function AdminDashboard() {
                     {p.isActive ? 'Active' : 'Inactive'}
                   </span>
                   <Link
-                    to={`/app/admin-patients?view=${p.patientId}`}
+                    to={`/app/users?role=patient&search=${encodeURIComponent(p.email || '')}`}
                     className="shrink-0 text-sm text-[#3990D7] hover:underline"
                   >
-                    View
+                    Open in Users
                   </Link>
                 </div>
               ))}
