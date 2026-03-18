@@ -11,6 +11,7 @@ import {
   CameraIcon,
   BriefcaseIcon,
   ClockIcon,
+  CalendarDaysIcon,
   AcademicCapIcon,
   BuildingOfficeIcon,
   MapPinIcon,
@@ -55,6 +56,12 @@ const WINDOWS = [
   { key: 'evening' as const, label: 'Evening', timeRange: '17:00–18:00' },
 ] as const;
 
+const SCHEDULE_PRESETS = [
+  { key: 'clinic-weekdays', label: 'Weekday Clinic', days: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'], windows: ['morning', 'noon'] },
+  { key: 'after-hours', label: 'After Hours', days: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'], windows: ['evening'] },
+  { key: 'six-day-practice', label: 'Six-Day Practice', days: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'], windows: ['morning', 'noon'] },
+] as const;
+
 function emptyChamberWindows(): ChamberWindows {
   const out: ChamberWindows = {};
   for (const day of WEEKDAYS) {
@@ -88,6 +95,47 @@ function normalizeChamberWindows(raw: ChamberWindows | null | undefined): Chambe
   return out;
 }
 
+function formatDisplayDate(value: string): string {
+  const date = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function getScheduleStats(windows: ChamberWindows, blockedDates: string[]) {
+  let activeDays = 0;
+  let activeWindows = 0;
+  let capacity = 0;
+
+  for (const day of WEEKDAYS) {
+    const dayWindows = windows[day] || {};
+    const enabledForDay = WINDOWS.filter((window) => dayWindows[window.key]?.enabled);
+    if (enabledForDay.length > 0) activeDays += 1;
+    activeWindows += enabledForDay.length;
+    capacity += enabledForDay.reduce((sum, window) => sum + (dayWindows[window.key]?.maxPatients || 0), 0);
+  }
+
+  return {
+    activeDays,
+    activeWindows,
+    blockedDates: blockedDates.length,
+    finiteCapacity: capacity,
+  };
+}
+
+function buildPresetWindows(days: readonly string[], windows: readonly string[]): ChamberWindows {
+  const next = emptyChamberWindows();
+  for (const day of days) {
+    const weekday = day as typeof WEEKDAYS[number];
+    for (const window of WINDOWS) {
+      next[weekday]![window.key] = {
+        enabled: windows.includes(window.key),
+        maxPatients: windows.includes(window.key) ? 12 : 0,
+      };
+    }
+  }
+  return next;
+}
+
 export default function DoctorProfile() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -102,6 +150,9 @@ export default function DoctorProfile() {
   const [chamberWindows, setChamberWindows] = useState<ChamberWindows>(emptyChamberWindows());
   const [unavailableDates, setUnavailableDates] = useState<string[]>([]);
   const [newUnavailableDate, setNewUnavailableDate] = useState('');
+  const [rangeStartDate, setRangeStartDate] = useState('');
+  const [rangeEndDate, setRangeEndDate] = useState('');
+  const [selectedExceptionWeekdays, setSelectedExceptionWeekdays] = useState<string[]>([]);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const { data: profileData } = useQuery({
@@ -167,6 +218,11 @@ export default function DoctorProfile() {
   const servicesItems = useWatch({ control: form.control, name: 'services' }) ?? [];
   const languagesItems = useWatch({ control: form.control, name: 'languages' }) ?? [];
   const awardsItems = useWatch({ control: form.control, name: 'awards' }) ?? [];
+  const scheduleStats = getScheduleStats(chamberWindows, unavailableDates);
+  const upcomingBlockedDates = [...unavailableDates]
+    .filter((date) => date >= new Date().toISOString().slice(0, 10))
+    .sort()
+    .slice(0, 6);
 
   const updateMutation = useMutation({
     mutationFn: async (payload: DoctorForm | FormData) => {
@@ -586,6 +642,9 @@ export default function DoctorProfile() {
                       setEditingChamber(false);
                       resetFormToDB();
                       setNewUnavailableDate('');
+                      setRangeStartDate('');
+                      setRangeEndDate('');
+                      setSelectedExceptionWeekdays([]);
                     }}
                     className="px-4 py-2 text-sm font-bold text-slate-600 hover:text-slate-900 transition-colors"
                   >
@@ -609,9 +668,62 @@ export default function DoctorProfile() {
             </div>
 
             <div className={`p-6 md:p-8 space-y-6 transition-opacity duration-300 ${updateMutation.isPending && editingChamber ? 'opacity-50 pointer-events-none' : ''}`}>
-              <p className="text-sm font-medium text-slate-500 mb-6 bg-slate-50 p-4 rounded-xl border border-slate-100">
-                Configure your weekly visiting hours. Enable shifts and set the maximum number of patients you can see per window (0 = unlimited).
+              <p className="text-sm font-medium text-slate-500 mb-2 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                Configure your recurring weekly chamber schedule, then use blocked dates and bulk exceptions to handle leave, closures, or temporary schedule changes.
               </p>
+
+              <div className="grid gap-3 md:grid-cols-4">
+                <div className="rounded-2xl border border-indigo-100 bg-indigo-50 px-4 py-4">
+                  <p className="text-xs font-bold uppercase tracking-wide text-indigo-700">Active Days</p>
+                  <p className="mt-2 text-2xl font-extrabold text-indigo-900">{scheduleStats.activeDays}</p>
+                </div>
+                <div className="rounded-2xl border border-sky-100 bg-sky-50 px-4 py-4">
+                  <p className="text-xs font-bold uppercase tracking-wide text-sky-700">Active Windows</p>
+                  <p className="mt-2 text-2xl font-extrabold text-sky-900">{scheduleStats.activeWindows}</p>
+                </div>
+                <div className="rounded-2xl border border-rose-100 bg-rose-50 px-4 py-4">
+                  <p className="text-xs font-bold uppercase tracking-wide text-rose-700">Blocked Dates</p>
+                  <p className="mt-2 text-2xl font-extrabold text-rose-900">{scheduleStats.blockedDates}</p>
+                </div>
+                <div className="rounded-2xl border border-emerald-100 bg-emerald-50 px-4 py-4">
+                  <p className="text-xs font-bold uppercase tracking-wide text-emerald-700">Known Weekly Capacity</p>
+                  <p className="mt-2 text-2xl font-extrabold text-emerald-900">
+                    {scheduleStats.finiteCapacity > 0 ? scheduleStats.finiteCapacity : 'Open'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                  <div>
+                    <h4 className="text-sm font-bold text-slate-800">Schedule Presets</h4>
+                    <p className="text-xs text-slate-500">
+                      Use presets for a quick baseline, then fine-tune per day below.
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {SCHEDULE_PRESETS.map((preset) => (
+                      <button
+                        key={preset.key}
+                        type="button"
+                        disabled={!editingChamber}
+                        onClick={() => setChamberWindows(buildPresetWindows(preset.days, preset.windows))}
+                        className="rounded-full border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-50"
+                      >
+                        {preset.label}
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      disabled={!editingChamber}
+                      onClick={() => setChamberWindows(emptyChamberWindows())}
+                      className="rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-700 hover:bg-rose-100 disabled:opacity-50"
+                    >
+                      Clear All
+                    </button>
+                  </div>
+                </div>
+              </div>
 
               <div className="overflow-x-auto rounded-xl border border-slate-200 shadow-sm">
                 <table className="min-w-full divide-y divide-slate-200">
@@ -699,12 +811,149 @@ export default function DoctorProfile() {
                 </table>
               </div>
 
-              <div className="rounded-xl border border-slate-200 p-4 bg-slate-50">
-                <h4 className="text-sm font-bold text-slate-800 mb-2">Blackout Dates</h4>
-                <p className="text-xs text-slate-500 mb-3">
-                  Mark dates when you are unavailable. Patients cannot book appointments on these dates.
-                </p>
-                <div className="flex flex-wrap gap-2 mb-3">
+              <div className="grid gap-5 xl:grid-cols-[1.35fr_0.85fr]">
+                <div className="rounded-xl border border-slate-200 p-4 bg-slate-50">
+                  <div className="flex items-center gap-2 mb-2">
+                    <CalendarDaysIcon className="w-5 h-5 text-rose-500" />
+                    <h4 className="text-sm font-bold text-slate-800">Blocked Dates And Exceptions</h4>
+                  </div>
+                  <p className="text-xs text-slate-500 mb-4">
+                    Add one-off closures, leave windows, or recurring weekday exceptions within a chosen date range.
+                  </p>
+
+                  <div className="grid gap-4 lg:grid-cols-2">
+                    <div className="rounded-xl border border-slate-200 bg-white p-4">
+                      <p className="text-xs font-bold uppercase tracking-wide text-slate-500 mb-2">Single Date</p>
+                      <div className="flex flex-wrap gap-2 items-center">
+                        <input
+                          type="date"
+                          value={newUnavailableDate}
+                          onChange={(e) => setNewUnavailableDate(e.target.value)}
+                          min={new Date().toISOString().slice(0, 10)}
+                          disabled={!editingChamber}
+                          className="rounded-lg border border-slate-300 px-3 py-2 text-sm disabled:bg-slate-100"
+                        />
+                        <button
+                          type="button"
+                          disabled={!editingChamber || !newUnavailableDate}
+                          onClick={() => {
+                            if (!newUnavailableDate) return;
+                            setUnavailableDates((prev) => Array.from(new Set([...prev, newUnavailableDate])).sort());
+                            setNewUnavailableDate('');
+                          }}
+                          className="px-3 py-2 text-xs font-bold rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50"
+                        >
+                          Add Date
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-3">
+                      <p className="text-xs font-bold uppercase tracking-wide text-slate-500">Date Range Exception</p>
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        <input
+                          type="date"
+                          value={rangeStartDate}
+                          min={new Date().toISOString().slice(0, 10)}
+                          onChange={(e) => setRangeStartDate(e.target.value)}
+                          disabled={!editingChamber}
+                          className="rounded-lg border border-slate-300 px-3 py-2 text-sm disabled:bg-slate-100"
+                        />
+                        <input
+                          type="date"
+                          value={rangeEndDate}
+                          min={rangeStartDate || new Date().toISOString().slice(0, 10)}
+                          onChange={(e) => setRangeEndDate(e.target.value)}
+                          disabled={!editingChamber}
+                          className="rounded-lg border border-slate-300 px-3 py-2 text-sm disabled:bg-slate-100"
+                        />
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {WEEKDAYS.map((day) => {
+                          const selected = selectedExceptionWeekdays.includes(day);
+                          return (
+                            <button
+                              key={day}
+                              type="button"
+                              disabled={!editingChamber}
+                              onClick={() => {
+                                setSelectedExceptionWeekdays((prev) =>
+                                  prev.includes(day) ? prev.filter((item) => item !== day) : [...prev, day]
+                                );
+                              }}
+                              className={`rounded-full px-3 py-1 text-xs font-bold capitalize transition-colors disabled:opacity-50 ${selected ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
+                            >
+                              {day.slice(0, 3)}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <button
+                        type="button"
+                        disabled={!editingChamber || !rangeStartDate || !rangeEndDate || selectedExceptionWeekdays.length === 0}
+                        onClick={() => {
+                          const nextDates: string[] = [];
+                          const cursor = new Date(`${rangeStartDate}T00:00:00`);
+                          const end = new Date(`${rangeEndDate}T00:00:00`);
+                          while (cursor <= end) {
+                            const weekday = WEEKDAYS[(cursor.getDay() + 6) % 7];
+                            if (selectedExceptionWeekdays.includes(weekday)) {
+                              nextDates.push(cursor.toISOString().slice(0, 10));
+                            }
+                            cursor.setDate(cursor.getDate() + 1);
+                          }
+                          setUnavailableDates((prev) => Array.from(new Set([...prev, ...nextDates])).sort());
+                          setRangeStartDate('');
+                          setRangeEndDate('');
+                          setSelectedExceptionWeekdays([]);
+                        }}
+                        className="w-full rounded-lg bg-slate-900 px-3 py-2 text-xs font-bold text-white hover:bg-slate-800 disabled:opacity-50"
+                      >
+                        Apply Exception Range
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2 mt-4">
+                    <button
+                      type="button"
+                      disabled={!editingChamber}
+                      onClick={() => {
+                        const today = new Date();
+                        const end = new Date();
+                        end.setDate(today.getDate() + 13);
+                        const weekendDates: string[] = [];
+                        const cursor = new Date(today);
+                        while (cursor <= end) {
+                          const weekday = WEEKDAYS[(cursor.getDay() + 6) % 7];
+                          if (weekday === 'friday' || weekday === 'saturday') {
+                            weekendDates.push(cursor.toISOString().slice(0, 10));
+                          }
+                          cursor.setDate(cursor.getDate() + 1);
+                        }
+                        setUnavailableDates((prev) => Array.from(new Set([...prev, ...weekendDates])).sort());
+                      }}
+                      className="rounded-full border border-slate-300 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-100 disabled:opacity-50"
+                    >
+                      Block Next 2 Weekends
+                    </button>
+                    <button
+                      type="button"
+                      disabled={!editingChamber}
+                      onClick={() => setUnavailableDates([])}
+                      className="rounded-full border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-700 hover:bg-rose-100 disabled:opacity-50"
+                    >
+                      Clear Blocked Dates
+                    </button>
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-slate-200 p-4 bg-white">
+                  <h4 className="text-sm font-bold text-slate-800 mb-2">Exception Summary</h4>
+                  <p className="text-xs text-slate-500 mb-3">
+                    Upcoming blocked dates help you confirm that temporary schedule changes are reflected before patients try to book.
+                  </p>
+                  <div className="flex flex-wrap gap-2 mb-4">
                   {unavailableDates.length === 0 ? (
                     <span className="text-xs text-slate-400">No blackout dates added</span>
                   ) : (
@@ -724,28 +973,23 @@ export default function DoctorProfile() {
                       </span>
                     ))
                   )}
-                </div>
-                <div className="flex gap-2 items-center">
-                  <input
-                    type="date"
-                    value={newUnavailableDate}
-                    onChange={(e) => setNewUnavailableDate(e.target.value)}
-                    min={new Date().toISOString().slice(0, 10)}
-                    disabled={!editingChamber}
-                    className="rounded-lg border border-slate-300 px-3 py-2 text-sm disabled:bg-slate-100"
-                  />
-                  <button
-                    type="button"
-                    disabled={!editingChamber || !newUnavailableDate}
-                    onClick={() => {
-                      if (!newUnavailableDate) return;
-                      setUnavailableDates((prev) => Array.from(new Set([...prev, newUnavailableDate])).sort());
-                      setNewUnavailableDate('');
-                    }}
-                    className="px-3 py-2 text-xs font-bold rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50"
-                  >
-                    Add Date
-                  </button>
+                  </div>
+
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                    <p className="text-xs font-bold uppercase tracking-wide text-slate-500 mb-2">Next Blocked Dates</p>
+                    {upcomingBlockedDates.length === 0 ? (
+                      <p className="text-sm text-slate-500">No future blocked dates scheduled.</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {upcomingBlockedDates.map((date) => (
+                          <div key={date} className="flex items-center justify-between rounded-lg bg-white px-3 py-2 text-sm border border-slate-200">
+                            <span className="font-medium text-slate-800">{formatDisplayDate(date)}</span>
+                            <span className="text-xs text-rose-600 font-semibold">Blocked</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
