@@ -12,7 +12,7 @@ const doctorNav = [
   { to: '/app/doctor-dashboard', label: 'Dashboard' },
   { to: '/app/doctor-profile', label: 'Profile' },
   { to: '/app/doctor-appointments', label: 'Appointments' },
-  // { to: '/app/patients', label: 'Patients' },
+  { to: '/app/doctor-my-patients', label: 'My Patients' },
 ];
 
 const adminNav = [

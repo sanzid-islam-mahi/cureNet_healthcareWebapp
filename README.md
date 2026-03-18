@@ -293,6 +293,7 @@ Base path: `/api/admin`
 - `/app/doctor-profile`
 - `/app/patient-appointments`
 - `/app/doctor-appointments`
+- `/app/doctor-my-patients`
 - `/app/doctors`
 - `/app/users`
 - `/app/admin-doctors`

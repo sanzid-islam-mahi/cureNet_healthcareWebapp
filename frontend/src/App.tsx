@@ -29,9 +29,9 @@ const PatientProfile = lazy(() => import('./pages/PatientProfile'));
 const DoctorProfile = lazy(() => import('./pages/DoctorProfile'));
 const PatientAppointments = lazy(() => import('./pages/PatientAppointments'));
 const DoctorAppointments = lazy(() => import('./pages/DoctorAppointments'));
+const DoctorMyPatients = lazy(() => import('./pages/DoctorMyPatients'));
 const Doctors = lazy(() => import('./pages/Doctors'));
 const DoctorProfileView = lazy(() => import('./pages/DoctorProfileView'));
-const AppPlaceholder = lazy(() => import('./pages/AppPlaceholder'));
 
 const queryClient = new QueryClient();
 
@@ -79,7 +79,7 @@ export default function App() {
                     <Route path="patient-appointments" element={<ProtectedRoute requiredRole="patient"><PatientAppointments /></ProtectedRoute>} />
                     <Route path="doctor-appointments" element={<ProtectedRoute requiredRole="doctor"><DoctorAppointments /></ProtectedRoute>} />
                     <Route path="doctors" element={<Doctors />} />
-                    <Route path="patients" element={<AppPlaceholder />} />
+                    <Route path="doctor-my-patients" element={<ProtectedRoute requiredRole="doctor"><DoctorMyPatients /></ProtectedRoute>} />
                     <Route path="users" element={<ProtectedRoute requiredRole="admin"><AdminUsers /></ProtectedRoute>} />
                     <Route path="admin-doctors" element={<ProtectedRoute requiredRole="admin"><AdminDoctors /></ProtectedRoute>} />
                     <Route path="admin-patients" element={<ProtectedRoute requiredRole="admin"><AdminPatients /></ProtectedRoute>} />

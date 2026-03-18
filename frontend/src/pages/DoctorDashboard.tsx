@@ -520,7 +520,7 @@ export default function DoctorDashboard() {
         </Link>
 
         <Link
-          to="/app/patients"
+          to="/app/doctor-my-patients"
           className="group flex items-center gap-4 rounded-2xl bg-white border border-slate-200 px-5 py-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
         >
           <div className="p-2.5 bg-purple-100 rounded-xl">
