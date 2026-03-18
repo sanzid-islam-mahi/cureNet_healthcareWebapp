@@ -2,6 +2,7 @@ import db from '../models/index.js';
 import { Op } from 'sequelize';
 import { logAudit } from '../lib/auditLog.js';
 import sequelize from '../config/database.js';
+import { createNotification } from '../lib/notifications.js';
 
 const { Appointment, Doctor, Patient, User } = db;
 const RED_FLAG_TERMS = [
@@ -25,6 +26,86 @@ const WEEKDAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', '
 function getWeekday(dateStr) {
   const d = new Date(dateStr + 'T12:00:00');
   return WEEKDAY_NAMES[d.getDay()];
+}
+
+async function notifyAppointmentTransition(appointmentId, nextStatus, actorRole) {
+  const appointment = await Appointment.findByPk(appointmentId, {
+    include: [
+      {
+        model: Doctor,
+        as: 'Doctor',
+        include: [{ model: User, as: 'User', attributes: ['id', 'firstName', 'lastName'] }],
+      },
+      {
+        model: Patient,
+        as: 'Patient',
+        include: [{ model: User, as: 'User', attributes: ['id', 'firstName', 'lastName'] }],
+      },
+    ],
+  });
+  if (!appointment) return;
+
+  const plain = appointment.get({ plain: true });
+  const doctorName = plain.Doctor?.User
+    ? `Dr. ${plain.Doctor.User.firstName} ${plain.Doctor.User.lastName}`.trim()
+    : 'Your doctor';
+  const patientName = plain.Patient?.User
+    ? `${plain.Patient.User.firstName} ${plain.Patient.User.lastName}`.trim()
+    : 'Your patient';
+  const date = plain.appointmentDate;
+  const link = actorRole === 'patient' ? '/app/doctor-appointments' : '/app/patient-appointments';
+
+  const configs = {
+    approved: {
+      targetUserId: plain.Patient?.User?.id,
+      title: 'Appointment approved',
+      message: `${doctorName} approved your appointment for ${date}.`,
+      link: '/app/patient-appointments',
+    },
+    rejected: {
+      targetUserId: plain.Patient?.User?.id,
+      title: 'Appointment rejected',
+      message: `${doctorName} rejected your appointment request for ${date}.`,
+      link: '/app/patient-appointments',
+    },
+    completed: {
+      targetUserId: plain.Patient?.User?.id,
+      title: 'Appointment completed',
+      message: `${doctorName} marked your appointment on ${date} as completed.`,
+      link: '/app/patient-appointments',
+    },
+    cancelled: actorRole === 'patient'
+      ? {
+          targetUserId: plain.Doctor?.User?.id,
+          title: 'Appointment cancelled',
+          message: `${patientName} cancelled the appointment scheduled for ${date}.`,
+          link: '/app/doctor-appointments',
+        }
+      : {
+          targetUserId: plain.Patient?.User?.id,
+          title: 'Appointment cancelled',
+          message: `${doctorName} cancelled your appointment scheduled for ${date}.`,
+          link: '/app/patient-appointments',
+        },
+  };
+
+  const config = configs[nextStatus];
+  if (!config?.targetUserId) return;
+
+  await createNotification({
+    userId: config.targetUserId,
+    type: `appointment_${nextStatus}`,
+    title: config.title,
+    message: config.message,
+    link: config.link || link,
+    metadata: {
+      appointmentId: plain.id,
+      appointmentDate: date,
+      status: nextStatus,
+      doctorId: plain.doctorId,
+      patientId: plain.patientId,
+    },
+  });
 }
 
 export async function create(req, res) {
@@ -341,6 +422,7 @@ export async function approve(req, res) {
     }
     const oldStatus = appointment.status;
     await appointment.update({ status: 'approved' });
+    await notifyAppointmentTransition(appointment.id, 'approved', 'doctor');
     logAudit({
       action: 'appointment_status_updated',
       userId: user.id,
@@ -373,6 +455,7 @@ export async function reject(req, res) {
     }
     const oldStatus = appointment.status;
     await appointment.update({ status: 'rejected' });
+    await notifyAppointmentTransition(appointment.id, 'rejected', 'doctor');
     logAudit({
       action: 'appointment_status_updated',
       userId: user.id,
@@ -437,6 +520,7 @@ export async function complete(req, res) {
     }
     const oldStatus = appointment.status;
     await appointment.update({ status: 'completed' });
+    await notifyAppointmentTransition(appointment.id, 'completed', 'doctor');
     logAudit({
       action: 'appointment_status_updated',
       userId: user.id,
@@ -468,6 +552,7 @@ export async function cancel(req, res) {
     }
     const oldStatus = appointment.status;
     await appointment.update({ status: 'cancelled' });
+    await notifyAppointmentTransition(appointment.id, 'cancelled', isPatient ? 'patient' : 'doctor');
     logAudit({
       action: 'appointment_status_updated',
       userId: user.id,

@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
-import { Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
+import { useQuery } from '@tanstack/react-query';
+import { Bars3Icon, BellIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../context/AuthContext';
+import { api } from '../context/AuthContext';
 import logo from '../assets/curenet_logo.png';
 
 const navLinks = [
@@ -19,6 +21,14 @@ const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const { data: notificationsData } = useQuery({
+    queryKey: ['notifications', 'summary'],
+    queryFn: async () => {
+      const { data } = await api.get<{ success: boolean; data: { unreadCount: number } }>('/notifications?limit=10');
+      return data.data;
+    },
+    enabled: !!user,
+  });
 
   const displayName = user ? `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || 'User' : '';
   const initial = (user?.firstName?.charAt(0) ?? user?.lastName?.charAt(0) ?? '?').toUpperCase();
@@ -27,6 +37,7 @@ const Navbar = () => {
       ? user.profileImage
       : `${API_ORIGIN}${user.profileImage}`
     : null;
+  const unreadCount = notificationsData?.unreadCount ?? 0;
 
   const dashboardPath =
     user?.role === 'patient'
@@ -73,6 +84,18 @@ const Navbar = () => {
         <div className="hidden md:flex gap-3 items-center shrink-0 border-l border-slate-200 pl-4 lg:pl-6 ml-2">
           {user ? (
             <>
+              <Link
+                to="/app/notifications"
+                className="relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600"
+                aria-label={unreadCount > 0 ? `${unreadCount} unread notifications` : 'Notifications'}
+              >
+                <BellIcon className="h-5 w-5" />
+                {unreadCount > 0 ? (
+                  <span className="absolute -right-0.5 -top-0.5 min-w-[1.25rem] rounded-full bg-blue-600 px-1.5 py-0.5 text-center text-[10px] font-bold leading-none text-white">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                ) : null}
+              </Link>
               <Link
                 to={dashboardPath}
                 className="flex items-center gap-2.5 px-3 py-1.5 rounded-full hover:bg-slate-50 transition-colors group"
@@ -150,6 +173,21 @@ const Navbar = () => {
 
             {user ? (
               <div className="flex flex-col gap-2">
+                <Link
+                  to="/app/notifications"
+                  className="flex items-center justify-between rounded-2xl bg-slate-50 px-5 py-4 text-slate-800 transition-colors hover:text-blue-600"
+                  onClick={closeMobileMenu}
+                >
+                  <span className="inline-flex items-center gap-3 font-bold">
+                    <BellIcon className="h-5 w-5" />
+                    Notifications
+                  </span>
+                  {unreadCount > 0 ? (
+                    <span className="rounded-full bg-blue-600 px-2 py-0.5 text-xs font-semibold text-white">
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  ) : null}
+                </Link>
                 <Link
                   to={dashboardPath}
                   className="flex items-center gap-3 text-slate-800 font-bold hover:text-blue-600 bg-slate-50 px-5 py-4 rounded-2xl transition-colors"

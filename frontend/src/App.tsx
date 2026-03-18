@@ -23,6 +23,7 @@ const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 const AdminUsers = lazy(() => import('./pages/AdminUsers'));
 const AdminAnalytics = lazy(() => import('./pages/AdminAnalytics'));
 const AdminLogs = lazy(() => import('./pages/AdminLogs'));
+const Notifications = lazy(() => import('./pages/Notifications'));
 const PatientProfile = lazy(() => import('./pages/PatientProfile'));
 const DoctorProfile = lazy(() => import('./pages/DoctorProfile'));
 const PatientAppointments = lazy(() => import('./pages/PatientAppointments'));
@@ -82,6 +83,7 @@ export default function App() {
                     <Route path="doctors" element={<Doctors />} />
                     <Route path="doctor-my-patients" element={<ProtectedRoute requiredRole="doctor"><DoctorMyPatients /></ProtectedRoute>} />
                     <Route path="doctor-continuity" element={<ProtectedRoute requiredRole="doctor"><DoctorContinuity /></ProtectedRoute>} />
+                    <Route path="notifications" element={<Notifications />} />
                     <Route path="users" element={<ProtectedRoute requiredRole="admin"><AdminUsers /></ProtectedRoute>} />
                     <Route path="admin-analytics" element={<ProtectedRoute requiredRole="admin"><AdminAnalytics /></ProtectedRoute>} />
                     <Route path="admin-logs" element={<ProtectedRoute requiredRole="admin"><AdminLogs /></ProtectedRoute>} />

@@ -7,6 +7,7 @@ import Appointment from './Appointment.js';
 import Prescription from './Prescription.js';
 import Rating from './Rating.js';
 import AuditLog from './AuditLog.js';
+import Notification from './Notification.js';
 
 const db = {
   sequelize,
@@ -17,6 +18,7 @@ const db = {
   Prescription,
   Rating,
   AuditLog,
+  Notification,
 };
 
 export default db;
