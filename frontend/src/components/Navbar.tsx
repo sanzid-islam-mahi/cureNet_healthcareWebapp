@@ -11,6 +11,10 @@ const navLinks = [
   { to: '/contact', label: 'CONTACT US' },
 ];
 
+const API_ORIGIN = import.meta.env.VITE_API_URL
+  ? new URL(import.meta.env.VITE_API_URL).origin
+  : 'http://localhost:5000';
+
 const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, logout } = useAuth();
@@ -18,6 +22,11 @@ const Navbar = () => {
 
   const displayName = user ? `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || 'User' : '';
   const initial = (user?.firstName?.charAt(0) ?? user?.lastName?.charAt(0) ?? '?').toUpperCase();
+  const profileImageUrl = user?.profileImage
+    ? user.profileImage.startsWith('http')
+      ? user.profileImage
+      : `${API_ORIGIN}${user.profileImage}`
+    : null;
 
   const dashboardPath =
     user?.role === 'patient'
@@ -68,9 +77,17 @@ const Navbar = () => {
                 to={dashboardPath}
                 className="flex items-center gap-2.5 px-3 py-1.5 rounded-full hover:bg-slate-50 transition-colors group"
               >
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-sm group-hover:shadow transition-all">
-                  {initial}
-                </div>
+                {profileImageUrl ? (
+                  <img
+                    src={profileImageUrl}
+                    alt={displayName}
+                    className="h-8 w-8 rounded-full object-cover ring-2 ring-slate-100 shadow-sm transition-all group-hover:shadow"
+                  />
+                ) : (
+                  <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-sm group-hover:shadow transition-all">
+                    {initial}
+                  </div>
+                )}
                 <span className="text-slate-700 text-sm font-bold group-hover:text-blue-600 transition-colors truncate max-w-[140px]">
                   {displayName}
                 </span>
@@ -138,9 +155,17 @@ const Navbar = () => {
                   className="flex items-center gap-3 text-slate-800 font-bold hover:text-blue-600 bg-slate-50 px-5 py-4 rounded-2xl transition-colors"
                   onClick={closeMobileMenu}
                 >
-                  <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-bold shadow-md shrink-0">
-                    {initial}
-                  </div>
+                  {profileImageUrl ? (
+                    <img
+                      src={profileImageUrl}
+                      alt={displayName}
+                      className="h-10 w-10 rounded-full object-cover shadow-md ring-2 ring-white shrink-0"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-bold shadow-md shrink-0">
+                      {initial}
+                    </div>
+                  )}
                   <div className="truncate">
                     <div className="text-[15px] truncate">{displayName}</div>
                     <div className="text-xs text-slate-500 font-semibold mt-0.5 uppercase tracking-wide">

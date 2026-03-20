@@ -16,6 +16,7 @@ export interface User {
   role: 'patient' | 'doctor' | 'admin';
   doctorId?: number;
   patientId?: number;
+  profileImage?: string;
 }
 
 interface AuthState {

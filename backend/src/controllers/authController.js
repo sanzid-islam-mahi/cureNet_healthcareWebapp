@@ -61,6 +61,8 @@ function formatUserResponse(user) {
   const payload = { ...rest };
   if (doctor) payload.doctorId = doctor.id;
   if (patient) payload.patientId = patient.id;
+  if (doctor?.profileImage) payload.profileImage = doctor.profileImage;
+  if (!payload.profileImage && patient?.profileImage) payload.profileImage = patient.profileImage;
   return payload;
 }
 
