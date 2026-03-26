@@ -8,12 +8,12 @@ import {
   ExclamationTriangleIcon,
   ArrowRightIcon,
   ChartBarIcon,
-  SparklesIcon,
   ChatBubbleLeftEllipsisIcon,
 } from '@heroicons/react/24/outline';
 import { StarIcon } from '@heroicons/react/24/solid';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../context/AuthContext';
+import AppPageHeader from '../components/AppPageHeader';
 
 interface StatCard {
   key: string;
@@ -50,7 +50,7 @@ const statCards: StatCard[] = [
   {
     key: 'inProgressAppointments',
     label: 'In Progress',
-    icon: SparklesIcon,
+    icon: CheckCircleIcon,
     color: 'text-indigo-600',
     bg: 'bg-indigo-100',
     border: 'border-indigo-100',
@@ -239,39 +239,33 @@ export default function DoctorDashboard() {
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto">
-
-      {/* ===== HERO HEADER ===== */}
-      <div className="relative rounded-3xl bg-gradient-to-r from-blue-700 via-indigo-700 to-violet-800 px-8 py-10 overflow-hidden shadow-xl">
-        <div className="absolute -top-16 -right-16 w-72 h-72 rounded-full bg-white/10 blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-16 -left-10 w-80 h-80 rounded-full bg-blue-400/20 blur-3xl pointer-events-none" />
-
-        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
-          <div>
-            <p className="text-indigo-200 text-sm font-semibold uppercase tracking-widest mb-1">{todayStr}</p>
-            <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight drop-shadow">
-              Good day, Dr. {user?.lastName} 👋
-            </h1>
-            <p className="mt-2 text-indigo-100 text-base font-medium leading-relaxed max-w-lg">
-              Here's an overview of your practice today. Stay on top of appointments and patient care.
-            </p>
-          </div>
-          <div className="shrink-0 inline-flex flex-col items-center gap-1 bg-white/15 backdrop-blur-sm border border-white/25 rounded-2xl px-6 py-4 shadow-lg">
-            <div className="flex items-center gap-1.5">
-              <StarIcon className="w-6 h-6 text-amber-300" />
-              <span className="text-3xl font-extrabold text-white">
+      <AppPageHeader
+        eyebrow="Doctor Dashboard"
+        title={`Dr. ${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim()}
+        description={`Operational view for ${todayStr}. Review appointment load, follow-ups, patient continuity, and recent feedback.`}
+        actions={
+          <>
+            <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-800">
+              <span className="font-semibold text-amber-900">
                 {summary.totalRatings > 0 ? summary.averageRating.toFixed(1) : '—'}
-              </span>
+              </span>{' '}
+              rating
+              <span className="ml-2 text-amber-700">{summary.totalRatings} reviews</span>
             </div>
-            <span className="text-indigo-200 text-xs font-semibold uppercase tracking-wider">
-              {summary.totalRatings > 0 ? `${summary.totalRatings} Reviews` : 'No reviews yet'}
-            </span>
-          </div>
-        </div>
-      </div>
+            <Link
+              to="/app/doctor-appointments"
+              className="inline-flex items-center rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
+            >
+              Open appointment desk
+            </Link>
+          </>
+        }
+      />
 
       {/* ===== PENDING ALERT ===== */}
       {pendingCount > 0 && (
-        <div className="rounded-2xl bg-amber-50 border border-amber-200 px-5 py-4 flex items-start gap-4 shadow-sm">
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 shadow-sm">
+          <div className="flex items-start gap-4">
           <div className="p-2 bg-amber-100 rounded-xl shrink-0">
             <ExclamationTriangleIcon className="h-5 w-5 text-amber-600" />
           </div>
@@ -283,10 +277,11 @@ export default function DoctorDashboard() {
           </div>
           <Link
             to="/app/doctor-appointments"
-            className="shrink-0 inline-flex items-center gap-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-sm font-bold px-4 py-2 transition-colors shadow-sm"
+            className="shrink-0 inline-flex items-center gap-1.5 rounded-xl bg-amber-600 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-700"
           >
             Review <ArrowRightIcon className="w-4 h-4" />
           </Link>
+          </div>
         </div>
       )}
 
@@ -310,14 +305,13 @@ export default function DoctorDashboard() {
         </div>
       )}
 
-      {/* ===== STAT CARDS ===== */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {statCards.map(({ key, label, icon: Icon, color, bg, border, gradient, textColor }) => (
           <div
             key={key}
-            className={`relative rounded-2xl bg-gradient-to-br ${gradient} border ${border} p-5 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden group`}
+            className={`relative overflow-hidden rounded-2xl border ${border} bg-gradient-to-br ${gradient} p-5 shadow-sm`}
           >
-            <div className={`absolute -right-4 -top-4 w-20 h-20 rounded-full ${bg} opacity-60 group-hover:opacity-80 transition-opacity`} />
+            <div className={`absolute -right-4 -top-4 h-20 w-20 rounded-full ${bg} opacity-60`} />
             <div className="relative z-10 flex items-start justify-between">
               <div>
                 <p className="text-sm font-semibold text-slate-500 mb-1">{label}</p>
@@ -333,12 +327,9 @@ export default function DoctorDashboard() {
         ))}
       </div>
 
-      {/* ===== TWO-COLUMN: Today's Schedule + Upcoming ===== */}
       <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
-
-        {/* Today's Schedule – wider */}
-        <div className="xl:col-span-3 bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
-          <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-slate-50 to-white">
+        <div className="xl:col-span-3 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+          <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-indigo-100 text-indigo-600 rounded-xl shadow-inner">
                 <CalendarDaysIcon className="w-5 h-5" />
@@ -389,12 +380,11 @@ export default function DoctorDashboard() {
           )}
         </div>
 
-        {/* Upcoming Appointments – narrower */}
-        <div className="xl:col-span-2 bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
-          <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-violet-50/50 to-white">
+        <div className="xl:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+          <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-violet-100 text-violet-600 rounded-xl shadow-inner">
-                <SparklesIcon className="w-5 h-5" />
+                <CalendarDaysIcon className="w-5 h-5" />
               </div>
               <div>
                 <h3 className="text-base font-bold text-slate-900">Upcoming</h3>
@@ -409,7 +399,7 @@ export default function DoctorDashboard() {
           {upcoming.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-14 gap-3 text-center px-4">
               <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center">
-                <SparklesIcon className="w-6 h-6 text-slate-400" />
+                <CalendarDaysIcon className="w-6 h-6 text-slate-400" />
               </div>
               <p className="text-slate-600 font-semibold text-sm">No upcoming appointments</p>
               <p className="text-xs text-slate-400">Your schedule beyond today is clear.</p>
@@ -443,9 +433,8 @@ export default function DoctorDashboard() {
         </div>
       </div>
 
-      {/* ===== RECENT REVIEWS ===== */}
-      <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
-        <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-amber-50/50 to-white">
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-amber-100 text-amber-600 rounded-xl shadow-inner">
               <ChatBubbleLeftEllipsisIcon className="w-5 h-5" />
@@ -503,13 +492,12 @@ export default function DoctorDashboard() {
         )}
       </div>
 
-      {/* ===== QUICK ACTIONS ===== */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Link
           to="/app/doctor-appointments"
-          className="group flex items-center gap-4 rounded-2xl bg-gradient-to-br from-indigo-600 to-blue-700 px-5 py-4 shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200"
+          className="group flex items-center gap-4 rounded-2xl border border-slate-900 bg-slate-900 px-5 py-4 shadow-sm transition-all hover:bg-slate-800"
         >
-          <div className="p-2.5 bg-white/20 rounded-xl">
+          <div className="p-2.5 bg-white/10 rounded-xl">
             <CalendarDaysIcon className="w-6 h-6 text-white" />
           </div>
           <div className="flex-1">
@@ -554,10 +542,10 @@ export default function DoctorDashboard() {
 
 function QueuePill({ title, value, subtitle }: { title: string; value: number; subtitle: string }) {
   return (
-    <div className="rounded-xl border border-indigo-100 bg-indigo-50 px-4 py-3">
-      <p className="text-xs font-semibold uppercase tracking-wide text-indigo-700">{title}</p>
-      <p className="text-2xl font-bold text-indigo-900">{value}</p>
-      <p className="text-xs text-indigo-700">{subtitle}</p>
+    <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{title}</p>
+      <p className="text-2xl font-bold text-slate-950">{value}</p>
+      <p className="text-xs text-slate-500">{subtitle}</p>
     </div>
   );
 }

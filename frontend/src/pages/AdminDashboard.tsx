@@ -18,6 +18,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { api } from '../context/AuthContext';
 import toast from 'react-hot-toast';
+import AppPageHeader from '../components/AppPageHeader';
 
 interface Stats {
   totalDoctors?: number;
@@ -74,13 +75,6 @@ interface LogRow {
   ip?: string;
   createdAt: string;
   user?: { id: number; email: string; name: string };
-}
-
-function greeting() {
-  const h = new Date().getHours();
-  if (h < 12) return 'Good Morning';
-  if (h < 17) return 'Good Afternoon';
-  return 'Good Evening';
 }
 
 export default function AdminDashboard() {
@@ -203,15 +197,30 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-8">
-      {/* Welcome banner */}
-      <div className="rounded-xl bg-[#3990D7] text-white px-6 py-5">
-        <h1 className="text-xl font-bold">{greeting()}, Admin</h1>
-        <p className="text-white/90 mt-1">
-          Welcome to the Healthcare Admin Dashboard. Manage doctors, patients, and system operations.
-        </p>
-      </div>
+      <AppPageHeader
+        eyebrow="Admin Dashboard"
+        title="System Operations"
+        description="Oversee user governance, verification load, today's operational activity, and recent audit events."
+        actions={
+          <>
+            <Link
+              to="/app/users?add=1"
+              className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
+            >
+              <PlusIcon className="h-5 w-5" />
+              Add user
+            </Link>
+            <Link
+              to="/app/admin-analytics"
+              className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            >
+              <ChartBarIcon className="h-5 w-5" />
+              Analytics
+            </Link>
+          </>
+        }
+      />
 
-      {/* Stat cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <StatCard
           label="Total Doctors"
@@ -251,7 +260,6 @@ export default function AdminDashboard() {
         />
       </div>
 
-      {/* Quick actions */}
       {stats.queue && (
         <div className="grid gap-3 sm:grid-cols-3">
           <QueueCard
@@ -275,39 +283,31 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {/* Quick actions */}
       <div className="flex flex-wrap gap-3">
         <Link
-          to="/app/users?add=1"
-          className="inline-flex items-center gap-2 rounded-lg bg-[#3990D7] px-4 py-2.5 text-sm font-medium text-white hover:bg-[#2d7ab8]"
-        >
-          <PlusIcon className="h-5 w-5" />
-          Add User
-        </Link>
-        <Link
           to="/app/users?role=doctor&verified=false"
-          className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+          className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
         >
           <CheckIcon className="h-5 w-5" />
           Verify Doctors
         </Link>
         <button
           type="button"
-          className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+          className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
         >
           <DocumentChartBarIcon className="h-5 w-5" />
           Generate Report
         </button>
         <button
           type="button"
-          className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+          className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
         >
           <Cog6ToothIcon className="h-5 w-5" />
           Hospital Settings
         </button>
         <Link
           to="/app/admin-analytics"
-          className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+          className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
         >
           <ChartBarIcon className="h-5 w-5" />
           System Analytics
@@ -574,10 +574,10 @@ export default function AdminDashboard() {
 
 function QueueCard({ title, value, actionLabel, actionTo }: { title: string; value: number; actionLabel: string; actionTo: string }) {
   return (
-    <div className="rounded-lg border border-blue-100 bg-blue-50 p-4">
-      <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">{title}</p>
-      <p className="mt-1 text-2xl font-bold text-blue-900">{value}</p>
-      <Link to={actionTo} className="mt-2 inline-block text-sm font-medium text-blue-700 hover:underline">
+    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">{title}</p>
+      <p className="mt-1 text-2xl font-bold text-slate-950">{value}</p>
+      <Link to={actionTo} className="mt-2 inline-block text-sm font-medium text-slate-700 hover:text-slate-950">
         {actionLabel}
       </Link>
     </div>
@@ -596,15 +596,15 @@ function StatCard({
   icon: React.ComponentType<{ className?: string }>;
 }) {
   return (
-    <div className="rounded-xl bg-white border border-gray-200 p-4">
+    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-sm text-gray-500">{label}</p>
-          <p className="text-2xl font-bold text-gray-900 mt-0.5">{value}</p>
-          <p className="text-xs text-gray-500 mt-1">{sub}</p>
+          <p className="text-sm text-slate-500">{label}</p>
+          <p className="mt-0.5 text-2xl font-semibold text-slate-950">{value}</p>
+          <p className="mt-1 text-xs text-slate-500">{sub}</p>
         </div>
-        <div className="rounded-lg bg-sky-50 p-2">
-          <Icon className="h-5 w-5 text-[#3990D7]" />
+        <div className="rounded-xl bg-slate-100 p-3">
+          <Icon className="h-5 w-5 text-slate-700" />
         </div>
       </div>
     </div>

@@ -9,6 +9,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../context/AuthContext';
+import AppPageHeader from '../components/AppPageHeader';
 
 const statCards = [
   { key: 'totalAppointments', label: 'Total Appointments', icon: CalendarDaysIcon },
@@ -79,27 +80,44 @@ export default function PatientDashboard() {
 
   return (
     <div className="space-y-8">
-      <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-        <h2 className="text-2xl font-bold text-gray-900">
-          Welcome, {user?.firstName} {user?.lastName}
-        </h2>
-        <p className="text-gray-600">Track your appointments and care actions in one place.</p>
+      <AppPageHeader
+        eyebrow="Patient Dashboard"
+        title={`${user?.firstName ?? 'Patient'} ${user?.lastName ?? ''}`.trim()}
+        description="Review current care activity, profile readiness, and recent appointment history from one place."
+        actions={
+          <>
+            <Link
+              to="/app/patient-appointments"
+              className="inline-flex items-center rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
+            >
+              Manage appointments
+            </Link>
+            <Link
+              to="/app/patient-reminders"
+              className="inline-flex items-center rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            >
+              Open reminders
+            </Link>
+          </>
+        }
+      />
 
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {statCards.map(({ key, label, icon: Icon }) => (
-            <div key={key} className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-              <div className="flex items-center gap-3">
-                <div className="rounded-lg bg-indigo-100 p-2">
-                  <Icon className="h-5 w-5 text-indigo-600" />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-500">{label}</p>
-                  <p className="text-xl font-semibold text-gray-900">{stats[key as keyof typeof stats] ?? 0}</p>
-                </div>
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {statCards.map(({ key, label, icon: Icon }) => (
+          <div key={key} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-medium text-slate-500">{label}</p>
+                <p className="mt-1 text-3xl font-semibold tracking-tight text-slate-950">
+                  {stats[key as keyof typeof stats] ?? 0}
+                </p>
+              </div>
+              <div className="rounded-xl bg-slate-100 p-3">
+                <Icon className="h-5 w-5 text-slate-700" />
               </div>
             </div>
-          ))}
-        </div>
+          </div>
+        ))}
       </section>
 
       {nextActiveAppointment ? (
@@ -155,13 +173,13 @@ export default function PatientDashboard() {
         </div>
       </section>
 
-      <section className="rounded-2xl border border-indigo-100 bg-indigo-50 p-6">
+      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="text-lg font-bold text-indigo-900">
+            <h2 className="text-lg font-semibold text-slate-950">
               {queue.needsProfileCompletion ? 'Complete Your Profile Before First Booking' : 'Care Action Queue'}
             </h2>
-            <p className="mt-1 text-sm text-indigo-700">
+            <p className="mt-1 text-sm text-slate-600">
               {queue.needsProfileCompletion
                 ? 'Add required health and emergency details to safely start booking appointments.'
                 : `${queue.pendingActions ?? 0} pending action${(queue.pendingActions ?? 0) === 1 ? '' : 's'} in your care workflow.`}
@@ -177,14 +195,14 @@ export default function PatientDashboard() {
             {queue.needsProfileCompletion ? (
               <Link
                 to="/app/patient-profile"
-                className="whitespace-nowrap rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500"
+                className="whitespace-nowrap rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-slate-800"
               >
                 Complete profile
               </Link>
             ) : null}
             <Link
               to="/app/patient-appointments"
-              className="whitespace-nowrap rounded-xl border border-indigo-300 bg-white px-5 py-2.5 text-sm font-semibold text-indigo-700 hover:bg-indigo-100"
+              className="whitespace-nowrap rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
             >
               Manage appointments
             </Link>
