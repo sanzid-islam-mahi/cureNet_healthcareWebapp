@@ -43,6 +43,44 @@ export const authPaths = {
           },
         }),
         400: errorResponse('Validation error'),
+        409: {
+          description: 'Unverified account already exists for this email',
+          content: json({
+            type: 'object',
+            properties: {
+              success: { type: 'boolean', example: false },
+              code: { type: 'string', example: 'EMAIL_ALREADY_REGISTERED_UNVERIFIED' },
+              message: { type: 'string' },
+              data: {
+                type: 'object',
+                properties: {
+                  email: { type: 'string', format: 'email' },
+                  verificationRequired: { type: 'boolean' },
+                  verificationExpiresAt: { type: 'string', format: 'date-time', nullable: true },
+                },
+              },
+            },
+          }),
+        },
+        503: {
+          description: 'Account created but verification email send failed',
+          content: json({
+            type: 'object',
+            properties: {
+              success: { type: 'boolean', example: false },
+              code: { type: 'string', example: 'VERIFICATION_EMAIL_SEND_FAILED' },
+              message: { type: 'string' },
+              data: {
+                type: 'object',
+                properties: {
+                  email: { type: 'string', format: 'email' },
+                  verificationRequired: { type: 'boolean' },
+                  verificationExpiresAt: { type: 'string', format: 'date-time', nullable: true },
+                },
+              },
+            },
+          }),
+        },
         500: errorResponse('Registration failed'),
       },
     },

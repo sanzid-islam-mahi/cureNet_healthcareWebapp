@@ -199,6 +199,7 @@ If you are working with an older local database created from previous migration 
 - Public registration now creates an unverified account and sends a 6-digit email verification code.
 - Successful email verification starts the login session immediately.
 - If `AUTH_ALLOW_UNVERIFIED_LOGIN=true`, local development can bypass the verification gate for unverified users at login.
+- Password reset now sends a real email reset link through the same SMTP configuration used by email verification.
 - Create the first admin from the `backend` directory with:
 
 ```bash

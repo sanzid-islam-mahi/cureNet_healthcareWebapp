@@ -54,6 +54,33 @@ export default function Register() {
         state: { email: result.email, verificationExpiresAt: result.verificationExpiresAt ?? null },
       });
     } catch (err: unknown) {
+      const responseData = err && typeof err === 'object' && 'response' in err
+        ? (err as {
+            response?: {
+              data?: {
+                message?: string;
+                code?: string;
+                data?: { email?: string; verificationExpiresAt?: string | null };
+              };
+            };
+          }).response?.data
+        : undefined;
+
+      if (
+        (responseData?.code === 'VERIFICATION_EMAIL_SEND_FAILED' || responseData?.code === 'EMAIL_ALREADY_REGISTERED_UNVERIFIED')
+        && responseData.data?.email
+      ) {
+        toast.error(responseData.message || 'Continue in the verification screen');
+        navigate(`/verify-email?email=${encodeURIComponent(responseData.data.email)}`, {
+          replace: true,
+          state: {
+            email: responseData.data.email,
+            verificationExpiresAt: responseData.data.verificationExpiresAt ?? null,
+          },
+        });
+        return;
+      }
+
       const message = err && typeof err === 'object' && 'response' in err
         ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
         : 'Registration failed';

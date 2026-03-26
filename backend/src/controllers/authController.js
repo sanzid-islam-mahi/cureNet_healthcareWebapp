@@ -5,7 +5,7 @@ import db from '../models/index.js';
 import PasswordResetToken from '../models/PasswordResetToken.js';
 import { logAudit } from '../lib/auditLog.js';
 import { getJwtSecret } from '../config/security.js';
-import { sendVerificationCodeEmail } from '../lib/mail.js';
+import { sendPasswordResetEmail, sendVerificationCodeEmail } from '../lib/mail.js';
 
 const { User, Doctor, Patient, EmailVerificationCode, sequelize } = db;
 
@@ -122,6 +122,17 @@ async function issueAuthResponse(res, user) {
   };
 }
 
+function buildVerificationPendingResponse(user, expiresAt, message) {
+  return {
+    success: true,
+    message,
+    data: getVerificationMetadata({
+      email: user.email,
+      expiresAt,
+    }),
+  };
+}
+
 export async function register(req, res) {
   try {
     const {
@@ -164,6 +175,28 @@ export async function register(req, res) {
 
     const existing = await User.findOne({ where: { email } });
     if (existing) {
+      if (!existing.emailVerifiedAt) {
+        const existingRecord = await EmailVerificationCode.findOne({
+          where: {
+            userId: existing.id,
+            purpose: EMAIL_VERIFICATION_PURPOSE,
+            consumedAt: null,
+          },
+          order: [['createdAt', 'DESC']],
+        });
+
+        return res.status(409).json({
+          success: false,
+          code: 'EMAIL_ALREADY_REGISTERED_UNVERIFIED',
+          message: 'An account with this email already exists but is not verified yet',
+          data: {
+            email: existing.email,
+            verificationRequired: true,
+            verificationExpiresAt: existingRecord?.expiresAt || null,
+          },
+        });
+      }
+
       return res.status(400).json({ success: false, message: 'Email already registered' });
     }
 
@@ -226,23 +259,21 @@ export async function register(req, res) {
         firstName: user.firstName,
       });
     } catch (mailError) {
-      await EmailVerificationCode.destroy({ where: { userId: user.id } }).catch(() => {});
-      await User.destroy({ where: { id: user.id } }).catch(() => {});
       console.error('Verification email send error:', mailError);
-      return res.status(500).json({
+      return res.status(503).json({
         success: false,
-        message: 'Could not send verification email. Please try registering again.',
+        code: 'VERIFICATION_EMAIL_SEND_FAILED',
+        message: 'Account created, but we could not send the verification email. Please retry from the verification screen.',
+        data: getVerificationMetadata({
+          email: user.email,
+          expiresAt: verification.expiresAt,
+        }),
       });
     }
 
-    return res.status(201).json({
-      success: true,
-      message: 'Account created. Check your email for the verification code.',
-      data: getVerificationMetadata({
-        email: user.email,
-        expiresAt: verification.expiresAt,
-      }),
-    });
+    return res.status(201).json(
+      buildVerificationPendingResponse(user, verification.expiresAt, 'Account created. Check your email for the verification code.')
+    );
   } catch (err) {
     console.error('Register error:', err);
     return res.status(500).json({ success: false, message: err.message || 'Registration failed' });
@@ -358,8 +389,21 @@ export async function forgotPassword(req, res) {
     await PasswordResetToken.destroy({ where: { userId: user.id } });
     await PasswordResetToken.create({ userId: user.id, token: tokenHash, expiresAt });
 
-    // TODO: send email with reset link (e.g. FRONTEND_URL/reset-password?token=...)
-    // Never expose the reset token in the API response; send it only via email.
+    try {
+      await sendPasswordResetEmail({
+        to: user.email,
+        token,
+        firstName: user.firstName,
+      });
+    } catch (mailError) {
+      await PasswordResetToken.destroy({ where: { userId: user.id } }).catch(() => {});
+      console.error('Forgot password email send error:', mailError);
+      return res.status(500).json({
+        success: false,
+        message: 'Could not send reset email. Please try again.',
+      });
+    }
+
     return res.json({
       success: true,
       message: 'If that email exists, we sent a reset link',
