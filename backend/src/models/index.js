@@ -3,6 +3,7 @@ import User from './User.js';
 import Doctor from './Doctor.js';
 import Patient from './Patient.js';
 import './PasswordResetToken.js';
+import EmailVerificationCode from './EmailVerificationCode.js';
 import Appointment from './Appointment.js';
 import Prescription from './Prescription.js';
 import Rating from './Rating.js';
@@ -14,6 +15,7 @@ const db = {
   User,
   Doctor,
   Patient,
+  EmailVerificationCode,
   Appointment,
   Prescription,
   Rating,

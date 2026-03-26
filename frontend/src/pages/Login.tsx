@@ -37,6 +37,18 @@ export default function Login() {
       toast.success('Signed in successfully');
       navigate(from, { replace: true });
     } catch (err: unknown) {
+      const responseData = err && typeof err === 'object' && 'response' in err
+        ? (err as { response?: { data?: { message?: string; code?: string; data?: { email?: string } } } }).response?.data
+        : undefined;
+      if (responseData?.code === 'EMAIL_NOT_VERIFIED' && responseData.data?.email) {
+        toast.error('Verify your email before signing in');
+        navigate(`/verify-email?email=${encodeURIComponent(responseData.data.email)}`, {
+          replace: true,
+          state: { email: responseData.data.email },
+        });
+        return;
+      }
+
       const message = err && typeof err === 'object' && 'response' in err
         ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
         : 'Invalid email/phone or password';

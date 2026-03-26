@@ -31,10 +31,13 @@ export const authPaths = {
           type: 'object',
           properties: {
             success: { type: 'boolean' },
+            message: { type: 'string' },
             data: {
               type: 'object',
               properties: {
-                user: { $ref: '#/components/schemas/User' },
+                verificationRequired: { type: 'boolean' },
+                email: { type: 'string', format: 'email' },
+                verificationExpiresAt: { type: 'string', format: 'date-time', nullable: true },
               },
             },
           },
@@ -75,8 +78,134 @@ export const authPaths = {
         }),
         400: errorResponse('Missing credentials'),
         401: errorResponse('Invalid credentials'),
-        403: errorResponse('Account is deactivated'),
+        403: {
+          description: 'Account is deactivated or email is not verified',
+          content: json({
+            oneOf: [
+              {
+                type: 'object',
+                properties: {
+                  success: { type: 'boolean', example: false },
+                  message: { type: 'string', example: 'Account is deactivated' },
+                },
+              },
+              {
+                type: 'object',
+                properties: {
+                  success: { type: 'boolean', example: false },
+                  code: { type: 'string', example: 'EMAIL_NOT_VERIFIED' },
+                  message: { type: 'string', example: 'Email is not verified yet' },
+                  data: {
+                    type: 'object',
+                    properties: {
+                      email: { type: 'string', format: 'email' },
+                    },
+                  },
+                },
+              },
+            ],
+          }),
+        },
         500: errorResponse('Login failed'),
+      },
+    },
+  },
+  '/auth/verify-email': {
+    post: {
+      tags: ['Auth'],
+      summary: 'Verify a newly registered account by email code',
+      requestBody: {
+        required: true,
+        content: json({
+          type: 'object',
+          properties: {
+            email: { type: 'string', format: 'email' },
+            code: { type: 'string', example: '123456' },
+          },
+          required: ['email', 'code'],
+        }),
+      },
+      responses: {
+        200: successResponse('Email verified and session started', {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            data: {
+              type: 'object',
+              properties: {
+                user: { $ref: '#/components/schemas/User' },
+              },
+            },
+          },
+        }),
+        400: errorResponse('Invalid or expired verification code'),
+        429: errorResponse('Too many verification attempts'),
+        500: errorResponse('Email verification failed'),
+      },
+    },
+  },
+  '/auth/resend-verification-code': {
+    post: {
+      tags: ['Auth'],
+      summary: 'Send a new email verification code',
+      requestBody: {
+        required: true,
+        content: json({
+          type: 'object',
+          properties: {
+            email: { type: 'string', format: 'email' },
+          },
+          required: ['email'],
+        }),
+      },
+      responses: {
+        200: successResponse('Verification code sent', {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            message: { type: 'string' },
+            data: {
+              type: 'object',
+              properties: {
+                verificationRequired: { type: 'boolean' },
+                email: { type: 'string', format: 'email' },
+                verificationExpiresAt: { type: 'string', format: 'date-time', nullable: true },
+              },
+            },
+          },
+        }),
+        400: errorResponse('Email is required or already verified'),
+        429: errorResponse('Please wait before requesting another verification code'),
+        500: errorResponse('Failed to resend verification code'),
+      },
+    },
+  },
+  '/auth/verification-status': {
+    get: {
+      tags: ['Auth'],
+      summary: 'Get email verification status for an account',
+      parameters: [
+        { name: 'email', in: 'query', required: true, schema: { type: 'string', format: 'email' } },
+      ],
+      responses: {
+        200: successResponse('Verification status loaded', {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            data: {
+              type: 'object',
+              properties: {
+                email: { type: 'string', format: 'email' },
+                verified: { type: 'boolean' },
+                verificationRequired: { type: 'boolean' },
+                verificationExpiresAt: { type: 'string', format: 'date-time', nullable: true },
+              },
+            },
+          },
+        }),
+        400: errorResponse('Email is required'),
+        404: errorResponse('User not found'),
+        500: errorResponse('Failed to load verification status'),
       },
     },
   },

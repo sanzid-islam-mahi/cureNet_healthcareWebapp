@@ -17,6 +17,7 @@ export interface User {
   doctorId?: number;
   patientId?: number;
   profileImage?: string;
+  emailVerifiedAt?: string | null;
 }
 
 interface AuthState {
@@ -27,7 +28,9 @@ interface AuthState {
 
 interface AuthContextValue extends AuthState {
   login: (emailOrPhone: string, password: string) => Promise<void>;
-  register: (data: RegisterData) => Promise<void>;
+  register: (data: RegisterData) => Promise<VerificationResponse>;
+  verifyEmail: (email: string, code: string) => Promise<void>;
+  resendVerificationCode: (email: string) => Promise<VerificationResponse>;
   logout: () => Promise<void>;
   updateProfile: (user: User) => void;
 }
@@ -45,6 +48,12 @@ export interface RegisterData {
   bmdcRegistrationNumber?: string;
   department?: string;
   experience?: number;
+}
+
+export interface VerificationResponse {
+  verificationRequired: boolean;
+  email: string;
+  verificationExpiresAt?: string | null;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -111,9 +120,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const register = useCallback(async (formData: RegisterData) => {
-    const { data } = await api.post<{ success: boolean; data: { user: User } }>('/auth/register', formData);
-    if (!data.success || !data.data.user) throw new Error('Registration failed');
+    const { data } = await api.post<{ success: boolean; data: VerificationResponse }>('/auth/register', formData);
+    if (!data.success || !data.data?.email) throw new Error('Registration failed');
+    return data.data;
+  }, []);
+
+  const verifyEmail = useCallback(async (email: string, code: string) => {
+    const { data } = await api.post<{ success: boolean; data: { user: User } }>('/auth/verify-email', { email, code });
+    if (!data.success || !data.data.user) throw new Error('Email verification failed');
     setState({ user: data.data.user, isAuthenticated: true, loading: false });
+  }, []);
+
+  const resendVerificationCode = useCallback(async (email: string) => {
+    const { data } = await api.post<{ success: boolean; data: VerificationResponse }>('/auth/resend-verification-code', { email });
+    if (!data.success || !data.data?.email) throw new Error('Resend verification code failed');
+    return data.data;
   }, []);
 
   const logout = useCallback(async () => {
@@ -133,6 +154,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     ...state,
     login,
     register,
+    verifyEmail,
+    resendVerificationCode,
     logout,
     updateProfile,
   };

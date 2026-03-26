@@ -47,9 +47,12 @@ export default function Register() {
         department: data.department,
         experience: data.experience,
       };
-      await doRegister({ ...payload, role });
-      toast.success('Account created successfully');
-      navigate('/app', { replace: true });
+      const result = await doRegister({ ...payload, role });
+      toast.success('Account created. Check your email for the verification code.');
+      navigate(`/verify-email?email=${encodeURIComponent(result.email)}`, {
+        replace: true,
+        state: { email: result.email, verificationExpiresAt: result.verificationExpiresAt ?? null },
+      });
     } catch (err: unknown) {
       const message = err && typeof err === 'object' && 'response' in err
         ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
