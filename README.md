@@ -120,6 +120,7 @@ Backend endpoints:
 - API base: `http://localhost:5000`
 - Health check: `GET /api/health`
 - Swagger UI: `http://localhost:5000/docs`
+- Raw OpenAPI JSON: `http://localhost:5000/openapi.json`
 - Admin panel: `http://localhost:5000/admin`
 
 ### 2. Start the Frontend
