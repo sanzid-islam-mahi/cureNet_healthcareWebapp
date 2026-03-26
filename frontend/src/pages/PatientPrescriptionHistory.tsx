@@ -3,7 +3,8 @@ import { useQuery } from '@tanstack/react-query';
 import { MagnifyingGlassIcon, DocumentTextIcon, BeakerIcon, CalendarDaysIcon } from '@heroicons/react/24/outline';
 import { api } from '../context/AuthContext';
 import PrescriptionView from '../components/PrescriptionView';
-import ReminderSetupModal, { type ReminderMedicineEntry } from '../components/ReminderSetupModal';
+import ReminderSetupModal, { type ExistingReminderPlan, type ReminderMedicineEntry } from '../components/ReminderSetupModal';
+import { formatMedicineForDisplay } from './doctorAppointments/utils';
 
 interface PrescriptionRecord {
   id: number;
@@ -22,6 +23,11 @@ interface PrescriptionRecord {
   } | null;
 }
 
+interface ReminderPlanSummary extends ExistingReminderPlan {
+  prescriptionId: number;
+  status: 'active' | 'paused' | 'stopped';
+}
+
 function formatDate(value?: string) {
   if (!value) return '—';
   const date = new Date(value);
@@ -37,7 +43,7 @@ function doctorName(record: PrescriptionRecord) {
 export default function PatientPrescriptionHistory() {
   const [search, setSearch] = useState('');
   const [selectedAppointmentId, setSelectedAppointmentId] = useState<number | null>(null);
-  const [reminderRecordId, setReminderRecordId] = useState<number | null>(null);
+  const [reminderTarget, setReminderTarget] = useState<{ prescriptionId: number; medicineIndex: number } | null>(null);
 
   const { data = [], isLoading } = useQuery({
     queryKey: ['patient-prescription-history'],
@@ -46,6 +52,14 @@ export default function PatientPrescriptionHistory() {
         '/prescriptions/history/patient'
       );
       return res.data?.prescriptions ?? [];
+    },
+  });
+
+  const { data: reminderPlans = [] } = useQuery({
+    queryKey: ['patient-reminders', 'history-lookup'],
+    queryFn: async () => {
+      const { data: res } = await api.get<{ success: boolean; data: { reminderPlans: ReminderPlanSummary[] } }>('/reminders');
+      return res.data?.reminderPlans ?? [];
     },
   });
 
@@ -73,6 +87,16 @@ export default function PatientPrescriptionHistory() {
       latestDate: filtered[0]?.appointment?.appointmentDate,
     };
   }, [filtered]);
+
+  const reminderPlansByMedicine = useMemo(() => {
+    const map = new Map<string, ReminderPlanSummary>();
+    reminderPlans
+      .filter((plan) => ['active', 'paused'].includes(plan.status))
+      .forEach((plan) => {
+        map.set(`${plan.prescriptionId}:${plan.medicineIndex}`, plan);
+      });
+    return map;
+  }, [reminderPlans]);
 
   return (
     <div className="space-y-6">
@@ -136,7 +160,8 @@ export default function PatientPrescriptionHistory() {
           </div>
         ) : (
           <div className="divide-y divide-slate-100">
-            {filtered.map((record) => (
+            {filtered.map((record) => {
+              return (
               <article key={record.id} className="px-5 py-4">
                 <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                   <div className="space-y-2">
@@ -157,16 +182,46 @@ export default function PatientPrescriptionHistory() {
                         {record.notes.length > 180 ? `${record.notes.slice(0, 180)}...` : record.notes}
                       </p>
                     ) : null}
+                    {record.medicines?.length ? (
+                      <div className="space-y-2">
+                        {record.medicines.map((medicine, medicineIndex) => {
+                          const existingPlan = reminderPlansByMedicine.get(`${record.id}:${medicineIndex}`);
+                          return (
+                            <div key={`${record.id}-${medicine.name || 'medicine'}-${medicineIndex}`} className="flex flex-col gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-3 lg:flex-row lg:items-center lg:justify-between">
+                              <div>
+                                <p className="text-sm font-medium text-slate-900">
+                                  {formatMedicineForDisplay({
+                                    name: medicine.name || '',
+                                    dosage: medicine.dosage || [medicine.strength, medicine.dose, medicine.unit].filter(Boolean).join(' '),
+                                    frequency: medicine.frequency || '',
+                                    duration: medicine.duration || '',
+                                    route: medicine.route || '',
+                                    instructions: medicine.instructions || '',
+                                  })}
+                                </p>
+                                {existingPlan ? (
+                                  <p className="mt-1 text-xs text-slate-500">
+                                    Reminder {existingPlan.status} • Times: {existingPlan.scheduleTimes.join(', ')}
+                                  </p>
+                                ) : (
+                                  <p className="mt-1 text-xs text-slate-500">No reminder set for this medicine</p>
+                                )}
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => setReminderTarget({ prescriptionId: record.id, medicineIndex })}
+                                className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-700 hover:bg-blue-100"
+                              >
+                                {existingPlan ? 'Edit reminder' : 'Set reminder'}
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : null}
                   </div>
 
                   <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setReminderRecordId(record.id)}
-                      className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-700 hover:bg-blue-100"
-                    >
-                      Set reminder
-                    </button>
                     <button
                       type="button"
                       onClick={() => setSelectedAppointmentId(record.appointmentId)}
@@ -177,7 +232,8 @@ export default function PatientPrescriptionHistory() {
                   </div>
                 </div>
               </article>
-            ))}
+              );
+            })}
           </div>
         )}
       </section>
@@ -189,12 +245,14 @@ export default function PatientPrescriptionHistory() {
         />
       ) : null}
 
-      {reminderRecordId != null ? (
+      {reminderTarget != null ? (
         <ReminderSetupModal
-          prescriptionId={reminderRecordId}
-          medicines={data.find((record) => record.id === reminderRecordId)?.medicines ?? []}
-          defaultStartDate={data.find((record) => record.id === reminderRecordId)?.appointment?.appointmentDate}
-          onClose={() => setReminderRecordId(null)}
+          prescriptionId={reminderTarget.prescriptionId}
+          medicines={data.find((record) => record.id === reminderTarget.prescriptionId)?.medicines ?? []}
+          defaultStartDate={data.find((record) => record.id === reminderTarget.prescriptionId)?.appointment?.appointmentDate}
+          existingPlan={reminderPlansByMedicine.get(`${reminderTarget.prescriptionId}:${reminderTarget.medicineIndex}`) ?? null}
+          initialMedicineIndex={reminderTarget.medicineIndex}
+          onClose={() => setReminderTarget(null)}
         />
       ) : null}
     </div>

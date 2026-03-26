@@ -3,16 +3,22 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { BellAlertIcon, CheckCircleIcon, ClockIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import { api } from '../context/AuthContext';
+import ReminderSetupModal, { type ExistingReminderPlan, type ReminderMedicineEntry } from '../components/ReminderSetupModal';
 
 interface ReminderPlan {
   id: number;
+  prescriptionId: number;
+  medicineIndex: number;
   medicineName: string;
   dosage?: string | null;
   frequencyLabel?: string | null;
   status: 'active' | 'paused' | 'stopped';
   timezone: string;
+  startDate: string;
+  endDate?: string | null;
   scheduleTimes: string[];
   prescription?: {
+    diagnosis?: string;
     appointment?: {
       appointmentDate?: string;
       doctor?: {
@@ -20,6 +26,7 @@ interface ReminderPlan {
         lastName?: string;
       } | null;
     } | null;
+    medicines?: ReminderMedicineEntry[];
   } | null;
 }
 
@@ -46,6 +53,7 @@ export default function PatientReminders() {
   const queryClient = useQueryClient();
   const [activeFilter, setActiveFilter] = useState<'all' | 'active' | 'paused' | 'stopped'>('all');
   const [historyFilter, setHistoryFilter] = useState<'all' | 'taken' | 'missed' | 'sent' | 'scheduled'>('all');
+  const [editingPlan, setEditingPlan] = useState<ReminderPlan | null>(null);
 
   const { data: plans = [], isLoading: plansLoading } = useQuery({
     queryKey: ['patient-reminders', activeFilter],
@@ -96,7 +104,11 @@ export default function PatientReminders() {
     },
   });
 
-  const upcomingDoses = useMemo(() => doses.filter((dose) => ['scheduled', 'sent'].includes(dose.status)).slice(0, 10), [doses]);
+  const todayString = new Date().toISOString().slice(0, 10);
+  const todayDoses = useMemo(
+    () => doses.filter((dose) => ['scheduled', 'sent'].includes(dose.status) && dose.scheduledAt.slice(0, 10) === todayString),
+    [doses, todayString]
+  );
   const historyDoses = useMemo(() => {
     const source = doses.filter((dose) => ['taken', 'missed', 'sent', 'scheduled'].includes(dose.status));
     const filtered = historyFilter === 'all' ? source : source.filter((dose) => dose.status === historyFilter);
@@ -106,7 +118,7 @@ export default function PatientReminders() {
   }, [doses, historyFilter]);
   const takenCount = doses.filter((dose) => dose.status === 'taken').length;
   const missedCount = doses.filter((dose) => dose.status === 'missed').length;
-  const dueCount = doses.filter((dose) => ['scheduled', 'sent'].includes(dose.status)).length;
+  const dueCount = todayDoses.length;
 
   return (
     <div className="space-y-6">
@@ -142,10 +154,10 @@ export default function PatientReminders() {
           <div className="rounded-xl border border-amber-100 bg-amber-50 px-4 py-3">
             <div className="flex items-center gap-2 text-amber-700">
               <ClockIcon className="h-5 w-5" />
-              <p className="text-xs font-semibold uppercase tracking-wide">Upcoming doses</p>
+              <p className="text-xs font-semibold uppercase tracking-wide">Today&apos;s doses</p>
             </div>
-            <p className="mt-2 text-2xl font-bold text-amber-900">{dueCount}</p>
-          </div>
+              <p className="mt-2 text-2xl font-bold text-amber-900">{dueCount}</p>
+            </div>
           <div className="rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3">
             <div className="flex items-center gap-2 text-emerald-700">
               <CheckCircleIcon className="h-5 w-5" />
@@ -192,6 +204,15 @@ export default function PatientReminders() {
                     </div>
 
                     <div className="flex flex-wrap gap-2">
+                      {plan.status !== 'stopped' ? (
+                        <button
+                          type="button"
+                          onClick={() => setEditingPlan(plan)}
+                          className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-700 hover:bg-blue-100"
+                        >
+                          Edit
+                        </button>
+                      ) : null}
                       {plan.status === 'active' ? (
                         <button
                           type="button"
@@ -229,17 +250,17 @@ export default function PatientReminders() {
 
         <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
           <header className="border-b border-slate-200 px-5 py-4">
-            <h3 className="text-base font-semibold text-slate-900">Upcoming Doses</h3>
-            <p className="text-sm text-slate-500">Mark a dose as taken when you complete it.</p>
+            <h3 className="text-base font-semibold text-slate-900">Today&apos;s Medicines</h3>
+            <p className="text-sm text-slate-500">Only the doses due today are shown here.</p>
           </header>
 
           {dosesLoading ? (
             <div className="px-5 py-10 text-sm text-slate-500">Loading doses...</div>
-          ) : upcomingDoses.length === 0 ? (
-            <div className="px-5 py-10 text-sm text-slate-500">No upcoming doses available yet.</div>
+          ) : todayDoses.length === 0 ? (
+            <div className="px-5 py-10 text-sm text-slate-500">No medicines are due today.</div>
           ) : (
             <div className="divide-y divide-slate-100">
-              {upcomingDoses.map((dose) => (
+              {todayDoses.map((dose) => (
                 <article key={dose.id} className="px-5 py-4">
                   <div className="flex items-start justify-between gap-3">
                     <div>
@@ -315,6 +336,23 @@ export default function PatientReminders() {
           </div>
         )}
       </section>
+
+      {editingPlan ? (
+        <ReminderSetupModal
+          prescriptionId={editingPlan.prescriptionId}
+          medicines={editingPlan.prescription?.medicines ?? []}
+          defaultStartDate={editingPlan.prescription?.appointment?.appointmentDate}
+          existingPlan={{
+            id: editingPlan.id,
+            medicineIndex: editingPlan.medicineIndex,
+            timezone: editingPlan.timezone,
+            startDate: editingPlan.startDate,
+            endDate: editingPlan.endDate,
+            scheduleTimes: editingPlan.scheduleTimes,
+          } satisfies ExistingReminderPlan}
+          onClose={() => setEditingPlan(null)}
+        />
+      ) : null}
     </div>
   );
 }

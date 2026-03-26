@@ -144,6 +144,48 @@ export const engagementPaths = {
       },
     },
   },
+  '/reminders/{id}': {
+    put: {
+      tags: ['Reminders'],
+      summary: 'Update an existing medication reminder plan for the authenticated patient',
+      security: authSecurity,
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }],
+      requestBody: {
+        required: true,
+        content: json({
+          type: 'object',
+          properties: {
+            medicineIndex: { type: 'integer', nullable: true },
+            timezone: { type: 'string' },
+            startDate: { type: 'string', format: 'date' },
+            endDate: { type: 'string', format: 'date', nullable: true },
+            scheduleTimes: {
+              type: 'array',
+              items: { type: 'string', example: '08:00' },
+              description: 'Optional exact reminder times. If omitted, the backend derives defaults from the prescription frequency.',
+            },
+          },
+          required: ['startDate'],
+        }),
+      },
+      responses: {
+        200: successResponse('Reminder plan updated', {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            data: {
+              type: 'object',
+              properties: {
+                reminderPlan: { $ref: '#/components/schemas/MedicationReminderPlan' },
+              },
+            },
+          },
+        }),
+        400: errorResponse('Failed to update reminder'),
+        404: errorResponse('Reminder plan not found'),
+      },
+    },
+  },
   '/reminders/doses': {
     get: {
       tags: ['Reminders'],

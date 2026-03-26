@@ -12,6 +12,7 @@ router.post('/', remindersController.create);
 router.get('/', remindersController.listPlans);
 router.get('/doses', remindersController.listDoses);
 router.post('/doses/:id/taken', remindersController.markDoseTaken);
+router.put('/:id', remindersController.update);
 router.put('/:id/pause', remindersController.pause);
 router.put('/:id/resume', remindersController.resume);
 router.put('/:id/stop', remindersController.stop);

@@ -43,6 +43,9 @@ export interface PrescriptionData {
 export interface MedicineEntry {
   name: string;
   dosage?: string;
+  strength?: string;
+  dose?: string;
+  unit?: string;
   frequency?: string;
   duration?: string;
   route?: string;

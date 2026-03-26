@@ -50,6 +50,7 @@ function serializePlan(plan) {
       id: plain.Prescription.id,
       diagnosis: plain.Prescription.diagnosis,
       appointmentId: plain.Prescription.appointmentId,
+      medicines: plain.Prescription.medicines,
       appointment: plain.Prescription.Appointment ? {
         id: plain.Prescription.Appointment.id,
         appointmentDate: plain.Prescription.Appointment.appointmentDate,
@@ -99,15 +100,11 @@ async function getOwnedPrescriptionOrFail(patientId, prescriptionId) {
 
 function parseReminderPayload(body) {
   const prescriptionId = parseInteger(body.prescriptionId);
-  const medicineIndex = parseInteger(body.medicineIndex);
+  const medicineIndex = body.medicineIndex == null ? null : parseInteger(body.medicineIndex);
   const startDate = typeof body.startDate === 'string' ? body.startDate : '';
   const endDate = typeof body.endDate === 'string' && body.endDate ? body.endDate : null;
   const timezone = typeof body.timezone === 'string' && body.timezone.trim() ? body.timezone.trim() : 'UTC';
   const scheduleTimes = body.scheduleTimes;
-
-  if (!prescriptionId) throw new Error('prescriptionId is required');
-  if (medicineIndex === null) throw new Error('medicineIndex is required');
-  if (!startDate) throw new Error('startDate is required');
 
   return {
     prescriptionId,
@@ -119,10 +116,21 @@ function parseReminderPayload(body) {
   };
 }
 
+function validateCreatePayload(payload) {
+  if (!payload.prescriptionId) throw new Error('prescriptionId is required');
+  if (payload.medicineIndex === null) throw new Error('medicineIndex is required');
+  if (!payload.startDate) throw new Error('startDate is required');
+}
+
+function validateUpdatePayload(payload) {
+  if (!payload.startDate) throw new Error('startDate is required');
+}
+
 export async function preview(req, res) {
   try {
     const user = req.user;
     const payload = parseReminderPayload(req.body);
+    validateCreatePayload(payload);
     const { prescription, error } = await getOwnedPrescriptionOrFail(user.patientId, payload.prescriptionId);
     if (error) return res.status(error.status).json(error.body);
 
@@ -159,6 +167,7 @@ export async function create(req, res) {
   try {
     const user = req.user;
     const payload = parseReminderPayload(req.body);
+    validateCreatePayload(payload);
     const { prescription, error } = await getOwnedPrescriptionOrFail(user.patientId, payload.prescriptionId);
     if (error) return res.status(error.status).json(error.body);
 
@@ -239,6 +248,116 @@ export async function create(req, res) {
   } catch (err) {
     console.error('Create reminder error:', err);
     return res.status(400).json({ success: false, message: err.message || 'Failed to create reminder' });
+  }
+}
+
+export async function update(req, res) {
+  try {
+    const user = req.user;
+    const plan = await MedicationReminderPlan.findOne({
+      where: { id: parseInteger(req.params.id), patientId: user.patientId },
+    });
+
+    if (!plan) {
+      return res.status(404).json({ success: false, message: 'Reminder plan not found' });
+    }
+
+    const payload = parseReminderPayload({ ...req.body, prescriptionId: plan.prescriptionId });
+    validateUpdatePayload(payload);
+
+    const { prescription, error } = await getOwnedPrescriptionOrFail(user.patientId, plan.prescriptionId);
+    if (error) return res.status(error.status).json(error.body);
+
+    const nextMedicineIndex = payload.medicineIndex ?? plan.medicineIndex;
+    const snapshot = extractMedicineSnapshot(prescription, nextMedicineIndex);
+    const scheduleTimes = resolveScheduleTimes(payload.scheduleTimes, snapshot.frequencyLabel);
+    const schedule = buildDoseSchedule({
+      ...payload,
+      scheduleTimes,
+      frequencyLabel: snapshot.frequencyLabel,
+      startDate: payload.startDate,
+      endDate: payload.endDate,
+    });
+
+    const transaction = await sequelize.transaction();
+    try {
+      const preservedDoses = await MedicationReminderDose.findAll({
+        where: {
+          reminderPlanId: plan.id,
+          status: { [Op.in]: ['taken', 'missed', 'skipped'] },
+        },
+        transaction,
+      });
+      const preservedScheduledAt = new Set(preservedDoses.map((dose) => new Date(dose.scheduledAt).toISOString()));
+
+      await MedicationReminderDose.destroy({
+        where: {
+          reminderPlanId: plan.id,
+          status: { [Op.notIn]: ['taken', 'missed', 'skipped'] },
+        },
+        transaction,
+      });
+
+      await plan.update({
+        medicineIndex: snapshot.medicineIndex,
+        medicineName: snapshot.medicineName,
+        dosage: snapshot.dosage,
+        frequencyLabel: snapshot.frequencyLabel,
+        instructions: snapshot.instructions,
+        timezone: payload.timezone,
+        startDate: payload.startDate,
+        endDate: payload.endDate || schedule.generatedUntil,
+        scheduleTimes: schedule.scheduleTimes,
+        lastGeneratedAt: new Date(),
+      }, { transaction });
+
+      const dosesToCreate = schedule.doses.filter(
+        (dose) => !preservedScheduledAt.has(new Date(dose.scheduledAt).toISOString()),
+      );
+
+      if (dosesToCreate.length > 0) {
+        await MedicationReminderDose.bulkCreate(
+          dosesToCreate.map((dose) => ({
+            reminderPlanId: plan.id,
+            scheduledAt: dose.scheduledAt,
+            status: 'scheduled',
+            metadata: dose.metadata,
+          })),
+          { transaction },
+        );
+      }
+
+      await transaction.commit();
+
+      const updatedPlan = await MedicationReminderPlan.findByPk(plan.id, {
+        include: [
+          {
+            model: Prescription,
+            include: [
+              {
+                model: Appointment,
+                as: 'Appointment',
+                include: [{ model: Doctor, as: 'Doctor', include: [{ model: User, as: 'User', attributes: ['id', 'firstName', 'lastName'] }] }],
+              },
+            ],
+          },
+          { model: MedicationReminderDose, as: 'Doses' },
+        ],
+      });
+
+      return res.json({
+        success: true,
+        data: {
+          reminderPlan: serializePlan(updatedPlan),
+        },
+      });
+    } catch (err) {
+      await transaction.rollback();
+      throw err;
+    }
+  } catch (err) {
+    console.error('Update reminder error:', err);
+    return res.status(400).json({ success: false, message: err.message || 'Failed to update reminder' });
   }
 }
 

@@ -74,9 +74,13 @@ export function emptyMedicine(): MedicineEntry {
 }
 
 export function normalizeMedicine(m: MedicineEntry): MedicineEntry {
+  const fallbackDosage = [m.strength, m.dose, m.unit].filter(Boolean).join(' ');
   return {
     name: m.name || '',
-    dosage: m.dosage || '',
+    dosage: m.dosage || fallbackDosage || '',
+    strength: m.strength || '',
+    dose: m.dose || '',
+    unit: m.unit || '',
     frequency: m.frequency || '',
     duration: m.duration || '',
     route: m.route || '',
@@ -85,7 +89,8 @@ export function normalizeMedicine(m: MedicineEntry): MedicineEntry {
 }
 
 export function formatMedicineForDisplay(m: MedicineEntry): string {
-  const headline = [m.name, m.dosage].filter(Boolean).join(' ');
+  const dosage = m.dosage || [m.strength, m.dose, m.unit].filter(Boolean).join(' ');
+  const headline = [m.name, dosage].filter(Boolean).join(' ');
   const schedule = [m.frequency, m.duration].filter(Boolean).join(' for ');
   const route = m.route ? ` via ${m.route.toLowerCase()}` : '';
   const instruction = m.instructions ? ` ${m.instructions}` : '';

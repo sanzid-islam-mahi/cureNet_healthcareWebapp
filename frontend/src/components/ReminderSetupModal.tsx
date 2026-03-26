@@ -37,10 +37,21 @@ interface ReminderPreview {
   doses: ReminderPreviewDose[];
 }
 
+export interface ExistingReminderPlan {
+  id: number;
+  medicineIndex: number;
+  timezone: string;
+  startDate: string;
+  endDate?: string | null;
+  scheduleTimes: string[];
+}
+
 interface ReminderSetupModalProps {
   prescriptionId: number;
   medicines: ReminderMedicineEntry[];
   defaultStartDate?: string;
+  existingPlan?: ExistingReminderPlan | null;
+  initialMedicineIndex?: number;
   onClose: () => void;
 }
 
@@ -104,16 +115,26 @@ export default function ReminderSetupModal({
   prescriptionId,
   medicines,
   defaultStartDate,
+  existingPlan = null,
+  initialMedicineIndex = 0,
   onClose,
 }: ReminderSetupModalProps) {
   const queryClient = useQueryClient();
-  const initialTimes = useMemo(() => suggestTimes(medicines[0]?.frequency), [medicines]);
-  const [medicineIndex, setMedicineIndex] = useState(0);
-  const [startDate, setStartDate] = useState(defaultStartDate || todayDateString());
-  const [endDate, setEndDate] = useState(addDays(defaultStartDate || todayDateString(), 6));
-  const [timezone, setTimezone] = useState(Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC');
+  const resolvedInitialMedicineIndex = existingPlan?.medicineIndex ?? initialMedicineIndex;
+  const initialTimes = useMemo(
+    () => existingPlan?.scheduleTimes?.length ? existingPlan.scheduleTimes : suggestTimes(medicines[resolvedInitialMedicineIndex]?.frequency),
+    [existingPlan, medicines, resolvedInitialMedicineIndex]
+  );
+  const [medicineIndex, setMedicineIndex] = useState(resolvedInitialMedicineIndex);
+  const [startDate, setStartDate] = useState(existingPlan?.startDate || defaultStartDate || todayDateString());
+  const [endDate, setEndDate] = useState(existingPlan?.endDate || addDays(defaultStartDate || todayDateString(), 6));
+  const [timezone, setTimezone] = useState(existingPlan?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC');
   const [scheduleTimes, setScheduleTimes] = useState(initialTimes);
   const [preview, setPreview] = useState<ReminderPreview | null>(null);
+  const scheduleDayCount = Math.max(
+    1,
+    Math.floor((new Date(`${endDate}T00:00:00`).getTime() - new Date(`${startDate}T00:00:00`).getTime()) / 86400000) + 1
+  );
 
   const previewMutation = useMutation({
     mutationFn: async () => {
@@ -138,26 +159,31 @@ export default function ReminderSetupModal({
 
   const createMutation = useMutation({
     mutationFn: async () => {
-      await api.post('/reminders', {
+      const payload = {
         prescriptionId,
         medicineIndex,
         startDate,
         endDate,
         timezone,
         scheduleTimes,
-      });
+      };
+      if (existingPlan?.id) {
+        await api.put(`/reminders/${existingPlan.id}`, payload);
+        return;
+      }
+      await api.post('/reminders', payload);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['patient-reminders'] });
       queryClient.invalidateQueries({ queryKey: ['patient-reminder-doses'] });
-      toast.success('Medication reminder created');
+      toast.success(existingPlan?.id ? 'Medication reminder updated' : 'Medication reminder created');
       onClose();
     },
     onError: (err: unknown) => {
       const message = err && typeof err === 'object' && 'response' in err
         ? (err as { response?: { data?: { message?: string } } }).response?.data?.message
-        : 'Failed to create reminder';
-      toast.error(message || 'Failed to create reminder');
+        : existingPlan?.id ? 'Failed to update reminder' : 'Failed to create reminder';
+      toast.error(message || (existingPlan?.id ? 'Failed to update reminder' : 'Failed to create reminder'));
     },
   });
 
@@ -185,7 +211,7 @@ export default function ReminderSetupModal({
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/60 p-4">
       <div className="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
         <header className="border-b border-slate-200 px-6 py-5">
-          <h3 className="text-lg font-semibold text-slate-900">Set medication reminder</h3>
+          <h3 className="text-lg font-semibold text-slate-900">{existingPlan?.id ? 'Edit medication reminder' : 'Set medication reminder'}</h3>
           <p className="text-sm text-slate-500">Choose a medicine, confirm exact reminder times, and preview the generated doses.</p>
         </header>
 
@@ -221,6 +247,7 @@ export default function ReminderSetupModal({
                   <p className="mt-1">{medicines[medicineIndex]?.dosage || [medicines[medicineIndex]?.strength, medicines[medicineIndex]?.dose, medicines[medicineIndex]?.unit].filter(Boolean).join(' ') || 'Dosage not specified'}</p>
                   <p className="mt-1">{formatSuggestionCopy(medicines[medicineIndex]?.frequency)}</p>
                   <p className="mt-1 text-slate-600">{frequencySummary(medicines[medicineIndex]?.frequency)}</p>
+                  <p className="mt-1 text-slate-600">Planned duration: {medicines[medicineIndex]?.duration || `${scheduleDayCount} day${scheduleDayCount === 1 ? '' : 's'}`}</p>
                   {medicines[medicineIndex]?.route ? (
                     <p className="mt-1 text-slate-600">Route: {medicines[medicineIndex]?.route}</p>
                   ) : null}
@@ -254,6 +281,7 @@ export default function ReminderSetupModal({
                     }}
                     className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
                   />
+                  <p className="mt-1 text-xs text-slate-500">{scheduleDayCount} day treatment window</p>
                 </div>
               </div>
 
@@ -322,7 +350,7 @@ export default function ReminderSetupModal({
                   disabled={createMutation.isPending}
                   className="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-500 disabled:opacity-50"
                 >
-                  {createMutation.isPending ? 'Creating…' : 'Create reminder'}
+                  {createMutation.isPending ? (existingPlan?.id ? 'Updating…' : 'Creating…') : (existingPlan?.id ? 'Save reminder' : 'Create reminder')}
                 </button>
               </div>
             </div>
