@@ -167,6 +167,7 @@ Frontend application:
 ```bash
 npm run dev
 npm start
+npm run reminder-worker
 npm test
 npm run migrate
 npm run generate-migrations
@@ -200,6 +201,7 @@ If you are working with an older local database created from previous migration 
 - Successful email verification starts the login session immediately.
 - If `AUTH_ALLOW_UNVERIFIED_LOGIN=true`, local development can bypass the verification gate for unverified users at login.
 - Password reset now sends a real email reset link through the same SMTP configuration used by email verification.
+- Medication reminders use a separate worker process so scheduled delivery does not run inside the API request server.
 - Create the first admin from the `backend` directory with:
 
 ```bash

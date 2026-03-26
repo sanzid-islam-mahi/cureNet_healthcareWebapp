@@ -1,5 +1,6 @@
 const MAX_DIAGNOSIS_LEN = 3000;
 const MAX_NOTES_LEN = 4000;
+const MAX_MEDICINES = 30;
 
 const FIELD_LIMITS = {
   name: 120,
@@ -12,11 +13,33 @@ const FIELD_LIMITS = {
   instructions: 400,
 };
 
+const FREQUENCY_PATTERNS = [
+  /^(od|bd|tid|tds|qid|hs|sos|prn)$/i,
+  /^(daily|nightly|weekly|once weekly|twice weekly|three times weekly)$/i,
+  /^(once daily|twice daily|three times daily|four times daily)$/i,
+  /^(every morning|every evening|every night|morning and evening)$/i,
+  /^(as needed|when needed)$/i,
+  /^every \d{1,2} (hour|hours|day|days|week|weeks)$/i,
+];
+
+const DURATION_PATTERNS = [
+  /^\d{1,3} (day|days|week|weeks|month|months)$/i,
+  /^(until review|ongoing|continue)$/i,
+];
+
 function cleanString(value, maxLen) {
   if (value == null) return '';
-  const text = String(value).trim();
+  const text = String(value).replace(/\s+/g, ' ').trim();
   if (!text) return '';
   return text.slice(0, maxLen);
+}
+
+function isRecognizedFrequency(value) {
+  return FREQUENCY_PATTERNS.some((pattern) => pattern.test(value));
+}
+
+function isRecognizedDuration(value) {
+  return DURATION_PATTERNS.some((pattern) => pattern.test(value));
 }
 
 function normalizeMedicine(raw) {
@@ -40,8 +63,8 @@ function validateMedicines(medicines) {
   if (!Array.isArray(medicines)) {
     return { value: null, errors: ['medicines must be an array'] };
   }
-  if (medicines.length > 30) {
-    return { value: null, errors: ['Too many medicines (max 30)'] };
+  if (medicines.length > MAX_MEDICINES) {
+    return { value: null, errors: [`Too many medicines (max ${MAX_MEDICINES})`] };
   }
 
   const normalized = medicines.map(normalizeMedicine).filter(Boolean);
@@ -59,6 +82,20 @@ function validateMedicines(medicines) {
     }
     dupSet.add(key);
   }
+
+  normalized.forEach((medicine, index) => {
+    if (medicine.frequency && !isRecognizedFrequency(medicine.frequency)) {
+      errors.push(
+        `Medicine ${index + 1} frequency must use a standard clinical pattern such as "Once daily", "Twice daily", "Every 8 hours", or common abbreviations like "OD" / "BD"`,
+      );
+    }
+
+    if (medicine.duration && !isRecognizedDuration(medicine.duration)) {
+      errors.push(
+        `Medicine ${index + 1} duration must use a format like "5 days", "2 weeks", "3 months", "Until review", or "Ongoing"`,
+      );
+    }
+  });
 
   return { value: normalized.length ? normalized : null, errors };
 }
@@ -82,4 +119,3 @@ export function validatePrescriptionPayload(payload) {
     errors,
   };
 }
-

@@ -5,7 +5,14 @@ import toast from 'react-hot-toast';
 import { api } from '../../context/AuthContext';
 import { useModalAccessibility } from './useModalAccessibility';
 import type { MedicineEntry, PrescriptionApiResponse, PrescriptionData } from './types';
-import { emptyMedicine, formatMedicineForDisplay, normalizeMedicine } from './utils';
+import {
+  DURATION_OPTIONS,
+  emptyMedicine,
+  formatMedicineForDisplay,
+  FREQUENCY_OPTIONS,
+  normalizeMedicine,
+  ROUTE_OPTIONS,
+} from './utils';
 
 interface PrescriptionFormModalProps {
   appointmentId: number;
@@ -124,6 +131,17 @@ export default function PrescriptionFormModal({ appointmentId, onClose }: Prescr
 
   const isSubmitting = createMutation.isPending || updateMutation.isPending;
 
+  const applyFrequencyTemplate = (index: number, value: string) => {
+    updateRow(index, 'frequency', value);
+    if (!medicines[index]?.duration && value) {
+      updateRow(index, 'duration', '5 days');
+    }
+  };
+
+  const applyDurationTemplate = (index: number, value: string) => {
+    updateRow(index, 'duration', value);
+  };
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
@@ -231,31 +249,72 @@ export default function PrescriptionFormModal({ appointmentId, onClose }: Prescr
                           className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm"
                         />
                         <input
-                          placeholder="Dosage (e.g. 500mg / 1 tab)"
+                          placeholder="Dosage (e.g. 500 mg, 1 tablet)"
                           value={m.dosage || ''}
                           onChange={(e) => updateRow(i, 'dosage', e.target.value)}
                           className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm"
                         />
-                        <input
-                          placeholder="Frequency (e.g. BID)"
-                          value={m.frequency || ''}
-                          onChange={(e) => updateRow(i, 'frequency', e.target.value)}
+                        <div className="space-y-2">
+                          <select
+                            value={FREQUENCY_OPTIONS.includes(m.frequency || '') ? (m.frequency || '') : ''}
+                            onChange={(e) => applyFrequencyTemplate(i, e.target.value)}
+                            className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm"
+                          >
+                            <option value="">Choose common frequency</option>
+                            {FREQUENCY_OPTIONS.map((option) => (
+                              <option key={option} value={option}>{option}</option>
+                            ))}
+                          </select>
+                          <input
+                            placeholder="Or custom frequency (e.g. Every other day)"
+                            value={m.frequency || ''}
+                            onChange={(e) => updateRow(i, 'frequency', e.target.value)}
+                            className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <select
+                            value={DURATION_OPTIONS.includes(m.duration || '') ? (m.duration || '') : ''}
+                            onChange={(e) => applyDurationTemplate(i, e.target.value)}
+                            className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm"
+                          >
+                            <option value="">Choose common duration</option>
+                            {DURATION_OPTIONS.map((option) => (
+                              <option key={option} value={option}>{option}</option>
+                            ))}
+                          </select>
+                          <input
+                            placeholder='Or custom duration (e.g. 2 weeks)'
+                            value={m.duration || ''}
+                            onChange={(e) => updateRow(i, 'duration', e.target.value)}
+                            className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="mt-2 grid gap-2 md:grid-cols-2">
+                        <select
+                          value={ROUTE_OPTIONS.includes(m.route || '') ? (m.route || '') : ''}
+                          onChange={(e) => updateRow(i, 'route', e.target.value)}
                           className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm"
-                        />
+                        >
+                          <option value="">Route</option>
+                          {ROUTE_OPTIONS.map((option) => (
+                            <option key={option} value={option}>{option}</option>
+                          ))}
+                        </select>
                         <input
-                          placeholder="Duration (e.g. 5 days)"
-                          value={m.duration || ''}
-                          onChange={(e) => updateRow(i, 'duration', e.target.value)}
+                          placeholder="Instructions (optional, e.g. After food)"
+                          value={m.instructions || ''}
+                          onChange={(e) => updateRow(i, 'instructions', e.target.value)}
                           className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm"
                         />
                       </div>
 
-                      <input
-                        placeholder="Instructions (optional)"
-                        value={m.instructions || ''}
-                        onChange={(e) => updateRow(i, 'instructions', e.target.value)}
-                        className="mt-2 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm"
-                      />
+                      <div className="mt-3 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Preview</p>
+                        <p className="mt-1">{formatMedicineForDisplay(normalizeMedicine(m))}</p>
+                      </div>
                     </div>
                   ))}
                 </div>

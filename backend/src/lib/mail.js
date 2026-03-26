@@ -129,3 +129,28 @@ export async function sendPasswordResetEmail({ to, token, firstName }) {
     ...email,
   });
 }
+
+export async function sendMedicationReminderEmail({ to, firstName, medicineName, scheduledAt }) {
+  const displayName = getDisplayName(firstName);
+  const doseTime = new Date(scheduledAt).toLocaleString();
+  const email = buildEmailShell({
+    intro: `Hi ${displayName},`,
+    bodyText: [
+      `This is your CureNet reminder to take ${medicineName}.`,
+      `Scheduled time: ${doseTime}`,
+      '',
+      `Open ${APP_BASE_URL} to review your reminders and mark the dose as taken.`,
+    ],
+    bodyHtml: `
+      <p>This is your CureNet reminder to take <strong>${medicineName}</strong>.</p>
+      <p>Scheduled time: <strong>${doseTime}</strong></p>
+      <p>Open <a href="${APP_BASE_URL}">${APP_BASE_URL}</a> to review your reminders and mark the dose as taken.</p>
+    `,
+  });
+
+  return sendEmail({
+    to,
+    subject: `Medication reminder: ${medicineName}`,
+    ...email,
+  });
+}

@@ -1,27 +1,18 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { api } from '../context/AuthContext';
+import { api, useAuth } from '../context/AuthContext';
+import ReminderSetupModal, { type ReminderMedicineEntry } from './ReminderSetupModal';
+import { formatMedicineForDisplay } from '../pages/doctorAppointments/utils';
 
 interface PrescriptionViewProps {
   appointmentId: number;
   onClose: () => void;
 }
 
-interface MedicineEntry {
-  name?: string;
-  dosage?: string;
-  frequency?: string;
-  duration?: string;
-  instructions?: string;
-  // Backward compatibility with structured schema
-  strength?: string;
-  dose?: string;
-  unit?: string;
-  route?: string;
-}
-
 interface PrescriptionDetail {
+  id?: number;
   diagnosis?: string;
-  medicines?: MedicineEntry[];
+  medicines?: ReminderMedicineEntry[];
   notes?: string;
   createdAt?: string;
   appointment?: {
@@ -46,15 +37,6 @@ interface PrescriptionDetail {
   } | null;
 }
 
-function formatMedicine(m: MedicineEntry): string {
-  const dosage = m.dosage || [m.dose, m.unit].filter(Boolean).join(' ');
-  const details = [dosage, m.frequency, m.duration].filter(Boolean).join(' | ');
-  const legacy = [m.strength, m.route].filter(Boolean).join(' | ');
-  const extra = m.instructions ? ` (${m.instructions})` : '';
-  const core = `${m.name || 'Medicine'}${details ? ` — ${details}` : ''}${extra}`;
-  return legacy ? `${core} [${legacy}]` : core;
-}
-
 function formatDate(value?: string): string {
   if (!value) return '—';
   const d = new Date(value);
@@ -72,6 +54,8 @@ function escapeHtml(value: string): string {
 }
 
 export default function PrescriptionView({ appointmentId, onClose }: PrescriptionViewProps) {
+  const { user } = useAuth();
+  const [showReminderSetup, setShowReminderSetup] = useState(false);
   const { data, isLoading, error } = useQuery({
     queryKey: ['prescription', appointmentId],
     queryFn: async () => {
@@ -84,6 +68,7 @@ export default function PrescriptionView({ appointmentId, onClose }: Prescriptio
   });
 
   const prescription = data;
+  const isPatient = user?.role === 'patient';
   const appointment = prescription?.appointment;
   const doctorName = appointment?.doctor
     ? `Dr. ${appointment.doctor.firstName || ''} ${appointment.doctor.lastName || ''}`.trim()
@@ -222,7 +207,14 @@ export default function PrescriptionView({ appointmentId, onClose }: Prescriptio
                   <div className="mt-2 space-y-2">
                     {prescription.medicines.map((m, i) => (
                       <p key={`${m.name || 'medicine'}-${i}`} className="rounded-md bg-slate-50 px-3 py-2 text-gray-800">
-                        {formatMedicine(m)}
+                        {formatMedicineForDisplay({
+                          name: m.name || '',
+                          dosage: m.dosage || [m.strength, m.dose, m.unit].filter(Boolean).join(' '),
+                          frequency: m.frequency || '',
+                          duration: m.duration || '',
+                          route: m.route || '',
+                          instructions: m.instructions || '',
+                        })}
                       </p>
                     ))}
                   </div>
@@ -248,6 +240,15 @@ export default function PrescriptionView({ appointmentId, onClose }: Prescriptio
             >
               Close
             </button>
+            {isPatient && prescription?.id && prescription.medicines?.length ? (
+              <button
+                type="button"
+                onClick={() => setShowReminderSetup(true)}
+                className="flex-1 rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100"
+              >
+                Set reminder
+              </button>
+            ) : null}
             <button
               type="button"
               onClick={downloadPdf}
@@ -259,6 +260,15 @@ export default function PrescriptionView({ appointmentId, onClose }: Prescriptio
           </div>
         </footer>
       </div>
+
+      {showReminderSetup && prescription?.id ? (
+        <ReminderSetupModal
+          prescriptionId={prescription.id}
+          medicines={prescription.medicines ?? []}
+          defaultStartDate={appointment?.appointmentDate}
+          onClose={() => setShowReminderSetup(false)}
+        />
+      ) : null}
     </div>
   );
 }

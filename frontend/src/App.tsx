@@ -29,6 +29,7 @@ const PatientProfile = lazy(() => import('./pages/PatientProfile'));
 const DoctorProfile = lazy(() => import('./pages/DoctorProfile'));
 const PatientAppointments = lazy(() => import('./pages/PatientAppointments'));
 const PatientPrescriptionHistory = lazy(() => import('./pages/PatientPrescriptionHistory'));
+const PatientReminders = lazy(() => import('./pages/PatientReminders'));
 const DoctorAppointments = lazy(() => import('./pages/DoctorAppointments'));
 const DoctorMyPatients = lazy(() => import('./pages/DoctorMyPatients'));
 const DoctorContinuity = lazy(() => import('./pages/DoctorContinuity'));
@@ -81,6 +82,7 @@ export default function App() {
                     <Route path="doctor-profile" element={<ProtectedRoute requiredRole="doctor"><DoctorProfile /></ProtectedRoute>} />
                     <Route path="patient-appointments" element={<ProtectedRoute requiredRole="patient"><PatientAppointments /></ProtectedRoute>} />
                     <Route path="patient-prescriptions" element={<ProtectedRoute requiredRole="patient"><PatientPrescriptionHistory /></ProtectedRoute>} />
+                    <Route path="patient-reminders" element={<ProtectedRoute requiredRole="patient"><PatientReminders /></ProtectedRoute>} />
                     <Route path="doctor-appointments" element={<ProtectedRoute requiredRole="doctor"><DoctorAppointments /></ProtectedRoute>} />
                     <Route path="doctors" element={<Doctors />} />
                     <Route path="doctor-my-patients" element={<ProtectedRoute requiredRole="doctor"><DoctorMyPatients /></ProtectedRoute>} />

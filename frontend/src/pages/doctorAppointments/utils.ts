@@ -1,5 +1,44 @@
 import type { AppointmentItem, MedicineEntry } from './types';
 
+export const FREQUENCY_OPTIONS = [
+  'OD',
+  'BD',
+  'TDS',
+  'QID',
+  'Once daily',
+  'Twice daily',
+  'Three times daily',
+  'Four times daily',
+  'Every 8 hours',
+  'Every 12 hours',
+  'At bedtime',
+  'As needed',
+  'After meals',
+  'Before meals',
+];
+
+export const DURATION_OPTIONS = [
+  '3 days',
+  '5 days',
+  '7 days',
+  '10 days',
+  '14 days',
+  '1 month',
+  '3 months',
+  'Until review',
+  'Ongoing',
+];
+
+export const ROUTE_OPTIONS = [
+  'Oral',
+  'Topical',
+  'Inhalation',
+  'Eye drops',
+  'Ear drops',
+  'Nasal',
+  'Injection',
+];
+
 export function prettyStatus(status: string): string {
   return status.replace('_', ' ');
 }
@@ -31,7 +70,7 @@ export function patientNameFromAppointment(apt: AppointmentItem): string {
 }
 
 export function emptyMedicine(): MedicineEntry {
-  return { name: '', dosage: '', frequency: '', duration: '', instructions: '' };
+  return { name: '', dosage: '', frequency: '', duration: '', route: 'Oral', instructions: '' };
 }
 
 export function normalizeMedicine(m: MedicineEntry): MedicineEntry {
@@ -40,12 +79,16 @@ export function normalizeMedicine(m: MedicineEntry): MedicineEntry {
     dosage: m.dosage || '',
     frequency: m.frequency || '',
     duration: m.duration || '',
+    route: m.route || '',
     instructions: m.instructions || '',
   };
 }
 
 export function formatMedicineForDisplay(m: MedicineEntry): string {
-  const details = [m.dosage, m.frequency, m.duration].filter(Boolean).join(' | ');
-  const extra = m.instructions ? ` (${m.instructions})` : '';
-  return `${m.name}${details ? ` - ${details}` : ''}${extra}`;
+  const headline = [m.name, m.dosage].filter(Boolean).join(' ');
+  const schedule = [m.frequency, m.duration].filter(Boolean).join(' for ');
+  const route = m.route ? ` via ${m.route.toLowerCase()}` : '';
+  const instruction = m.instructions ? ` ${m.instructions}` : '';
+  const parts = [headline || 'Medicine', schedule ? `Take ${schedule}${route}.` : route ? `Use${route}.` : '', instruction].filter(Boolean);
+  return parts.join(' ').trim();
 }

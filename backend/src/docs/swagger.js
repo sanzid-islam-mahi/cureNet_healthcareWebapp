@@ -25,6 +25,7 @@ export const swaggerSpec = {
     { name: 'Doctors' },
     { name: 'Appointments' },
     { name: 'Prescriptions' },
+    { name: 'Reminders' },
     { name: 'Ratings' },
     { name: 'Notifications' },
     { name: 'Admin' },

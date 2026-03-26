@@ -6,6 +6,8 @@ import './PasswordResetToken.js';
 import EmailVerificationCode from './EmailVerificationCode.js';
 import Appointment from './Appointment.js';
 import Prescription from './Prescription.js';
+import MedicationReminderPlan from './MedicationReminderPlan.js';
+import MedicationReminderDose from './MedicationReminderDose.js';
 import Rating from './Rating.js';
 import AuditLog from './AuditLog.js';
 import Notification from './Notification.js';
@@ -18,6 +20,8 @@ const db = {
   EmailVerificationCode,
   Appointment,
   Prescription,
+  MedicationReminderPlan,
+  MedicationReminderDose,
   Rating,
   AuditLog,
   Notification,

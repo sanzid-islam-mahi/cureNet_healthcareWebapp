@@ -45,6 +45,7 @@ export interface MedicineEntry {
   dosage?: string;
   frequency?: string;
   duration?: string;
+  route?: string;
   instructions?: string;
 }
 

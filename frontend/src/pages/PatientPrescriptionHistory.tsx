@@ -3,12 +3,13 @@ import { useQuery } from '@tanstack/react-query';
 import { MagnifyingGlassIcon, DocumentTextIcon, BeakerIcon, CalendarDaysIcon } from '@heroicons/react/24/outline';
 import { api } from '../context/AuthContext';
 import PrescriptionView from '../components/PrescriptionView';
+import ReminderSetupModal, { type ReminderMedicineEntry } from '../components/ReminderSetupModal';
 
 interface PrescriptionRecord {
   id: number;
   appointmentId: number;
   diagnosis?: string;
-  medicines?: Array<{ name?: string }>;
+  medicines?: ReminderMedicineEntry[];
   notes?: string;
   createdAt?: string;
   appointment?: {
@@ -36,6 +37,7 @@ function doctorName(record: PrescriptionRecord) {
 export default function PatientPrescriptionHistory() {
   const [search, setSearch] = useState('');
   const [selectedAppointmentId, setSelectedAppointmentId] = useState<number | null>(null);
+  const [reminderRecordId, setReminderRecordId] = useState<number | null>(null);
 
   const { data = [], isLoading } = useQuery({
     queryKey: ['patient-prescription-history'],
@@ -157,13 +159,22 @@ export default function PatientPrescriptionHistory() {
                     ) : null}
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => setSelectedAppointmentId(record.appointmentId)}
-                    className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                  >
-                    Open record
-                  </button>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setReminderRecordId(record.id)}
+                      className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-sm font-medium text-blue-700 hover:bg-blue-100"
+                    >
+                      Set reminder
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedAppointmentId(record.appointmentId)}
+                      className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                    >
+                      Open record
+                    </button>
+                  </div>
                 </div>
               </article>
             ))}
@@ -175,6 +186,15 @@ export default function PatientPrescriptionHistory() {
         <PrescriptionView
           appointmentId={selectedAppointmentId}
           onClose={() => setSelectedAppointmentId(null)}
+        />
+      ) : null}
+
+      {reminderRecordId != null ? (
+        <ReminderSetupModal
+          prescriptionId={reminderRecordId}
+          medicines={data.find((record) => record.id === reminderRecordId)?.medicines ?? []}
+          defaultStartDate={data.find((record) => record.id === reminderRecordId)?.appointment?.appointmentDate}
+          onClose={() => setReminderRecordId(null)}
         />
       ) : null}
     </div>

@@ -323,10 +323,8 @@ export const operationsPaths = {
             diagnosis: { type: 'string', nullable: true },
             medicines: {
               type: 'array',
-              items: {
-                type: 'object',
-                additionalProperties: true,
-              },
+              maxItems: 30,
+              items: { $ref: '#/components/schemas/PrescriptionMedicine' },
             },
             notes: { type: 'string', nullable: true },
           },
@@ -368,10 +366,8 @@ export const operationsPaths = {
             diagnosis: { type: 'string', nullable: true },
             medicines: {
               type: 'array',
-              items: {
-                type: 'object',
-                additionalProperties: true,
-              },
+              maxItems: 30,
+              items: { $ref: '#/components/schemas/PrescriptionMedicine' },
             },
             notes: { type: 'string', nullable: true },
           },
