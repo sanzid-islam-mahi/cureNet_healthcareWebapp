@@ -56,10 +56,13 @@ async function getTableDefinition(queryInterface) {
   try {
     return await queryInterface.describeTable(tableName);
   } catch (error) {
+    const message = error?.message || '';
     if (
       error?.name === 'SequelizeDatabaseError' ||
       error?.name === 'SequelizeUnknownConstraintError' ||
-      /doesn't exist/i.test(error?.message || '')
+      /doesn't exist/i.test(message) ||
+      /no description found/i.test(message) ||
+      /unknown table/i.test(message)
     ) {
       return null;
     }

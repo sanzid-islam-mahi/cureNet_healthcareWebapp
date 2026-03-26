@@ -1,11 +1,20 @@
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  CalendarDaysIcon,
+  FunnelIcon,
+} from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import { api, useAuth } from '../context/AuthContext';
 import PatientContextModal from './doctorAppointments/PatientContextModal';
 import PrescriptionFormModal from './doctorAppointments/PrescriptionFormModal';
 import QueueCard from './doctorAppointments/QueueCard';
-import { STATUS_FILTERS, type AppointmentAction, type AppointmentItem, type DoctorPatientRow } from './doctorAppointments/types';
+import {
+  STATUS_FILTERS,
+  type AppointmentAction,
+  type AppointmentItem,
+  type DoctorPatientRow,
+} from './doctorAppointments/types';
 import { formatDate } from './doctorAppointments/utils';
 
 export default function DoctorAppointments() {
@@ -64,6 +73,9 @@ export default function DoctorAppointments() {
   const active = appointments.filter((a) => a.status === 'in_progress');
   const history = appointments.filter((a) => ['completed', 'rejected', 'cancelled'].includes(a.status));
   const queueCount = requested.length + approved.length;
+  const completedCount = appointments.filter((a) => a.status === 'completed').length;
+  const todayDate = new Date().toISOString().slice(0, 10);
+  const todayLoad = appointments.filter((a) => a.appointmentDate === todayDate).length;
 
   const filteredPatients = useMemo(() => {
     const list = patientsData ?? [];
@@ -119,157 +131,196 @@ export default function DoctorAppointments() {
 
   return (
     <div className="space-y-6">
-      <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Doctor Appointment Desk</h2>
-            <p className="text-sm text-gray-600">
-              Manage triage, consultation flow, patient context, and prescriptions from a single workspace.
+            <h2 className="text-2xl font-bold text-slate-900">Doctor Appointment Desk</h2>
+            <p className="mt-1 text-sm text-slate-600">
+              Manage triage, consultation flow, patient context, and prescriptions from one workspace.
             </p>
           </div>
 
-          <div className="grid w-full gap-2 sm:grid-cols-2 lg:w-auto">
-            <input
-              type="date"
-              value={dateFilter}
-              onChange={(e) => setDateFilter(e.target.value)}
-              className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
-            />
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="rounded-lg border border-gray-300 px-3 py-2 text-sm"
-            >
-              {STATUS_FILTERS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+          <div className="grid w-full gap-3 sm:grid-cols-2 lg:w-auto">
+            <label className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
+              <span className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+                <CalendarDaysIcon className="h-4 w-4" />
+                Date
+              </span>
+              <input
+                type="date"
+                value={dateFilter}
+                onChange={(e) => setDateFilter(e.target.value)}
+                className="mt-2 w-full border-none bg-transparent p-0 text-sm text-slate-800 outline-none"
+              />
+            </label>
+            <label className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-3">
+              <span className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+                <FunnelIcon className="h-4 w-4" />
+                Status
+              </span>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="mt-2 w-full border-none bg-transparent p-0 text-sm text-slate-800 outline-none"
+              >
+                {STATUS_FILTERS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
         </div>
 
-        <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <div className="rounded-lg border border-amber-100 bg-amber-50 px-4 py-3">
-            <p className="text-xs font-medium uppercase tracking-wide text-amber-700">Triage Queue</p>
-            <p className="mt-1 text-2xl font-bold text-amber-900">{queueCount}</p>
+        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+          <div className="rounded-xl border border-amber-100 bg-amber-50 px-4 py-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-amber-700">Waiting Queue</p>
+            <p className="mt-1 text-2xl font-semibold text-amber-900">{queueCount}</p>
           </div>
-          <div className="rounded-lg border border-indigo-100 bg-indigo-50 px-4 py-3">
-            <p className="text-xs font-medium uppercase tracking-wide text-indigo-700">In Consultation</p>
-            <p className="mt-1 text-2xl font-bold text-indigo-900">{active.length}</p>
+          <div className="rounded-xl border border-indigo-100 bg-indigo-50 px-4 py-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-indigo-700">In Consultation</p>
+            <p className="mt-1 text-2xl font-semibold text-indigo-900">{active.length}</p>
           </div>
-          <div className="rounded-lg border border-emerald-100 bg-emerald-50 px-4 py-3">
-            <p className="text-xs font-medium uppercase tracking-wide text-emerald-700">Completed</p>
-            <p className="mt-1 text-2xl font-bold text-emerald-900">
-              {appointments.filter((a) => a.status === 'completed').length}
-            </p>
-          </div>
-          <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-700">Total Loaded</p>
-            <p className="mt-1 text-2xl font-bold text-slate-900">{appointments.length}</p>
+          <div className="rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-700">Today Loaded</p>
+            <p className="mt-1 text-2xl font-semibold text-emerald-900">{todayLoad}</p>
           </div>
         </div>
       </section>
 
       {isLoading ? (
-        <div className="rounded-xl border border-gray-200 bg-white p-8 text-center text-sm text-gray-500 shadow-sm">
+        <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500 shadow-sm">
           Loading appointment data...
         </div>
       ) : appointments.length === 0 ? (
-        <div className="rounded-xl border border-gray-200 bg-white p-8 text-center text-sm text-gray-500 shadow-sm">
+        <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500 shadow-sm">
           No appointments for the selected filters.
         </div>
       ) : (
-        <div className="space-y-5">
-          {queueCount > 0 ? (
+        <div className="grid gap-6 xl:grid-cols-[1.18fr,0.82fr]">
+          <div className="space-y-5">
+            {queueCount > 0 ? (
+              <QueueCard
+                title="Triage Queue"
+                subtitle="Requests awaiting action and approved patients waiting to start consultation."
+                items={[...requested, ...approved]}
+                emptyMessage="No patients currently waiting in triage."
+                onOpenPatient={(patientId) => setPatientContextFor(patientId)}
+                onOpenPrescription={(appointmentId) => setPrescriptionFor(appointmentId)}
+                onAction={handleAppointmentAction}
+                actionPending={actionMutation.isPending}
+              />
+            ) : null}
+
+            {active.length > 0 ? (
+              <QueueCard
+                title="Active Consultations"
+                subtitle="Patients currently in progress; complete the visit with a prescription before closure."
+                items={active}
+                emptyMessage="No consultations are currently active."
+                onOpenPatient={(patientId) => setPatientContextFor(patientId)}
+                onOpenPrescription={(appointmentId) => setPrescriptionFor(appointmentId)}
+                onAction={handleAppointmentAction}
+                actionPending={actionMutation.isPending}
+              />
+            ) : null}
+
             <QueueCard
-              title="Triage Queue"
-              subtitle="Requests awaiting action and approved patients waiting to start consultation"
-              items={[...requested, ...approved]}
-              emptyMessage="No patients currently waiting in triage."
+              title="Visit History"
+              subtitle="Completed and closed visits for audit, follow-up, and prescription review."
+              items={history}
+              emptyMessage="No historical visits match your selected filters."
               onOpenPatient={(patientId) => setPatientContextFor(patientId)}
               onOpenPrescription={(appointmentId) => setPrescriptionFor(appointmentId)}
               onAction={handleAppointmentAction}
               actionPending={actionMutation.isPending}
             />
-          ) : null}
-
-          {active.length > 0 ? (
-            <QueueCard
-              title="Active Consultations"
-              subtitle="Patients currently in-progress; complete visit with prescription before closure"
-              items={active}
-              emptyMessage="No consultations are currently active."
-              onOpenPatient={(patientId) => setPatientContextFor(patientId)}
-              onOpenPrescription={(appointmentId) => setPrescriptionFor(appointmentId)}
-              onAction={handleAppointmentAction}
-              actionPending={actionMutation.isPending}
-            />
-          ) : null}
-
-          <QueueCard
-            title="Visit History"
-            subtitle="Completed and closed visits for audit and follow-up"
-            items={history}
-            emptyMessage="No historical visits match your selected filters."
-            onOpenPatient={(patientId) => setPatientContextFor(patientId)}
-            onOpenPrescription={(appointmentId) => setPrescriptionFor(appointmentId)}
-            onAction={handleAppointmentAction}
-            actionPending={actionMutation.isPending}
-          />
-        </div>
-      )}
-
-      <section className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
-        <header className="border-b border-gray-200 px-5 py-4 flex items-center justify-between gap-3">
-          <div>
-            <h3 className="text-base font-semibold text-gray-900">Patient Panel</h3>
-            <p className="text-sm text-gray-500">Recently seen patients and continuity-of-care quick access</p>
           </div>
-          <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
-            {(patientsData ?? []).length} records
-          </span>
-        </header>
 
-        <div className="border-b border-gray-100 px-5 py-3">
-          <input
-            type="search"
-            value={patientSearch}
-            onChange={(e) => setPatientSearch(e.target.value)}
-            placeholder="Search patient by name, email, or phone"
-            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
-          />
-        </div>
+          <aside className="space-y-5 xl:sticky xl:top-24 xl:self-start">
+            <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+              <header className="border-b border-slate-200 px-5 py-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <h3 className="text-base font-semibold text-slate-900">Patient Continuity Panel</h3>
+                    <p className="text-sm text-slate-500">Fast access to recent patients and return visits.</p>
+                  </div>
+                  <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700">
+                    {(patientsData ?? []).length} records
+                  </span>
+                </div>
+              </header>
 
-        <div className="divide-y divide-gray-100">
-          {(patientsData ?? []).length === 0 ? (
-            <p className="px-5 py-6 text-sm text-gray-500">No patient history available yet.</p>
-          ) : filteredPatients.length === 0 ? (
-            <p className="px-5 py-6 text-sm text-gray-500">No matching patients found.</p>
-          ) : (
-            filteredPatients.map((p) => (
-              <article key={p.patientId} className="px-5 py-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="font-semibold text-gray-900">
-                    {p.user.firstName} {p.user.lastName}
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    Visits: {p.totalVisits} • Last: {formatDate(p.lastVisitDate)}
-                    {p.nextVisitDate ? ` • Next: ${formatDate(p.nextVisitDate)}` : ''}
+              <div className="border-b border-slate-100 px-5 py-3">
+                <input
+                  type="search"
+                  value={patientSearch}
+                  onChange={(e) => setPatientSearch(e.target.value)}
+                  placeholder="Search patient by name, email, or phone"
+                  className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
+                />
+              </div>
+
+              <div className="divide-y divide-slate-100">
+                {(patientsData ?? []).length === 0 ? (
+                  <p className="px-5 py-6 text-sm text-slate-500">No patient history available yet.</p>
+                ) : filteredPatients.length === 0 ? (
+                  <p className="px-5 py-6 text-sm text-slate-500">No matching patients found.</p>
+                ) : (
+                  filteredPatients.map((p) => (
+                    <article key={p.patientId} className="px-5 py-4">
+                      <div className="flex flex-col gap-3">
+                        <div>
+                          <p className="font-semibold text-slate-900">
+                            {p.user.firstName} {p.user.lastName}
+                          </p>
+                          <p className="mt-1 text-sm text-slate-600">
+                            Visits: {p.totalVisits} • Last: {formatDate(p.lastVisitDate)}
+                            {p.nextVisitDate ? ` • Next: ${formatDate(p.nextVisitDate)}` : ''}
+                          </p>
+                        </div>
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="text-xs text-slate-500">
+                            {p.user.phone || p.user.email || 'No direct contact saved'}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setPatientContextFor(p.patientId)}
+                            className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                          >
+                            Open context
+                          </button>
+                        </div>
+                      </div>
+                    </article>
+                  ))
+                )}
+              </div>
+            </section>
+
+            <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Operational Pulse</p>
+              <div className="mt-4 space-y-3">
+                <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Waiting to start</p>
+                  <p className="mt-1 text-2xl font-semibold text-slate-900">{approved.length}</p>
+                </div>
+                <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Requested today</p>
+                  <p className="mt-1 text-2xl font-semibold text-slate-900">
+                    {requested.filter((appointment) => appointment.appointmentDate === todayDate).length}
                   </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setPatientContextFor(p.patientId)}
-                  className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
-                >
-                  Open context
-                </button>
-              </article>
-            ))
-          )}
+                <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Completed</p>
+                  <p className="mt-1 text-2xl font-semibold text-slate-900">{completedCount}</p>
+                </div>
+              </div>
+            </section>
+          </aside>
         </div>
-      </section>
+      )}
 
       {prescriptionFor != null ? (
         <PrescriptionFormModal
