@@ -45,7 +45,7 @@ npm run preview
 
 - Landing page
 - About and contact pages
-- Login and registration
+- Login, registration, and email verification
 - Forgot password and reset password
 - Doctor discovery and doctor profile view
 
@@ -64,6 +64,7 @@ npm run preview
 - `/contact`
 - `/login`
 - `/register`
+- `/verify-email`
 - `/forgot-password`
 - `/reset-password`
 - `/doctors`
@@ -88,5 +89,7 @@ npm run preview
 ## Notes
 
 - Authentication state is managed through the shared auth context in `src/context/AuthContext.tsx`.
+- Registration now redirects users into the email verification flow instead of directly authenticating them.
+- Login may redirect unverified users to `/verify-email` when the backend returns `EMAIL_NOT_VERIFIED`.
 - API calls are made against the backend through Axios and React Query.
 - Production verification should include at least `npm run build` and `npm run lint`.

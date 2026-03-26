@@ -107,6 +107,21 @@ Optional values:
 - `ADMIN_SESSION_SECRET`
 - `ADMIN_EMAIL`
 - `ADMIN_PASSWORD`
+- `APP_BASE_URL`
+- `AUTH_ALLOW_UNVERIFIED_LOGIN`
+- `MAIL_HOST`
+- `MAIL_PORT`
+- `MAIL_SECURE`
+- `MAIL_USER`
+- `MAIL_PASSWORD`
+- `MAIL_FROM`
+
+Development defaults:
+
+- [backend/.env.example](/home/sanzid/playground/curenet/backend/.env.example) keeps `AUTH_ALLOW_UNVERIFIED_LOGIN=true` so teammates can log in locally even before email delivery is configured.
+- For the full verification flow, set `AUTH_ALLOW_UNVERIFIED_LOGIN=false` and configure SMTP.
+- The easiest local SMTP option is Mailpit or MailHog on `127.0.0.1:1025`.
+- For real email delivery, use an SMTP provider such as Brevo and replace the `MAIL_*` values in `backend/.env`.
 
 Install dependencies and start the API:
 
@@ -181,6 +196,9 @@ If you are working with an older local database created from previous migration 
 
 - Public users can register as patients or doctors.
 - Admin users cannot self-register through the public UI.
+- Public registration now creates an unverified account and sends a 6-digit email verification code.
+- Successful email verification starts the login session immediately.
+- If `AUTH_ALLOW_UNVERIFIED_LOGIN=true`, local development can bypass the verification gate for unverified users at login.
 - Create the first admin from the `backend` directory with:
 
 ```bash
@@ -202,6 +220,10 @@ Base path: `/api/auth`
 
 - `POST /register`
 - `POST /login`
+- `POST /verify-email`
+- `POST /resend-verification-code`
+- `GET /verification-status`
+- `POST /logout`
 - `GET /profile`
 - `PUT /profile`
 - `POST /forgot-password`
@@ -279,6 +301,7 @@ Base path: `/api/admin`
 - `/contact`
 - `/login`
 - `/register`
+- `/verify-email`
 - `/forgot-password`
 - `/reset-password`
 - `/doctors`
