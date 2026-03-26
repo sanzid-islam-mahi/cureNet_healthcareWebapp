@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
+  DocumentTextIcon,
   MagnifyingGlassIcon,
   UserGroupIcon,
   ClockIcon,
@@ -10,6 +11,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { api, useAuth } from '../context/AuthContext';
 import PatientContextModal from './doctorAppointments/PatientContextModal';
+import PrescriptionView from '../components/PrescriptionView';
 import type { DoctorPatientRow } from './doctorAppointments/types';
 import { formatDate } from './doctorAppointments/utils';
 
@@ -30,6 +32,7 @@ export default function DoctorMyPatients() {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [selectedPatientId, setSelectedPatientId] = useState<number | null>(null);
+  const [selectedAppointmentId, setSelectedAppointmentId] = useState<number | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ['doctor-my-patients', doctorId, search, page],
@@ -44,6 +47,29 @@ export default function DoctorMyPatients() {
         { params }
       );
       return res.data;
+    },
+    enabled: !!doctorId,
+  });
+
+  const { data: continuityRecords = [] } = useQuery({
+    queryKey: ['doctor-continuity-embedded', doctorId],
+    queryFn: async () => {
+      const { data: res } = await api.get<{
+        success: boolean;
+        data: {
+          prescriptions: Array<{
+            id: number;
+            appointmentId: number;
+            diagnosis?: string;
+            medicines?: Array<{ name?: string }>;
+            appointment?: {
+              appointmentDate?: string;
+              patient?: { id?: number; firstName?: string; lastName?: string } | null;
+            } | null;
+          }>;
+        };
+      }>('/prescriptions/history/doctor');
+      return res.data?.prescriptions ?? [];
     },
     enabled: !!doctorId,
   });
@@ -67,6 +93,18 @@ export default function DoctorMyPatients() {
       avgVisits,
     };
   }, [patients]);
+
+  const continuityStats = useMemo(() => ({
+    prescriptions: continuityRecords.length,
+    diagnosedPatients: new Set(
+      continuityRecords
+        .map((record) => record.appointment?.patient?.id)
+        .filter((value): value is number => typeof value === 'number')
+    ).size,
+    medicinesLogged: continuityRecords.reduce((sum, record) => sum + (record.medicines?.length ?? 0), 0),
+  }), [continuityRecords]);
+
+  const recentContinuity = useMemo(() => continuityRecords.slice(0, 6), [continuityRecords]);
 
   return (
     <div className="space-y-6">
@@ -129,6 +167,64 @@ export default function DoctorMyPatients() {
             <p className="mt-2 text-2xl font-bold text-slate-900">{stats.avgVisits}</p>
           </div>
         </div>
+      </section>
+
+      <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <header className="flex flex-col gap-3 border-b border-slate-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h3 className="text-base font-semibold text-slate-900">Prescription Continuity</h3>
+            <p className="text-sm text-slate-500">Recent prescription-led activity is embedded here, so this remains the single doctor patient workspace.</p>
+          </div>
+          <div className="grid gap-2 text-sm sm:grid-cols-3">
+            <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Records</p>
+              <p className="mt-1 font-semibold text-slate-900">{continuityStats.prescriptions}</p>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Patients</p>
+              <p className="mt-1 font-semibold text-slate-900">{continuityStats.diagnosedPatients}</p>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Medicines</p>
+              <p className="mt-1 font-semibold text-slate-900">{continuityStats.medicinesLogged}</p>
+            </div>
+          </div>
+        </header>
+
+        {recentContinuity.length === 0 ? (
+          <div className="px-5 py-10 text-sm text-slate-500">No prescription continuity records available yet.</div>
+        ) : (
+          <div className="grid gap-4 p-5 lg:grid-cols-2">
+            {recentContinuity.map((record) => (
+              <button
+                key={record.id}
+                type="button"
+                onClick={() => setSelectedAppointmentId(record.appointmentId)}
+                className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-left transition-colors hover:border-blue-200 hover:bg-blue-50/50"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="rounded-lg bg-white p-2 shadow-sm ring-1 ring-slate-200">
+                        <DocumentTextIcon className="h-4 w-4 text-slate-600" />
+                      </span>
+                      <p className="text-sm font-semibold text-slate-900">
+                        {record.diagnosis || 'Prescription record'}
+                      </p>
+                    </div>
+                    <p className="mt-3 text-sm text-slate-600">
+                      {record.appointment?.patient
+                        ? `${record.appointment.patient.firstName || ''} ${record.appointment.patient.lastName || ''}`.trim()
+                        : 'Patient'}
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500">{formatDate(record.appointment?.appointmentDate)}</p>
+                  </div>
+                  <span className="text-xs font-medium text-blue-700">Open</span>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
       </section>
 
       <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -269,6 +365,13 @@ export default function DoctorMyPatients() {
           doctorId={doctorId}
           patientId={selectedPatientId}
           onClose={() => setSelectedPatientId(null)}
+        />
+      ) : null}
+
+      {selectedAppointmentId != null ? (
+        <PrescriptionView
+          appointmentId={selectedAppointmentId}
+          onClose={() => setSelectedAppointmentId(null)}
         />
       ) : null}
     </div>
