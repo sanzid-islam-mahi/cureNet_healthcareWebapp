@@ -9,7 +9,10 @@ If you are new to it, the easiest way to think about it is:
 
 In this project:
 
-- the API description lives in [swagger.js](/home/sanzid/playground/curenet/backend/src/docs/swagger.js)
+- the Swagger entrypoint lives in [swagger.js](/home/sanzid/playground/curenet/backend/src/docs/swagger.js)
+- reusable schemas live in [schemas.js](/home/sanzid/playground/curenet/backend/src/docs/swagger/schemas.js)
+- shared helpers live in [helpers.js](/home/sanzid/playground/curenet/backend/src/docs/swagger/helpers.js)
+- route docs are split by domain under [backend/src/docs/swagger/paths](/home/sanzid/playground/curenet/backend/src/docs/swagger/paths)
 - the server registers the docs in [index.js](/home/sanzid/playground/curenet/backend/src/index.js)
 - the docs are available at `http://localhost:5000/docs`
 - the raw JSON spec is available at `http://localhost:5000/openapi.json`
@@ -42,14 +45,22 @@ Swagger/OpenAPI helps with:
 
 ## How This Project Uses It
 
-The main file is [swagger.js](/home/sanzid/playground/curenet/backend/src/docs/swagger.js).
+The main entrypoint is [swagger.js](/home/sanzid/playground/curenet/backend/src/docs/swagger.js).
 
 That file exports:
 
 - `swaggerSpec`
 - `registerSwagger(app)`
 
-`swaggerSpec` contains the actual documentation object.
+`swaggerSpec` is assembled from smaller modules:
+
+- auth paths
+- care paths
+- operations paths
+- engagement paths
+- admin paths
+
+This keeps the docs maintainable as the API grows.
 
 `registerSwagger(app)` does two things:
 
@@ -168,6 +179,8 @@ $ref: '#/components/schemas/User'
 
 This is the core part. Each API route is described here.
 
+In this project, `paths` are split across domain files in [backend/src/docs/swagger/paths](/home/sanzid/playground/curenet/backend/src/docs/swagger/paths).
+
 Example:
 
 ```js
@@ -236,12 +249,12 @@ For development and testing inside Swagger UI, bearer token support is usually s
 
 ## How to Add a New Endpoint
 
-When you add a backend route, update `swagger.js` too.
+When you add a backend route, update the relevant file under [backend/src/docs/swagger/paths](/home/sanzid/playground/curenet/backend/src/docs/swagger/paths).
 
 Example process:
 
 1. create the route and controller
-2. find the correct group in `paths`
+2. find the correct domain file in `backend/src/docs/swagger/paths`
 3. add the new path entry
 4. add request body or params
 5. add response schema
@@ -264,7 +277,7 @@ Example:
 
 ## How to Add a Reusable Schema
 
-If a response object appears in multiple places, add it under `components.schemas`.
+If a response object appears in multiple places, add it under `components.schemas` in [schemas.js](/home/sanzid/playground/curenet/backend/src/docs/swagger/schemas.js).
 
 Example:
 
@@ -299,7 +312,7 @@ Open:
 - Swagger UI: `http://localhost:5000/docs`
 - Raw spec: `http://localhost:5000/openapi.json`
 
-If you change `swagger.js`, restart the backend if the watcher does not reload correctly.
+If you change any Swagger docs file, restart the backend if the watcher does not reload correctly.
 
 ## How to Keep the Docs Accurate
 
@@ -346,7 +359,7 @@ If docs are not updated alongside route/controller work, they stop helping.
 When you build or change an endpoint:
 
 1. update the route/controller
-2. update [swagger.js](/home/sanzid/playground/curenet/backend/src/docs/swagger.js)
+2. update the relevant file under [backend/src/docs/swagger/paths](/home/sanzid/playground/curenet/backend/src/docs/swagger/paths) or [schemas.js](/home/sanzid/playground/curenet/backend/src/docs/swagger/schemas.js)
 3. restart backend if needed
 4. open `/docs`
 5. confirm the endpoint appears in the right section
@@ -377,4 +390,4 @@ If you want to improve the docs further, the next practical steps are:
 - split the large `paths` object into smaller modules by domain
 - generate parts of the spec from route-level annotations later if the project grows
 
-If you want, I can do the next step and refactor [swagger.js](/home/sanzid/playground/curenet/backend/src/docs/swagger.js) into smaller files like `auth.docs.js`, `appointments.docs.js`, and `admin.docs.js`. 
+The docs are already split into smaller files. If you want, the next step is adding request/response examples for the most important endpoints. 
