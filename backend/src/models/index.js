@@ -5,6 +5,7 @@ import Doctor from './Doctor.js';
 import Receptionist from './Receptionist.js';
 import Patient from './Patient.js';
 import PatientMedicalHistory from './PatientMedicalHistory.js';
+import MedicalImagingRecord from './MedicalImagingRecord.js';
 import './PasswordResetToken.js';
 import EmailVerificationCode from './EmailVerificationCode.js';
 import Appointment from './Appointment.js';
@@ -23,6 +24,7 @@ const db = {
   Receptionist,
   Patient,
   PatientMedicalHistory,
+  MedicalImagingRecord,
   EmailVerificationCode,
   Appointment,
   Prescription,

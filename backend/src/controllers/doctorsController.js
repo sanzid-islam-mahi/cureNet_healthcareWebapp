@@ -2,9 +2,10 @@ import db from '../models/index.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { Op } from 'sequelize';
+import { serializeMedicalImagingRecord } from '../lib/medicalImaging.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const { User, Doctor, Appointment, Rating, Prescription, Patient, PatientMedicalHistory, MedicationReminderPlan, Clinic } = db;
+const { User, Doctor, Appointment, Rating, Prescription, Patient, PatientMedicalHistory, MedicationReminderPlan, Clinic, MedicalImagingRecord } = db;
 
 const WEEKDAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 function getWeekday(dateStr) {
@@ -509,7 +510,7 @@ export async function getPatientContext(req, res) {
       return res.status(404).json({ success: false, message: 'Patient not found' });
     }
 
-    const [historyRecord, recentAppointments, recentPrescriptions, activeReminderPlans] = await Promise.all([
+    const [historyRecord, recentAppointments, recentPrescriptions, activeReminderPlans, imagingRecords] = await Promise.all([
       PatientMedicalHistory.findOne({ where: { patientId } }),
       Appointment.findAll({
         where: { doctorId, patientId },
@@ -533,6 +534,22 @@ export async function getPatientContext(req, res) {
       MedicationReminderPlan.findAll({
         where: { patientId, status: { [Op.in]: ['active', 'paused'] } },
         attributes: ['id', 'prescriptionId', 'medicineIndex', 'medicineName', 'status', 'scheduleTimes'],
+      }),
+      MedicalImagingRecord.findAll({
+        where: { patientId },
+        include: [
+          { model: User, as: 'Uploader', attributes: ['id', 'firstName', 'lastName', 'email'] },
+          {
+            model: Appointment,
+            as: 'Appointment',
+            where: { doctorId, patientId },
+            attributes: ['id', 'appointmentDate', 'type', 'status', 'clinicId'],
+            required: true,
+            include: [{ model: Clinic, as: 'Clinic', attributes: ['id', 'name', 'type', 'addressLine', 'area', 'city', 'phone', 'status'], required: false }],
+          },
+        ],
+        order: [['studyDate', 'DESC'], ['createdAt', 'DESC']],
+        limit: 8,
       }),
     ]);
 
@@ -616,9 +633,11 @@ export async function getPatientContext(req, res) {
             totalVisitsWithDoctor: relationCount,
             prescriptionCount: prescriptions.length,
             activeReminderCount: activeReminderPlans.length,
+            imagingCount: imagingRecords.length,
             recentAppointments: appointments,
           },
           prescriptions,
+          imaging: imagingRecords.map(serializeMedicalImagingRecord),
         },
       },
     });

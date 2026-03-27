@@ -89,6 +89,10 @@ export const carePaths = {
                   type: 'array',
                   items: { $ref: '#/components/schemas/PatientHistoryPrescription' },
                 },
+                imaging: {
+                  type: 'array',
+                  items: { $ref: '#/components/schemas/MedicalImagingRecord' },
+                },
               },
             },
           },
@@ -222,6 +226,221 @@ export const carePaths = {
         }),
         403: errorResponse('Unauthorized'),
         500: errorResponse('Failed'),
+      },
+    },
+  },
+  '/imaging': {
+    post: {
+      tags: ['Imaging'],
+      summary: 'Upload a medical imaging record for a patient',
+      security: authSecurity,
+      requestBody: {
+        required: true,
+        content: {
+          'multipart/form-data': {
+            schema: {
+              type: 'object',
+              required: ['patientId', 'title', 'studyType', 'file'],
+              properties: {
+                patientId: { type: 'integer' },
+                appointmentId: { type: 'integer', nullable: true },
+                title: { type: 'string' },
+                studyType: { type: 'string', enum: ['xray', 'mri', 'ct', 'ultrasound', 'echo', 'mammography', 'other'] },
+                bodyPart: { type: 'string', nullable: true },
+                studyDate: { type: 'string', format: 'date', nullable: true },
+                reportText: { type: 'string', nullable: true },
+                notes: { type: 'string', nullable: true },
+                file: { type: 'string', format: 'binary' },
+              },
+            },
+          },
+        },
+      },
+      responses: {
+        201: successResponse('Created imaging record', {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            data: {
+              type: 'object',
+              properties: {
+                record: { $ref: '#/components/schemas/MedicalImagingRecord' },
+              },
+            },
+          },
+        }),
+        400: errorResponse('Invalid upload payload'),
+        403: errorResponse('Unauthorized to upload imaging records'),
+        404: errorResponse('Patient not found'),
+        500: errorResponse('Failed to upload imaging record'),
+      },
+      description:
+        'Doctors and receptionists upload appointment-linked provider imaging. Patients can upload external imaging without an appointment link; patientId is inferred from the authenticated account.',
+    },
+  },
+  '/imaging/my': {
+    get: {
+      tags: ['Imaging'],
+      summary: 'List imaging records for the authenticated patient',
+      security: authSecurity,
+      responses: {
+        200: successResponse('Patient imaging records', {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            data: {
+              type: 'object',
+              properties: {
+                records: {
+                  type: 'array',
+                  items: { $ref: '#/components/schemas/MedicalImagingRecord' },
+                },
+              },
+            },
+          },
+        }),
+        403: errorResponse('Not a patient'),
+        500: errorResponse('Failed to load imaging records'),
+      },
+    },
+  },
+  '/imaging/appointment/{appointmentId}': {
+    get: {
+      tags: ['Imaging'],
+      summary: 'List imaging records linked to one appointment',
+      security: authSecurity,
+      parameters: [{ name: 'appointmentId', in: 'path', required: true, schema: { type: 'integer' } }],
+      responses: {
+        200: successResponse('Appointment imaging records', {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            data: {
+              type: 'object',
+              properties: {
+                records: {
+                  type: 'array',
+                  items: { $ref: '#/components/schemas/MedicalImagingRecord' },
+                },
+              },
+            },
+          },
+        }),
+        403: errorResponse('Unauthorized'),
+        404: errorResponse('Appointment not found'),
+        500: errorResponse('Failed to load appointment imaging'),
+      },
+    },
+  },
+  '/imaging/patient/{patientId}': {
+    get: {
+      tags: ['Imaging'],
+      summary: 'List imaging records for a patient',
+      security: authSecurity,
+      parameters: [{ name: 'patientId', in: 'path', required: true, schema: { type: 'integer' } }],
+      responses: {
+        200: successResponse('Patient imaging records', {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            data: {
+              type: 'object',
+              properties: {
+                records: {
+                  type: 'array',
+                  items: { $ref: '#/components/schemas/MedicalImagingRecord' },
+                },
+              },
+            },
+          },
+        }),
+        403: errorResponse('Unauthorized'),
+        500: errorResponse('Failed to load imaging records'),
+      },
+    },
+  },
+  '/imaging/{id}': {
+    get: {
+      tags: ['Imaging'],
+      summary: 'Get one imaging record',
+      security: authSecurity,
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }],
+      responses: {
+        200: successResponse('Imaging record', {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            data: {
+              type: 'object',
+              properties: {
+                record: { $ref: '#/components/schemas/MedicalImagingRecord' },
+              },
+            },
+          },
+        }),
+        403: errorResponse('Unauthorized'),
+        404: errorResponse('Imaging record not found'),
+        500: errorResponse('Failed to load imaging record'),
+      },
+    },
+    delete: {
+      tags: ['Imaging'],
+      summary: 'Delete an imaging record',
+      security: authSecurity,
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }],
+      responses: {
+        200: successResponse('Deleted imaging record', {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            message: { type: 'string' },
+          },
+        }),
+        403: errorResponse('Unauthorized'),
+        404: errorResponse('Imaging record not found'),
+        500: errorResponse('Failed to delete imaging record'),
+      },
+    },
+    put: {
+      tags: ['Imaging'],
+      summary: 'Update an imaging record',
+      security: authSecurity,
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }],
+      requestBody: {
+        required: true,
+        content: {
+          'multipart/form-data': {
+            schema: {
+              type: 'object',
+              properties: {
+                title: { type: 'string' },
+                studyType: { type: 'string', enum: ['xray', 'mri', 'ct', 'ultrasound', 'echo', 'mammography', 'other'] },
+                bodyPart: { type: 'string', nullable: true },
+                studyDate: { type: 'string', format: 'date', nullable: true },
+                reportText: { type: 'string', nullable: true },
+                notes: { type: 'string', nullable: true },
+                file: { type: 'string', format: 'binary' },
+              },
+            },
+          },
+        },
+      },
+      responses: {
+        200: successResponse('Updated imaging record', {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            data: {
+              type: 'object',
+              properties: {
+                record: { $ref: '#/components/schemas/MedicalImagingRecord' },
+              },
+            },
+          },
+        }),
+        403: errorResponse('Unauthorized'),
+        404: errorResponse('Imaging record not found'),
+        500: errorResponse('Failed to update imaging record'),
       },
     },
   },

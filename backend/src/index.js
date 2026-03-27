@@ -15,6 +15,7 @@ import appointmentsRoutes from './routes/appointments.js';
 import prescriptionsRoutes from './routes/prescriptions.js';
 import notificationsRoutes from './routes/notifications.js';
 import remindersRoutes from './routes/reminders.js';
+import imagingRoutes from './routes/imaging.js';
 import { buildAdminRouter } from './adminjs.js';
 import { securityHeaders } from './middleware/securityHeaders.js';
 import { createRateLimiter } from './middleware/rateLimit.js';
@@ -62,6 +63,7 @@ app.use('/api/appointments', appointmentsRoutes);
 app.use('/api/prescriptions', prescriptionsRoutes);
 app.use('/api/notifications', notificationsRoutes);
 app.use('/api/reminders', remindersRoutes);
+app.use('/api/imaging', imagingRoutes);
 
 app.get('/api/health', (req, res) => {
   res.json({ success: true, message: 'CureNet API' });

@@ -1,5 +1,6 @@
 import db from '../models/index.js';
 import { Op } from 'sequelize';
+import { serializeMedicalImagingRecord } from '../lib/medicalImaging.js';
 import {
   buildEmergencyReadiness,
   buildMedicalHistorySummary,
@@ -8,7 +9,7 @@ import {
   normalizeTextArrayInput,
 } from '../lib/patientHistory.js';
 
-const { User, Patient, PatientMedicalHistory, Appointment, Doctor, Prescription, MedicationReminderPlan } = db;
+const { User, Patient, PatientMedicalHistory, Appointment, Doctor, Prescription, MedicationReminderPlan, MedicalImagingRecord, Clinic } = db;
 
 export async function getProfile(req, res) {
   try {
@@ -157,7 +158,7 @@ export async function getMedicalHistory(req, res) {
       return res.status(403).json({ success: false, message: 'Not a patient' });
     }
 
-    const [patient, history, completedAppointments, prescriptions, activeReminderPlans] = await Promise.all([
+    const [patient, history, completedAppointments, prescriptions, activeReminderPlans, imagingRecords] = await Promise.all([
       Patient.findByPk(user.patientId, {
         include: [{ model: User, as: 'User', attributes: { exclude: ['password'] } }],
       }),
@@ -195,6 +196,20 @@ export async function getMedicalHistory(req, res) {
         attributes: ['id', 'prescriptionId', 'medicineIndex', 'status', 'scheduleTimes', 'medicineName'],
         order: [['createdAt', 'DESC']],
       }),
+      MedicalImagingRecord.findAll({
+        where: { patientId: user.patientId },
+        include: [
+          { model: User, as: 'Uploader', attributes: ['id', 'firstName', 'lastName', 'email'] },
+          {
+            model: Appointment,
+            as: 'Appointment',
+            attributes: ['id', 'appointmentDate', 'type', 'status', 'clinicId'],
+            required: false,
+            include: [{ model: Clinic, as: 'Clinic', attributes: ['id', 'name', 'type', 'addressLine', 'area', 'city', 'phone', 'status'], required: false }],
+          },
+        ],
+        order: [['studyDate', 'DESC'], ['createdAt', 'DESC']],
+      }),
     ]);
 
     if (!patient) {
@@ -215,6 +230,7 @@ export async function getMedicalHistory(req, res) {
           user: patientUser,
           activeReminderCount: activeReminderPlans.length,
           activeMedicationNames,
+          imagingCount: imagingRecords.length,
         }),
         history: history
           ? {
@@ -239,6 +255,7 @@ export async function getMedicalHistory(req, res) {
             },
         timeline: buildTimelineEntries(completedAppointments),
         prescriptions: buildPrescriptionHistoryEntries(prescriptions, activePlansByPrescriptionMedicine),
+        imaging: imagingRecords.map(serializeMedicalImagingRecord),
       },
     });
   } catch (err) {

@@ -55,7 +55,9 @@ export async function getByAppointment(req, res) {
     }
     const isPatient = user.role === 'patient' && user.patientId === appointment.patientId;
     const isDoctor = user.role === 'doctor' && user.doctorId === appointment.doctorId;
-    if (!isPatient && !isDoctor) {
+    const isReceptionist = user.role === 'receptionist' && user.clinicId && appointment.clinicId === user.clinicId;
+    const isAdmin = user.role === 'admin';
+    if (!isPatient && !isDoctor && !isReceptionist && !isAdmin) {
       return res.status(403).json({ success: false, message: 'Not authorized' });
     }
     const prescription = await Prescription.findOne({

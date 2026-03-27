@@ -26,7 +26,7 @@ export function buildEmergencyReadiness(patient, user) {
   );
 }
 
-export function buildMedicalHistorySummary({ patient, user, activeReminderCount, activeMedicationNames }) {
+export function buildMedicalHistorySummary({ patient, user, activeReminderCount, activeMedicationNames, imagingCount = 0 }) {
   const emergencyReady = buildEmergencyReadiness(patient, user);
   return {
     bloodType: patient?.bloodType ?? null,
@@ -35,6 +35,7 @@ export function buildMedicalHistorySummary({ patient, user, activeReminderCount,
     emergencyPhone: patient?.emergencyPhone ?? null,
     emergencyReady,
     activeReminderCount,
+    imagingCount,
     activeMedicationNames,
   };
 }
