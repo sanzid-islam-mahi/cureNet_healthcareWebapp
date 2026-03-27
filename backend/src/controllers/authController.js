@@ -7,7 +7,7 @@ import { logAudit } from '../lib/auditLog.js';
 import { getJwtSecret } from '../config/security.js';
 import { sendPasswordResetEmail, sendVerificationCodeEmail } from '../lib/mail.js';
 
-const { User, Doctor, Patient, Receptionist, EmailVerificationCode, sequelize } = db;
+const { User, Doctor, Patient, Receptionist, Clinic, EmailVerificationCode, sequelize } = db;
 
 const JWT_SECRET = getJwtSecret();
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
@@ -65,6 +65,22 @@ function clearAuthCookie(res) {
   res.clearCookie(AUTH_COOKIE_NAME, cookieOptions);
 }
 
+function serializeClinicSummary(clinic) {
+  const value = clinic?.toJSON ? clinic.toJSON() : clinic;
+  if (!value) return null;
+  return {
+    id: value.id,
+    name: value.name,
+    type: value.type,
+    addressLine: value.addressLine,
+    area: value.area,
+    city: value.city,
+    phone: value.phone,
+    email: value.email,
+    status: value.status,
+  };
+}
+
 function formatUserResponse(user) {
   const u = user.toJSON ? user.toJSON() : user;
   const { Doctor: doctor, Patient: patient, ...rest } = u;
@@ -74,8 +90,12 @@ function formatUserResponse(user) {
   if (u.Receptionist) {
     payload.receptionistId = u.Receptionist.id;
     payload.clinicId = u.Receptionist.clinicId;
+    payload.clinic = serializeClinicSummary(u.Receptionist.Clinic || u.Receptionist.clinic || u.Receptionist.dataValues?.Clinic);
   }
   if (!payload.clinicId && doctor?.clinicId) payload.clinicId = doctor.clinicId;
+  if (!payload.clinic && doctor) {
+    payload.clinic = serializeClinicSummary(doctor.Clinic || doctor.clinic || doctor.dataValues?.Clinic);
+  }
   if (doctor?.profileImage) payload.profileImage = doctor.profileImage;
   if (!payload.profileImage && patient?.profileImage) payload.profileImage = patient.profileImage;
   return payload;
@@ -92,10 +112,20 @@ function getVerificationMetadata(record) {
 async function loadAuthUser(userId) {
   return User.findByPk(userId, {
     attributes: { exclude: ['password'] },
-    include: [
-      { model: Doctor, as: 'Doctor', required: false },
+      include: [
+      {
+        model: Doctor,
+        as: 'Doctor',
+        required: false,
+        include: [{ model: Clinic, as: 'Clinic', required: false }],
+      },
       { model: Patient, as: 'Patient', required: false },
-      { model: Receptionist, as: 'Receptionist', required: false },
+      {
+        model: Receptionist,
+        as: 'Receptionist',
+        required: false,
+        include: [{ model: Clinic, as: 'Clinic', required: false }],
+      },
     ],
   });
 }
@@ -302,9 +332,19 @@ export async function login(req, res) {
     const user = await User.findOne({
       where,
       include: [
-        { model: Doctor, as: 'Doctor', required: false },
+        {
+          model: Doctor,
+          as: 'Doctor',
+          required: false,
+          include: [{ model: Clinic, as: 'Clinic', required: false }],
+        },
         { model: Patient, as: 'Patient', required: false },
-        { model: Receptionist, as: 'Receptionist', required: false },
+        {
+          model: Receptionist,
+          as: 'Receptionist',
+          required: false,
+          include: [{ model: Clinic, as: 'Clinic', required: false }],
+        },
       ],
     });
 
@@ -363,9 +403,19 @@ export async function updateProfile(req, res) {
     const updated = await User.findByPk(user.id, {
       attributes: { exclude: ['password'] },
       include: [
-        { model: Doctor, as: 'Doctor', required: false },
+        {
+          model: Doctor,
+          as: 'Doctor',
+          required: false,
+          include: [{ model: Clinic, as: 'Clinic', required: false }],
+        },
         { model: Patient, as: 'Patient', required: false },
-        { model: Receptionist, as: 'Receptionist', required: false },
+        {
+          model: Receptionist,
+          as: 'Receptionist',
+          required: false,
+          include: [{ model: Clinic, as: 'Clinic', required: false }],
+        },
       ],
     });
 
@@ -434,9 +484,19 @@ export async function verifyEmail(req, res) {
     const user = await User.findOne({
       where: { email },
       include: [
-        { model: Doctor, as: 'Doctor', required: false },
+        {
+          model: Doctor,
+          as: 'Doctor',
+          required: false,
+          include: [{ model: Clinic, as: 'Clinic', required: false }],
+        },
         { model: Patient, as: 'Patient', required: false },
-        { model: Receptionist, as: 'Receptionist', required: false },
+        {
+          model: Receptionist,
+          as: 'Receptionist',
+          required: false,
+          include: [{ model: Clinic, as: 'Clinic', required: false }],
+        },
       ],
     });
 

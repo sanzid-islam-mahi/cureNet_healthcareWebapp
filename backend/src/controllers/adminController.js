@@ -274,6 +274,7 @@ export async function getDoctorVerifications(req, res) {
         ...include,
         {
           model: Clinic,
+          as: 'Clinic',
           attributes: ['id', 'name', 'type', 'city', 'status'],
           required: false,
         },
@@ -383,10 +384,11 @@ export async function listClinics(req, res) {
         ? [
             {
               model: Doctor,
+              as: 'Doctors',
               include: [{ model: User, as: 'User', attributes: ['id', 'firstName', 'lastName', 'email'] }],
             },
           ]
-        : [{ model: Doctor, attributes: ['id'] }],
+        : [{ model: Doctor, as: 'Doctors', attributes: ['id'] }],
       order: [['name', 'ASC']],
     });
 
@@ -437,6 +439,7 @@ export async function createClinic(req, res) {
       include: [
         {
           model: Doctor,
+          as: 'Doctors',
           include: [{ model: User, as: 'User', attributes: ['id', 'firstName', 'lastName', 'email'] }],
         },
       ],
@@ -506,6 +509,7 @@ export async function updateClinic(req, res) {
       include: [
         {
           model: Doctor,
+          as: 'Doctors',
           include: [{ model: User, as: 'User', attributes: ['id', 'firstName', 'lastName', 'email'] }],
         },
       ],

@@ -138,6 +138,10 @@ function clinicDisplayName(profile?: { clinicId?: number | null; clinic?: { id: 
   return 'Not assigned';
 }
 
+function clinicOptionLabel(clinic: ClinicOption) {
+  return clinic.status === 'active' ? clinic.name : `${clinic.name} (inactive)`;
+}
+
 function buildUserPayload(values: UserFormValues, includePassword: boolean) {
   const payload: Record<string, unknown> = {
     firstName: values.firstName.trim(),
@@ -334,11 +338,9 @@ function UserFormFields({
             className="w-full rounded-lg border border-blue-200 px-3 py-2 text-sm"
           >
             <option value="">Assign clinic</option>
-            {clinics
-              .filter((clinic) => clinic.status === 'active')
-              .map((clinic) => (
-                <option key={clinic.id} value={clinic.id}>{clinic.name}</option>
-              ))}
+            {clinics.map((clinic) => (
+              <option key={clinic.id} value={clinic.id}>{clinicOptionLabel(clinic)}</option>
+            ))}
           </select>
           <label className="flex items-center gap-2 rounded-lg bg-white px-3 py-2">
             <input
@@ -360,11 +362,9 @@ function UserFormFields({
             className="w-full rounded-lg border border-sky-200 px-3 py-2 text-sm"
           >
             <option value="">Assign clinic</option>
-            {clinics
-              .filter((clinic) => clinic.status === 'active')
-              .map((clinic) => (
-                <option key={clinic.id} value={clinic.id}>{clinic.name}</option>
-              ))}
+            {clinics.map((clinic) => (
+              <option key={clinic.id} value={clinic.id}>{clinicOptionLabel(clinic)}</option>
+            ))}
           </select>
           <input
             type="text"

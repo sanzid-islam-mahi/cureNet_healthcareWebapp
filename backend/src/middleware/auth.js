@@ -2,7 +2,7 @@ import jwt from 'jsonwebtoken';
 import db from '../models/index.js';
 import { getJwtSecret } from '../config/security.js';
 
-const { User, Doctor, Patient, Receptionist } = db;
+const { User, Doctor, Patient, Receptionist, Clinic } = db;
 const JWT_SECRET = getJwtSecret();
 const AUTH_COOKIE_NAME = process.env.AUTH_COOKIE_NAME || 'curenet_auth';
 
@@ -21,6 +21,20 @@ function getCookieValue(req, name) {
   return null;
 }
 
+function serializeClinicSummary(clinic) {
+  const value = clinic?.toJSON ? clinic.toJSON() : clinic;
+  if (!value) return null;
+  return {
+    id: value.id,
+    name: value.name,
+    addressLine: value.addressLine,
+    area: value.area,
+    city: value.city,
+    phone: value.phone,
+    status: value.status,
+  };
+}
+
 export const authenticateToken = async (req, res, next) => {
   const authHeader = req.headers.authorization;
   const bearerToken = authHeader && authHeader.split(' ')[1];
@@ -35,9 +49,9 @@ export const authenticateToken = async (req, res, next) => {
     const user = await User.findByPk(decoded.userId, {
       attributes: { exclude: ['password'] },
       include: [
-        { model: Doctor, as: 'Doctor', required: false },
+        { model: Doctor, as: 'Doctor', required: false, include: [{ model: Clinic, as: 'Clinic', required: false }] },
         { model: Patient, as: 'Patient', required: false },
-        { model: Receptionist, as: 'Receptionist', required: false },
+        { model: Receptionist, as: 'Receptionist', required: false, include: [{ model: Clinic, as: 'Clinic', required: false }] },
       ],
     });
 
@@ -52,6 +66,9 @@ export const authenticateToken = async (req, res, next) => {
     user.doctorId = user.Doctor?.id ?? null;
     user.receptionistId = user.Receptionist?.id ?? null;
     user.clinicId = user.Receptionist?.clinicId ?? user.Doctor?.clinicId ?? null;
+    user.clinic = serializeClinicSummary(
+      user.Receptionist?.Clinic || user.Doctor?.Clinic || null
+    );
     req.user = user;
     next();
   } catch (err) {

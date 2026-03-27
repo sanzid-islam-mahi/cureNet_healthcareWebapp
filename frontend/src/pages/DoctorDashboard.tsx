@@ -9,6 +9,8 @@ import {
   ArrowRightIcon,
   ChartBarIcon,
   ChatBubbleLeftEllipsisIcon,
+  BuildingOffice2Icon,
+  MapPinIcon,
 } from '@heroicons/react/24/outline';
 import { StarIcon } from '@heroicons/react/24/solid';
 import { useAuth } from '../context/AuthContext';
@@ -261,6 +263,33 @@ export default function DoctorDashboard() {
           </>
         }
       />
+
+      <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-start gap-3">
+            <div className="rounded-2xl bg-sky-50 p-3 text-sky-700">
+              <BuildingOffice2Icon className="h-6 w-6" />
+            </div>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">Assigned Clinic</p>
+              <h2 className="mt-1 text-xl font-semibold text-slate-950">
+                {user?.clinic?.name || (user?.clinicId ? `Clinic #${user.clinicId}` : 'Clinic assignment pending')}
+              </h2>
+              <p className="mt-2 flex items-start gap-2 text-sm text-slate-600">
+                <MapPinIcon className="mt-0.5 h-4 w-4 shrink-0 text-slate-400" />
+                <span>
+                  {[user?.clinic?.addressLine, user?.clinic?.area, user?.clinic?.city].filter(Boolean).join(', ') || 'Clinic address is not configured yet.'}
+                </span>
+              </p>
+            </div>
+          </div>
+          <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600 lg:max-w-md">
+            {user?.clinicId
+              ? 'This is the public booking location patients see, and receptionist operations are scoped to this clinic.'
+              : 'Admin needs to assign you to a clinic before booking and clinic operations can work properly.'}
+          </div>
+        </div>
+      </section>
 
       {/* ===== PENDING ALERT ===== */}
       {pendingCount > 0 && (

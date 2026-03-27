@@ -18,6 +18,15 @@ export interface User {
   patientId?: number;
   receptionistId?: number;
   clinicId?: number;
+  clinic?: {
+    id: number;
+    name?: string;
+    addressLine?: string;
+    area?: string;
+    city?: string;
+    phone?: string;
+    status?: string;
+  } | null;
   profileImage?: string;
   emailVerifiedAt?: string | null;
 }

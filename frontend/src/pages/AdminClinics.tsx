@@ -117,6 +117,12 @@ function clinicTypeLabel(type: ClinicRow['type']) {
   return type[0].toUpperCase() + type.slice(1);
 }
 
+function doctorClinicLabel(doctor: DoctorUser) {
+  if (doctor.doctorProfile?.clinic?.name) return doctor.doctorProfile.clinic.name;
+  if (doctor.doctorProfile?.clinicId) return `Clinic #${doctor.doctorProfile.clinicId}`;
+  return null;
+}
+
 function ClinicModal({
   values,
   onChange,
@@ -200,7 +206,7 @@ function ClinicModal({
                       <span className="block text-xs text-slate-500">{doctor.email}</span>
                       <span className="mt-1 block text-xs text-slate-600">
                         {doctor.doctorProfile?.department || 'Department not set'}
-                        {doctor.doctorProfile?.clinic?.name ? ` • Currently: ${doctor.doctorProfile.clinic.name}` : ''}
+                        {doctorClinicLabel(doctor) ? ` • Currently: ${doctorClinicLabel(doctor)}` : ''}
                       </span>
                     </span>
                   </label>

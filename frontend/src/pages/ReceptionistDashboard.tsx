@@ -71,7 +71,7 @@ export default function ReceptionistDashboard() {
     enabled: !!user?.clinicId,
   });
 
-  const clinic = appointments[0]?.clinic ?? null;
+  const clinic = appointments[0]?.clinic ?? user?.clinic ?? null;
   const requested = appointments.filter((item) => item.status === 'requested');
   const approved = appointments.filter((item) => item.status === 'approved');
   const inProgress = appointments.filter((item) => item.status === 'in_progress');
