@@ -22,6 +22,7 @@ const API_ORIGIN = import.meta.env.VITE_API_URL
 const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notificationOpen, setNotificationOpen] = useState(false);
+  const [profileImageFailed, setProfileImageFailed] = useState(false);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -42,7 +43,12 @@ const Navbar = () => {
       ? user.profileImage
       : `${API_ORIGIN}${user.profileImage}`
     : null;
+  const showProfileImage = Boolean(profileImageUrl) && !profileImageFailed;
   const unreadCount = notificationsData?.unreadCount ?? 0;
+
+  useEffect(() => {
+    setProfileImageFailed(false);
+  }, [profileImageUrl]);
 
   useEffect(() => {
     if (!user) {
@@ -145,10 +151,11 @@ const Navbar = () => {
                 to={dashboardPath}
                 className="flex items-center gap-2.5 px-3 py-1.5 rounded-full hover:bg-slate-50 transition-colors group"
               >
-                {profileImageUrl ? (
+                {showProfileImage ? (
                   <img
-                    src={profileImageUrl}
+                    src={profileImageUrl || undefined}
                     alt={displayName}
+                    onError={() => setProfileImageFailed(true)}
                     className="h-8 w-8 rounded-full object-cover ring-2 ring-slate-100 shadow-sm transition-all group-hover:shadow"
                   />
                 ) : (
@@ -242,10 +249,11 @@ const Navbar = () => {
                   className="flex items-center gap-3 text-slate-800 font-bold hover:text-blue-600 bg-slate-50 px-5 py-4 rounded-2xl transition-colors"
                   onClick={closeMobileMenu}
                 >
-                  {profileImageUrl ? (
+                  {showProfileImage ? (
                     <img
-                      src={profileImageUrl}
+                      src={profileImageUrl || undefined}
                       alt={displayName}
+                      onError={() => setProfileImageFailed(true)}
                       className="h-10 w-10 rounded-full object-cover shadow-md ring-2 ring-white shrink-0"
                     />
                   ) : (
