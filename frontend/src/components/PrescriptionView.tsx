@@ -5,6 +5,7 @@ import ReminderSetupModal, { type ExistingReminderPlan, type ReminderMedicineEnt
 import { formatMedicineForDisplay } from '../pages/doctorAppointments/utils';
 import PrescriptionFormModal from '../pages/doctorAppointments/PrescriptionFormModal';
 import { downloadPrescriptionPdf } from '../lib/prescriptionPdf';
+import AppointmentImagingModal from './AppointmentImagingModal';
 
 interface PrescriptionViewProps {
   appointmentId: number;
@@ -50,6 +51,7 @@ export default function PrescriptionView({ appointmentId, onClose }: Prescriptio
   const { user } = useAuth();
   const [reminderTargetIndex, setReminderTargetIndex] = useState<number | null>(null);
   const [editing, setEditing] = useState(false);
+  const [managingImaging, setManagingImaging] = useState(false);
   const { data, isLoading, error } = useQuery({
     queryKey: ['prescription', appointmentId],
     queryFn: async () => {
@@ -121,8 +123,19 @@ export default function PrescriptionView({ appointmentId, onClose }: Prescriptio
                 </p>
               </section>
               <section className="rounded-lg border border-gray-200 p-4">
-                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Diagnosis</p>
-                <p className="mt-1 text-gray-800">{prescription.diagnosis || 'No diagnosis entered'}</p>
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Diagnosis</p>
+                    <p className="mt-1 text-gray-800">{prescription.diagnosis || 'No diagnosis entered'}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setManagingImaging(true)}
+                    className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                  >
+                    {user?.role === 'patient' ? 'View imaging' : 'Add medical imaging'}
+                  </button>
+                </div>
               </section>
 
               <section className="rounded-lg border border-gray-200 p-4">
@@ -201,6 +214,15 @@ export default function PrescriptionView({ appointmentId, onClose }: Prescriptio
                 Edit Prescription
               </button>
             ) : null}
+            {['doctor', 'receptionist', 'patient'].includes(user?.role || '') ? (
+              <button
+                type="button"
+                onClick={() => setManagingImaging(true)}
+                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                {user?.role === 'patient' ? 'View Imaging' : 'Manage Imaging'}
+              </button>
+            ) : null}
           </div>
         </footer>
       </div>
@@ -220,6 +242,14 @@ export default function PrescriptionView({ appointmentId, onClose }: Prescriptio
         <PrescriptionFormModal
           appointmentId={appointmentId}
           onClose={() => setEditing(false)}
+        />
+      ) : null}
+
+      {managingImaging ? (
+        <AppointmentImagingModal
+          scope="appointment"
+          appointmentId={appointmentId}
+          onClose={() => setManagingImaging(false)}
         />
       ) : null}
     </div>

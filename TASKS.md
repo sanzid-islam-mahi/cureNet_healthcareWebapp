@@ -36,9 +36,8 @@
   reminder plans, doses, worker execution, in-app notifications, and email delivery are implemented.
 - [ ] Health monitoring dashboard:
   decide whether to formalize this as a real patient health dashboard or stop claiming it as a rubric feature.
-- [ ] Add one more clearly demonstrable additional feature from the rubric.
-  Recommended options:
-  laboratory test results integration
+- [x] Add one more clearly demonstrable additional feature from the rubric.
+  Implemented:
   medical imaging upload and viewing
 
 ### Presentation Readiness

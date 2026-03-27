@@ -8,10 +8,12 @@ import {
   CalendarDaysIcon,
   ClipboardDocumentListIcon,
   DocumentTextIcon,
+  PhotoIcon,
   UserIcon,
 } from '@heroicons/react/24/outline';
 import { useState } from 'react';
 import PrescriptionView from '../../components/PrescriptionView';
+import MedicalImagingList from '../../components/MedicalImagingList';
 
 interface PatientContextModalProps {
   doctorId: number;
@@ -104,6 +106,7 @@ export default function PatientContextModal({
                     <MetricCard icon={<CalendarDaysIcon className="h-4 w-4 text-slate-700" />} label="Visits" value={String(data.summary.totalVisitsWithDoctor)} />
                     <MetricCard icon={<ClipboardDocumentListIcon className="h-4 w-4 text-slate-700" />} label="Prescriptions" value={String(data.summary.prescriptionCount || 0)} />
                     <MetricCard icon={<BellAlertIcon className="h-4 w-4 text-slate-700" />} label="Active Reminders" value={String(data.summary.activeReminderCount || 0)} />
+                    <MetricCard icon={<PhotoIcon className="h-4 w-4 text-slate-700" />} label="Imaging" value={String(data.summary.imagingCount || 0)} />
                   </div>
                 </div>
               </section>
@@ -222,6 +225,22 @@ export default function PatientContextModal({
                           );
                         })
                       )}
+                    </div>
+                  </section>
+
+                  <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <h4 className="text-sm font-semibold text-slate-950">Imaging Records</h4>
+                        <p className="text-xs text-slate-500">Only visit-linked imaging shared between you and this patient appears here. Manage uploads from the appointment or prescription record.</p>
+                      </div>
+                    </div>
+                    <div className="mt-4">
+                      <MedicalImagingList
+                        records={data.imaging || []}
+                        emptyMessage="No imaging records are attached to this patient yet."
+                        compact
+                      />
                     </div>
                   </section>
                 </div>

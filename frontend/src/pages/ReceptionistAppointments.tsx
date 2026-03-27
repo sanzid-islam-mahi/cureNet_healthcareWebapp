@@ -14,6 +14,7 @@ import {
 import toast from 'react-hot-toast';
 import AppPageHeader from '../components/AppPageHeader';
 import { api, useAuth } from '../context/AuthContext';
+import AppointmentImagingModal from '../components/AppointmentImagingModal';
 
 type QueueStatus = 'all' | 'requested' | 'approved' | 'in_progress' | 'completed' | 'rejected' | 'cancelled';
 
@@ -86,6 +87,7 @@ export default function ReceptionistAppointments() {
   const queryClient = useQueryClient();
   const [status, setStatus] = useState<QueueStatus>('all');
   const [date, setDate] = useState('');
+  const [imagingAppointmentId, setImagingAppointmentId] = useState<number | null>(null);
 
   const { data } = useQuery({
     queryKey: ['receptionist', 'clinic-queue', { status, date }],
@@ -277,8 +279,17 @@ export default function ReceptionistAppointments() {
                                 ? 'Visit completed and cleared from the live queue.'
                                 : appointment.status === 'rejected'
                                   ? 'Rejected at the front desk.'
-                                  : 'No immediate desk action needed.'}
+                                : 'No immediate desk action needed.'}
                         </p>
+                        {['approved', 'in_progress', 'completed'].includes(appointment.status) ? (
+                          <button
+                            type="button"
+                            onClick={() => setImagingAppointmentId(appointment.id)}
+                            className="mt-3 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+                          >
+                            Manage imaging
+                          </button>
+                        ) : null}
                       </div>
                     )}
                   </div>
@@ -288,6 +299,14 @@ export default function ReceptionistAppointments() {
           </div>
         )}
       </section>
+
+      {imagingAppointmentId != null ? (
+        <AppointmentImagingModal
+          scope="appointment"
+          appointmentId={imagingAppointmentId}
+          onClose={() => setImagingAppointmentId(null)}
+        />
+      ) : null}
     </div>
   );
 }

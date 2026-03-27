@@ -14,6 +14,7 @@ import {
   ROUTE_OPTIONS,
 } from './utils';
 import { downloadPrescriptionPdf } from '../../lib/prescriptionPdf';
+import AppointmentImagingModal from '../../components/AppointmentImagingModal';
 
 interface PrescriptionFormModalProps {
   appointmentId: number;
@@ -27,6 +28,7 @@ export default function PrescriptionFormModal({ appointmentId, onClose }: Prescr
   const [medicines, setMedicines] = useState<MedicineEntry[]>([emptyMedicine()]);
   const [notes, setNotes] = useState('');
   const [mode, setMode] = useState<'view' | 'edit' | 'create'>('create');
+  const [managingImaging, setManagingImaging] = useState(false);
 
   const { data: existing, isLoading: loadingExisting } = useQuery<PrescriptionData | null>({
     queryKey: ['prescription', appointmentId],
@@ -186,8 +188,19 @@ export default function PrescriptionFormModal({ appointmentId, onClose }: Prescr
           {!loadingExisting && hasExisting && !isEditing ? (
             <div className="space-y-4 text-sm">
               <section className="rounded-lg border border-gray-200 p-4">
-                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Diagnosis</p>
-                <p className="mt-1 text-gray-800">{existing.diagnosis || 'No diagnosis entered'}</p>
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Diagnosis</p>
+                    <p className="mt-1 text-gray-800">{existing.diagnosis || 'No diagnosis entered'}</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setManagingImaging(true)}
+                    className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                  >
+                    Add medical imaging
+                  </button>
+                </div>
               </section>
 
               <section className="rounded-lg border border-gray-200 p-4">
@@ -368,6 +381,13 @@ export default function PrescriptionFormModal({ appointmentId, onClose }: Prescr
               </button>
               <button
                 type="button"
+                onClick={() => setManagingImaging(true)}
+                className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              >
+                Manage imaging
+              </button>
+              <button
+                type="button"
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => setMode('edit')}
                 className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
@@ -396,6 +416,14 @@ export default function PrescriptionFormModal({ appointmentId, onClose }: Prescr
               )}
 
               <button
+                type="button"
+                onClick={() => setManagingImaging(true)}
+                className="flex-1 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              >
+                Manage imaging
+              </button>
+
+              <button
                 type="submit"
                 form="prescription-form"
                 disabled={isSubmitting || !canSubmit}
@@ -407,6 +435,14 @@ export default function PrescriptionFormModal({ appointmentId, onClose }: Prescr
           )}
         </footer>
       </div>
+
+      {managingImaging ? (
+        <AppointmentImagingModal
+          scope="appointment"
+          appointmentId={appointmentId}
+          onClose={() => setManagingImaging(false)}
+        />
+      ) : null}
     </div>
   );
 }

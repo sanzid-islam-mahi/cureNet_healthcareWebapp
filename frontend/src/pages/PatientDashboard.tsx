@@ -215,15 +215,23 @@ export default function PatientDashboard() {
           <div>
             <h2 className="text-lg font-semibold text-slate-950">Medical History</h2>
             <p className="mt-1 text-sm text-slate-600">
-              Review your longitudinal care record, prior diagnoses, prescription history, and reminder-linked medications.
+              Review your longitudinal care record, prior diagnoses, prescription history, reminder-linked medications, and uploaded imaging.
             </p>
           </div>
-          <Link
-            to="/app/patient-medical-history"
-            className="inline-flex items-center rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
-          >
-            Open medical history
-          </Link>
+          <div className="flex gap-2">
+            <Link
+              to="/app/patient-medical-history"
+              className="inline-flex items-center rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
+            >
+              Open medical history
+            </Link>
+            <Link
+              to="/app/patient-imaging"
+              className="inline-flex items-center rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            >
+              View imaging
+            </Link>
+          </div>
         </div>
       </section>
     </div>

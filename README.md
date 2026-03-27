@@ -17,6 +17,7 @@ The repository contains two applications:
 - Discover verified doctors by specialty
 - Book appointments using doctor availability windows
 - View appointment history and prescription details
+- Review medical history and provider-uploaded imaging records
 - Rate completed consultations
 
 ### Doctor
@@ -25,6 +26,7 @@ The repository contains two applications:
 - Review, approve, reject, start, and complete appointments
 - View recent patients and appointment queues
 - Create and review prescriptions
+- Upload and review patient imaging records from the continuity view
 
 ### Admin
 
@@ -202,6 +204,7 @@ If you are working with an older local database created from previous migration 
 - If `AUTH_ALLOW_UNVERIFIED_LOGIN=true`, local development can bypass the verification gate for unverified users at login.
 - Password reset now sends a real email reset link through the same SMTP configuration used by email verification.
 - Medication reminders use a separate worker process so scheduled delivery does not run inside the API request server.
+- Medical imaging uploads reuse the local `uploads/` storage flow and are served from the backend static uploads path.
 - Create the first admin from the `backend` directory with:
 
 ```bash
@@ -239,8 +242,20 @@ Base path: `/api/patients`
 
 - `GET /profile`
 - `PUT /profile`
+- `GET /history`
+- `PUT /history`
 - `GET /:id/dashboard/stats`
 - `GET /:id/appointments`
+
+### Imaging
+
+Base path: `/api/imaging`
+
+- `POST /`
+- `GET /my`
+- `GET /patient/:patientId`
+- `GET /:id`
+- `DELETE /:id`
 
 ### Doctors
 
@@ -314,11 +329,19 @@ Base path: `/api/admin`
 
 - `/app`
 - `/app/patient-dashboard`
+- `/app/patient-medical-history`
+- `/app/patient-imaging`
 - `/app/doctor-dashboard`
+- `/app/receptionist-dashboard`
+- `/app/receptionist-appointments`
+- `/app/receptionist-doctors`
 - `/app/admin-dashboard`
+- `/app/admin-clinics`
 - `/app/patient-profile`
 - `/app/doctor-profile`
 - `/app/patient-appointments`
+- `/app/patient-prescriptions`
+- `/app/patient-reminders`
 - `/app/doctor-appointments`
 - `/app/doctor-my-patients`
 - `/app/doctors`
@@ -355,8 +378,24 @@ npm run lint
 ## Operational Notes
 
 - Uploaded doctor profile images are served from `/uploads`.
+- Uploaded medical imaging files are also served from `/uploads`.
 - CORS defaults to `http://localhost:5173` and `http://localhost:3000` unless overridden.
 - If custom AdminJS components change, remove `backend/.adminjs/` and restart the backend to force a rebuild.
+
+## Evaluation Mapping
+
+- `User Authentication & Authorization`
+  - multi-role auth, email verification, password reset, and protected workspaces
+- `Patient Management`
+  - registration, profile, medical history, appointment booking, prescriptions, reminders, and imaging access
+- `Doctor Dashboard`
+  - appointment desk, patient continuity, prescriptions, and imaging upload/view workflows
+- `Administrative Features`
+  - user management, doctor approval, clinic management, analytics, and audit logs
+- `Additional Feature 1`
+  - medication tracking and reminders
+- `Additional Feature 2`
+  - medical imaging upload and viewing
 
 ## Status
 

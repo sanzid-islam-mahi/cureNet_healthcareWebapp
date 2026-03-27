@@ -1,3 +1,5 @@
+import type { MedicalImagingRecord } from '../../types/medicalImaging';
+
 export interface AppointmentItem {
   id: number;
   appointmentDate: string;
@@ -90,6 +92,7 @@ export interface PatientContextData {
     totalVisitsWithDoctor: number;
     prescriptionCount?: number;
     activeReminderCount?: number;
+    imagingCount?: number;
     recentAppointments: Array<{
       id: number;
       appointmentDate: string;
@@ -130,6 +133,7 @@ export interface PatientContextData {
       } | null;
     }>;
   }>;
+  imaging: MedicalImagingRecord[];
 }
 
 export type AppointmentAction = 'approve' | 'reject' | 'start' | 'complete';

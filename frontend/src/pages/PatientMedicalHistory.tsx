@@ -12,8 +12,10 @@ import {
 } from '@heroicons/react/24/outline';
 import { api } from '../context/AuthContext';
 import AppPageHeader from '../components/AppPageHeader';
+import MedicalImagingList from '../components/MedicalImagingList';
 import PrescriptionView from '../components/PrescriptionView';
 import { formatMedicineForDisplay } from './doctorAppointments/utils';
+import type { MedicalImagingRecord } from '../types/medicalImaging';
 
 interface MedicalHistoryRecord {
   chronicConditions: string[];
@@ -33,6 +35,7 @@ interface MedicalHistorySummary {
   emergencyPhone?: string | null;
   emergencyReady: boolean;
   activeReminderCount: number;
+  imagingCount: number;
   activeMedicationNames: string[];
 }
 
@@ -86,6 +89,7 @@ interface MedicalHistoryPayload {
   history: MedicalHistoryRecord;
   timeline: TimelineEntry[];
   prescriptions: PrescriptionEntry[];
+  imaging: MedicalImagingRecord[];
 }
 
 interface HistoryFormValues {
@@ -215,6 +219,12 @@ export default function PatientMedicalHistory() {
             >
               Open reminders
             </Link>
+            <Link
+              to="/app/patient-imaging"
+              className="inline-flex items-center rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            >
+              View imaging
+            </Link>
           </>
         }
       />
@@ -239,6 +249,11 @@ export default function PatientMedicalHistory() {
           icon={<BellAlertIcon className="h-5 w-5 text-slate-700" />}
           label="Active Reminders"
           value={`${data.summary.activeReminderCount} plan${data.summary.activeReminderCount === 1 ? '' : 's'}`}
+        />
+        <SnapshotCard
+          icon={<ClipboardDocumentListIcon className="h-5 w-5 text-slate-700" />}
+          label="Imaging Records"
+          value={`${data.summary.imagingCount} record${data.summary.imagingCount === 1 ? '' : 's'}`}
         />
       </section>
 
@@ -319,6 +334,22 @@ export default function PatientMedicalHistory() {
               <SnapshotRow label="Emergency Contact" value={data.summary.emergencyContact || 'Not recorded'} />
               <SnapshotRow label="Emergency Phone" value={data.summary.emergencyPhone || 'Not recorded'} />
               <SnapshotRow label="Reminder-linked Medicines" value={activeReminderMedicines} />
+              <SnapshotRow label="Imaging Records" value={`${data.summary.imagingCount} uploaded ${data.summary.imagingCount === 1 ? 'study' : 'studies'}`} />
+            </div>
+          </section>
+
+          <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+              <div>
+                <h2 className="text-base font-semibold text-slate-950">Imaging Records</h2>
+                <p className="text-sm text-slate-500">Provider-uploaded imaging studies connected to your patient record.</p>
+              </div>
+              <Link to="/app/patient-imaging" className="text-sm font-medium text-slate-700 hover:text-slate-950">
+                Open library
+              </Link>
+            </div>
+            <div className="px-5 py-5">
+              <MedicalImagingList records={data.imaging.slice(0, 3)} emptyMessage="No imaging records have been added yet." compact />
             </div>
           </section>
 

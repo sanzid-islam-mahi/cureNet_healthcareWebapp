@@ -31,6 +31,7 @@ const AdminLogs = lazy(() => import('./pages/AdminLogs'));
 const Notifications = lazy(() => import('./pages/Notifications'));
 const PatientProfile = lazy(() => import('./pages/PatientProfile'));
 const PatientMedicalHistory = lazy(() => import('./pages/PatientMedicalHistory'));
+const PatientImaging = lazy(() => import('./pages/PatientImaging'));
 const DoctorProfile = lazy(() => import('./pages/DoctorProfile'));
 const PatientAppointments = lazy(() => import('./pages/PatientAppointments'));
 const PatientPrescriptionHistory = lazy(() => import('./pages/PatientPrescriptionHistory'));
@@ -89,6 +90,7 @@ function AppRoutes() {
                 <Route path="admin-clinics" element={<ProtectedRoute requiredRole="admin"><AdminClinics /></ProtectedRoute>} />
                 <Route path="patient-profile" element={<ProtectedRoute requiredRole="patient"><PatientProfile /></ProtectedRoute>} />
                 <Route path="patient-medical-history" element={<ProtectedRoute requiredRole="patient"><PatientMedicalHistory /></ProtectedRoute>} />
+                <Route path="patient-imaging" element={<ProtectedRoute requiredRole="patient"><PatientImaging /></ProtectedRoute>} />
                 <Route path="doctor-profile" element={<ProtectedRoute requiredRole="doctor"><DoctorProfile /></ProtectedRoute>} />
                 <Route path="patient-appointments" element={<ProtectedRoute requiredRole="patient"><PatientAppointments /></ProtectedRoute>} />
                 <Route path="patient-prescriptions" element={<ProtectedRoute requiredRole="patient"><PatientPrescriptionHistory /></ProtectedRoute>} />
