@@ -66,6 +66,95 @@ export const carePaths = {
       },
     },
   },
+  '/patients/history': {
+    get: {
+      tags: ['Patients'],
+      summary: 'Get authenticated patient medical history',
+      security: authSecurity,
+      responses: {
+        200: successResponse('Patient medical history', {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            data: {
+              type: 'object',
+              properties: {
+                summary: { $ref: '#/components/schemas/PatientHistorySummary' },
+                history: { $ref: '#/components/schemas/PatientHistoryRecord' },
+                timeline: {
+                  type: 'array',
+                  items: { $ref: '#/components/schemas/PatientHistoryTimelineEntry' },
+                },
+                prescriptions: {
+                  type: 'array',
+                  items: { $ref: '#/components/schemas/PatientHistoryPrescription' },
+                },
+              },
+            },
+          },
+        }),
+        403: errorResponse('Not a patient'),
+        404: errorResponse('Patient profile not found'),
+        500: errorResponse('Failed to get medical history'),
+      },
+    },
+    put: {
+      tags: ['Patients'],
+      summary: 'Create or update authenticated patient structured medical history',
+      security: authSecurity,
+      requestBody: {
+        required: true,
+        content: json({
+          type: 'object',
+          properties: {
+            chronicConditions: {
+              oneOf: [
+                { type: 'array', items: { type: 'string' } },
+                { type: 'string' },
+              ],
+            },
+            pastProcedures: {
+              oneOf: [
+                { type: 'array', items: { type: 'string' } },
+                { type: 'string' },
+              ],
+            },
+            familyHistory: {
+              oneOf: [
+                { type: 'array', items: { type: 'string' } },
+                { type: 'string' },
+              ],
+            },
+            currentLongTermMedications: {
+              oneOf: [
+                { type: 'array', items: { type: 'string' } },
+                { type: 'string' },
+              ],
+            },
+            immunizationNotes: { type: 'string', nullable: true },
+            lifestyleRiskNotes: { type: 'string', nullable: true },
+            generalMedicalNotes: { type: 'string', nullable: true },
+          },
+        }),
+      },
+      responses: {
+        200: successResponse('Updated patient medical history', {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            data: {
+              type: 'object',
+              properties: {
+                history: { $ref: '#/components/schemas/PatientHistoryRecord' },
+              },
+            },
+          },
+        }),
+        403: errorResponse('Not a patient'),
+        500: errorResponse('Failed to update medical history'),
+      },
+    },
+  },
   '/patients/{id}/dashboard/stats': {
     get: {
       tags: ['Patients'],

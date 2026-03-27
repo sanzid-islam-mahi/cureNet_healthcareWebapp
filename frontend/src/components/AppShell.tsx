@@ -38,6 +38,7 @@ const shellByRole: Record<Role, NavGroup[]> = {
     {
       label: 'Records',
       items: [
+        { to: '/app/patient-medical-history', label: 'Medical History', icon: ClipboardDocumentListIcon, description: 'Longitudinal clinical record' },
         { to: '/app/patient-prescriptions', label: 'Prescriptions', icon: DocumentTextIcon, description: 'Clinical medication records' },
         { to: '/app/patient-reminders', label: 'Reminders', icon: BellAlertIcon, description: 'Daily medicine tracking' },
         { to: '/app/patient-profile', label: 'Profile', icon: UserCircleIcon, description: 'Personal and medical details' },

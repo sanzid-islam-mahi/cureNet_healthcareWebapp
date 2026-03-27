@@ -1,7 +1,14 @@
 import db from '../models/index.js';
 import { Op } from 'sequelize';
+import {
+  buildEmergencyReadiness,
+  buildMedicalHistorySummary,
+  buildPrescriptionHistoryEntries,
+  buildTimelineEntries,
+  normalizeTextArrayInput,
+} from '../lib/patientHistory.js';
 
-const { User, Patient, Appointment, Doctor } = db;
+const { User, Patient, PatientMedicalHistory, Appointment, Doctor, Prescription, MedicationReminderPlan } = db;
 
 export async function getProfile(req, res) {
   try {
@@ -120,13 +127,7 @@ export async function getDashboardStats(req, res) {
         include: [{ model: User, as: 'User', attributes: ['phone', 'dateOfBirth'] }],
       }),
     ]);
-    const profileComplete = Boolean(
-      patient?.bloodType
-      && patient?.emergencyContact
-      && patient?.emergencyPhone
-      && patient?.User?.phone
-      && patient?.User?.dateOfBirth
-    );
+    const profileComplete = buildEmergencyReadiness(patient, patient?.User);
     return res.json({
       success: true,
       data: {
@@ -146,6 +147,148 @@ export async function getDashboardStats(req, res) {
   } catch (err) {
     console.error('Get patient dashboard stats error:', err);
     return res.status(500).json({ success: false, message: err.message || 'Failed' });
+  }
+}
+
+export async function getMedicalHistory(req, res) {
+  try {
+    const user = req.user;
+    if (user.role !== 'patient' || !user.patientId) {
+      return res.status(403).json({ success: false, message: 'Not a patient' });
+    }
+
+    const [patient, history, completedAppointments, prescriptions, activeReminderPlans] = await Promise.all([
+      Patient.findByPk(user.patientId, {
+        include: [{ model: User, as: 'User', attributes: { exclude: ['password'] } }],
+      }),
+      PatientMedicalHistory.findOne({ where: { patientId: user.patientId } }),
+      Appointment.findAll({
+        where: {
+          patientId: user.patientId,
+          status: 'completed',
+        },
+        include: [
+          { model: Doctor, as: 'Doctor', include: [{ model: User, as: 'User', attributes: ['firstName', 'lastName'] }] },
+          { model: Prescription, as: 'Prescription', attributes: ['id', 'diagnosis', 'medicines'] },
+        ],
+        order: [['appointmentDate', 'DESC'], ['createdAt', 'DESC']],
+      }),
+      Prescription.findAll({
+        include: [
+          {
+            model: Appointment,
+            as: 'Appointment',
+            where: { patientId: user.patientId },
+            attributes: ['id', 'appointmentDate', 'type'],
+            include: [
+              { model: Doctor, as: 'Doctor', include: [{ model: User, as: 'User', attributes: ['firstName', 'lastName'] }] },
+            ],
+          },
+        ],
+        order: [['createdAt', 'DESC']],
+      }),
+      MedicationReminderPlan.findAll({
+        where: {
+          patientId: user.patientId,
+          status: { [Op.in]: ['active', 'paused'] },
+        },
+        attributes: ['id', 'prescriptionId', 'medicineIndex', 'status', 'scheduleTimes', 'medicineName'],
+        order: [['createdAt', 'DESC']],
+      }),
+    ]);
+
+    if (!patient) {
+      return res.status(404).json({ success: false, message: 'Patient profile not found' });
+    }
+
+    const patientUser = patient.User ? patient.User.get({ plain: true }) : null;
+    const activePlansByPrescriptionMedicine = new Map(
+      activeReminderPlans.map((plan) => [`${plan.prescriptionId}:${plan.medicineIndex}`, plan.get({ plain: true })])
+    );
+    const activeMedicationNames = [...new Set(activeReminderPlans.map((plan) => plan.medicineName).filter(Boolean))];
+
+    return res.json({
+      success: true,
+      data: {
+        summary: buildMedicalHistorySummary({
+          patient,
+          user: patientUser,
+          activeReminderCount: activeReminderPlans.length,
+          activeMedicationNames,
+        }),
+        history: history
+          ? {
+              chronicConditions: history.chronicConditions ?? [],
+              pastProcedures: history.pastProcedures ?? [],
+              familyHistory: history.familyHistory ?? [],
+              currentLongTermMedications: history.currentLongTermMedications ?? [],
+              immunizationNotes: history.immunizationNotes ?? '',
+              lifestyleRiskNotes: history.lifestyleRiskNotes ?? '',
+              generalMedicalNotes: history.generalMedicalNotes ?? '',
+              updatedAt: history.updatedAt,
+            }
+          : {
+              chronicConditions: [],
+              pastProcedures: [],
+              familyHistory: [],
+              currentLongTermMedications: [],
+              immunizationNotes: '',
+              lifestyleRiskNotes: '',
+              generalMedicalNotes: '',
+              updatedAt: null,
+            },
+        timeline: buildTimelineEntries(completedAppointments),
+        prescriptions: buildPrescriptionHistoryEntries(prescriptions, activePlansByPrescriptionMedicine),
+      },
+    });
+  } catch (err) {
+    console.error('Get patient medical history error:', err);
+    return res.status(500).json({ success: false, message: err.message || 'Failed to get medical history' });
+  }
+}
+
+export async function updateMedicalHistory(req, res) {
+  try {
+    const user = req.user;
+    if (user.role !== 'patient' || !user.patientId) {
+      return res.status(403).json({ success: false, message: 'Not a patient' });
+    }
+
+    const payload = {
+      chronicConditions: normalizeTextArrayInput(req.body.chronicConditions),
+      pastProcedures: normalizeTextArrayInput(req.body.pastProcedures),
+      familyHistory: normalizeTextArrayInput(req.body.familyHistory),
+      currentLongTermMedications: normalizeTextArrayInput(req.body.currentLongTermMedications),
+      immunizationNotes: req.body.immunizationNotes?.trim?.() ?? '',
+      lifestyleRiskNotes: req.body.lifestyleRiskNotes?.trim?.() ?? '',
+      generalMedicalNotes: req.body.generalMedicalNotes?.trim?.() ?? '',
+    };
+
+    const [history] = await PatientMedicalHistory.findOrCreate({
+      where: { patientId: user.patientId },
+      defaults: { patientId: user.patientId, ...payload },
+    });
+
+    await history.update(payload);
+
+    return res.json({
+      success: true,
+      data: {
+        history: {
+          chronicConditions: history.chronicConditions ?? [],
+          pastProcedures: history.pastProcedures ?? [],
+          familyHistory: history.familyHistory ?? [],
+          currentLongTermMedications: history.currentLongTermMedications ?? [],
+          immunizationNotes: history.immunizationNotes ?? '',
+          lifestyleRiskNotes: history.lifestyleRiskNotes ?? '',
+          generalMedicalNotes: history.generalMedicalNotes ?? '',
+          updatedAt: history.updatedAt,
+        },
+      },
+    });
+  } catch (err) {
+    console.error('Update patient medical history error:', err);
+    return res.status(500).json({ success: false, message: err.message || 'Failed to update medical history' });
   }
 }
 

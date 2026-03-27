@@ -90,6 +90,99 @@ export const schemas = {
     },
     required: ['id', 'userId', 'user'],
   },
+  PatientHistoryRecord: {
+    type: 'object',
+    properties: {
+      chronicConditions: { type: 'array', items: { type: 'string' } },
+      pastProcedures: { type: 'array', items: { type: 'string' } },
+      familyHistory: { type: 'array', items: { type: 'string' } },
+      currentLongTermMedications: { type: 'array', items: { type: 'string' } },
+      immunizationNotes: { type: 'string', nullable: true },
+      lifestyleRiskNotes: { type: 'string', nullable: true },
+      generalMedicalNotes: { type: 'string', nullable: true },
+      updatedAt: { type: 'string', format: 'date-time', nullable: true },
+    },
+  },
+  PatientHistorySummary: {
+    type: 'object',
+    properties: {
+      bloodType: { type: 'string', nullable: true },
+      allergies: { type: 'string', nullable: true },
+      emergencyContact: { type: 'string', nullable: true },
+      emergencyPhone: { type: 'string', nullable: true },
+      emergencyReady: { type: 'boolean' },
+      activeReminderCount: { type: 'integer' },
+      activeMedicationNames: { type: 'array', items: { type: 'string' } },
+    },
+  },
+  PatientHistoryTimelineEntry: {
+    type: 'object',
+    properties: {
+      appointmentId: { type: 'integer' },
+      appointmentDate: { type: 'string', format: 'date' },
+      appointmentType: { type: 'string', nullable: true },
+      status: { type: 'string', nullable: true },
+      doctor: {
+        type: 'object',
+        nullable: true,
+        properties: {
+          firstName: { type: 'string', nullable: true },
+          lastName: { type: 'string', nullable: true },
+        },
+      },
+      diagnosis: { type: 'string', nullable: true },
+      medicineCount: { type: 'integer' },
+      prescriptionId: { type: 'integer', nullable: true },
+    },
+  },
+  PatientHistoryPrescription: {
+    type: 'object',
+    properties: {
+      id: { type: 'integer' },
+      appointmentId: { type: 'integer' },
+      diagnosis: { type: 'string', nullable: true },
+      notes: { type: 'string', nullable: true },
+      createdAt: { type: 'string', format: 'date-time', nullable: true },
+      appointment: {
+        type: 'object',
+        nullable: true,
+        properties: {
+          appointmentDate: { type: 'string', format: 'date', nullable: true },
+          type: { type: 'string', nullable: true },
+          doctor: {
+            type: 'object',
+            nullable: true,
+            properties: {
+              firstName: { type: 'string', nullable: true },
+              lastName: { type: 'string', nullable: true },
+            },
+          },
+        },
+      },
+      medicines: {
+        type: 'array',
+        items: {
+          allOf: [
+            { $ref: '#/components/schemas/PrescriptionMedicine' },
+            {
+              type: 'object',
+              properties: {
+                activeReminder: {
+                  type: 'object',
+                  nullable: true,
+                  properties: {
+                    id: { type: 'integer' },
+                    status: { type: 'string' },
+                    scheduleTimes: { type: 'array', items: { type: 'string' } },
+                  },
+                },
+              },
+            },
+          ],
+        },
+      },
+    },
+  },
   DoctorProfile: {
     type: 'object',
     properties: {
