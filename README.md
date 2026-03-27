@@ -1,12 +1,12 @@
 # CureNet
 
-CureNet is a full-stack healthcare platform for patients, doctors, and administrators. It provides authentication, role-based dashboards, doctor discovery, profile management, appointment booking, prescription handling, ratings, and administrative oversight.
+CureNet is a full-stack healthcare platform for patients, doctors, receptionists, and administrators. It provides authentication, role-based dashboards, doctor discovery, clinic-based appointment booking, prescription handling, reminders, medical history, and imaging workflows.
 
 ## Overview
 
 The repository contains two applications:
 
-- `backend`: Express API with Sequelize, MySQL, JWT authentication, Swagger documentation, and AdminJS.
+- `backend`: Express API with Sequelize, MySQL, JWT authentication, Swagger documentation, and the reminder worker.
 - `frontend`: React + TypeScript single-page application built with Vite and Tailwind CSS.
 
 ## Core Capabilities
@@ -32,7 +32,13 @@ The repository contains two applications:
 
 - Access platform dashboard and analytics
 - Review doctor verification status
-- View user, doctor, patient, and audit-oriented admin screens
+- Manage users, clinics, and audit-oriented admin screens
+
+### Receptionist
+
+- Manage clinic-scoped appointment requests
+- Review clinic doctor roster and daily queue load
+- Support imaging and appointment-linked operational workflows
 
 ## Tech Stack
 
@@ -44,7 +50,6 @@ The repository contains two applications:
 - MySQL
 - JWT authentication
 - Umzug migrations
-- AdminJS
 - Swagger UI
 
 ### Frontend
@@ -86,6 +91,8 @@ curenet/
 
 ## Getting Started
 
+### Local Development
+
 ### 1. Start the Backend
 
 ```bash
@@ -106,10 +113,11 @@ Optional values:
 - `DB_PORT`
 - `PORT`
 - `CORS_ORIGIN`
-- `ADMIN_SESSION_SECRET`
 - `ADMIN_EMAIL`
 - `ADMIN_PASSWORD`
 - `APP_BASE_URL`
+- `TRUST_PROXY`
+- `UPLOADS_DIR`
 - `AUTH_ALLOW_UNVERIFIED_LOGIN`
 - `MAIL_HOST`
 - `MAIL_PORT`
@@ -138,7 +146,6 @@ Backend endpoints:
 - Health check: `GET /api/health`
 - Swagger UI: `http://localhost:5000/docs`
 - Raw OpenAPI JSON: `http://localhost:5000/openapi.json`
-- Admin panel: `http://localhost:5000/admin`
 
 ### 2. Start the Frontend
 
@@ -149,7 +156,7 @@ cp .env.example .env
 
 Optional frontend environment value:
 
-- `VITE_API_URL` if the API is not available at `http://localhost:5000/api`
+- `VITE_API_URL` if the API is not available at `/api` or `http://localhost:5000/api`
 
 Install dependencies and start the frontend:
 
@@ -161,6 +168,101 @@ npm run dev
 Frontend application:
 
 - App URL: `http://localhost:5173`
+
+## Docker Deployment
+
+The repo includes a production-style Docker stack with:
+
+- `mysql`
+- `backend`
+- `reminder-worker`
+- `frontend`
+- `nginx-proxy`
+
+This stack does not use AdminJS.
+
+### 1. Prepare the deploy environment
+
+From the repo root:
+
+```bash
+cp .env.deploy.example .env.deploy
+```
+
+Update at least:
+
+- `APP_BASE_URL`
+- `CORS_ORIGIN`
+- `DB_PASSWORD`
+- `DB_ROOT_PASSWORD`
+- `JWT_SECRET`
+- `MAIL_*`
+
+For local network testing on your PC, set:
+
+- `APP_BASE_URL=https://<your-pc-lan-ip>`
+- `CORS_ORIGIN=https://<your-pc-lan-ip>`
+
+### 2. Create local TLS certificates
+
+Generate the self-signed files expected by the reverse proxy:
+
+```bash
+openssl req -x509 -nodes -days 365 \
+  -newkey rsa:2048 \
+  -keyout deploy/certs/local.key \
+  -out deploy/certs/local.crt \
+  -subj "/CN=localhost"
+```
+
+See [deploy/certs/README.md](/home/sanzid/playground/curenet/deploy/certs/README.md) for the certificate path expected by the proxy.
+
+### 3. Start the full stack
+
+From the repo root:
+
+```bash
+docker compose --env-file .env.deploy up --build
+```
+
+Services exposed through the reverse proxy:
+
+- App: `https://localhost/`
+- API health: `https://localhost/api/health`
+- Swagger: `https://localhost/docs`
+
+On another device in the same LAN, use:
+
+- `https://<your-pc-lan-ip>/`
+
+You may need to:
+
+- open ports `80` and `443` in your OS firewall
+- accept the browser warning for the self-signed certificate
+
+### 4. Persistent data
+
+Docker Compose uses named volumes for:
+
+- MySQL data
+- uploaded files under `/uploads`
+
+So restarts do not lose records or uploaded imaging/profile files.
+
+### 5. Azure VM later
+
+The same stack can be reused on an Azure VM:
+
+1. install Docker and the Compose plugin
+2. copy the repository or deployment bundle
+3. create `.env.deploy`
+4. provide TLS certs under `deploy/certs/`
+5. run `docker compose --env-file .env.deploy up -d --build`
+
+When you have a real domain, replace the self-signed cert with a real certificate and set:
+
+- `APP_BASE_URL=https://your-domain`
+- `CORS_ORIGIN=https://your-domain`
 
 ## Available Commands
 
@@ -205,6 +307,7 @@ If you are working with an older local database created from previous migration 
 - Password reset now sends a real email reset link through the same SMTP configuration used by email verification.
 - Medication reminders use a separate worker process so scheduled delivery does not run inside the API request server.
 - Medical imaging uploads reuse the local `uploads/` storage flow and are served from the backend static uploads path.
+- In deployed mode, the backend is expected to run behind Nginx with `TRUST_PROXY=1` so secure auth cookies work correctly over HTTPS.
 - Create the first admin from the `backend` directory with:
 
 ```bash
@@ -380,7 +483,8 @@ npm run lint
 - Uploaded doctor profile images are served from `/uploads`.
 - Uploaded medical imaging files are also served from `/uploads`.
 - CORS defaults to `http://localhost:5173` and `http://localhost:3000` unless overridden.
-- If custom AdminJS components change, remove `backend/.adminjs/` and restart the backend to force a rebuild.
+- Production-style deployment is same-origin through Nginx: frontend at `/` and backend at `/api`.
+- The reminder worker is a separate process and should run as its own container in Docker deployments.
 
 ## Evaluation Mapping
 

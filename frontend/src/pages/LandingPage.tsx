@@ -11,6 +11,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { api } from '../context/AuthContext';
 import DoctorCard from '../components/DoctorCard';
+import { getAssetUrl } from '../lib/runtimeConfig';
 
 const HERO_IMAGE = 'https://storage.googleapis.com/tagjs-prod.appspot.com/v1/v0o8XbXdnI/0ngpry2q_expires_30_days.png';
 const FEATURE_LEFT = 'https://storage.googleapis.com/tagjs-prod.appspot.com/v1/v0o8XbXdnI/z3yn2juq_expires_30_days.png';
@@ -31,8 +32,6 @@ const SPECIALTIES = [
   { name: 'Gynecologist', icon: HeartIcon },
   { name: 'General', icon: AcademicCapIcon },
 ];
-
-const API_BASE = import.meta.env.VITE_API_URL?.replace(/\/api\/?$/, '') || 'http://localhost:5000';
 
 interface DoctorItem {
   id: number;
@@ -243,9 +242,7 @@ export default function LandingPage() {
               {doctors.map((doc) => {
                 const name = doc.user ? `Dr. ${doc.user.firstName} ${doc.user.lastName}` : 'Doctor';
                 const rating = ratingsMap[doc.id] ?? { averageRating: 0, totalRatings: 0 };
-                const imgSrc = doc.profileImage
-                  ? (doc.profileImage.startsWith('http') ? doc.profileImage : `${API_BASE}${doc.profileImage}`)
-                  : null;
+                const imgSrc = getAssetUrl(doc.profileImage);
                 return (
                   <DoctorCard
                     key={doc.id}

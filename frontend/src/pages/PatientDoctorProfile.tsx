@@ -13,8 +13,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { api, useAuth } from '../context/AuthContext';
 import BookAppointmentModal from '../components/BookAppointmentModal';
-
-const API_BASE = import.meta.env.VITE_API_URL?.replace(/\/api\/?$/, '') || 'http://localhost:5000';
+import { getAssetUrl } from '../lib/runtimeConfig';
 
 interface DoctorProfileData {
   id: number;
@@ -102,9 +101,7 @@ export default function PatientDoctorProfile() {
 
   const rating = ratingsRes ?? { averageRating: 0, totalRatings: 0 };
   const name = doctor?.user ? `Dr. ${doctor.user.firstName} ${doctor.user.lastName}` : 'Doctor';
-  const imgSrc = doctor?.profileImage
-    ? (doctor.profileImage.startsWith('http') ? doctor.profileImage : `${API_BASE}${doctor.profileImage}`)
-    : null;
+  const imgSrc = getAssetUrl(doctor?.profileImage);
   const languages = Array.isArray(doctor?.languages) ? doctor.languages : [];
   const expertise = Array.isArray(doctor?.services) ? doctor.services : [];
   const availabilityPreview = upcomingSlots.slice(0, 3);

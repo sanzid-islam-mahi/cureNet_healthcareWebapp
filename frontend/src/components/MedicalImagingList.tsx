@@ -1,5 +1,6 @@
 import { ArrowDownTrayIcon, CalendarDaysIcon, PhotoIcon } from '@heroicons/react/24/outline';
 import type { MedicalImagingRecord } from '../types/medicalImaging';
+import { getApiOrigin } from '../lib/runtimeConfig';
 
 function formatDate(value?: string | null) {
   if (!value) return '—';
@@ -17,8 +18,7 @@ function formatStudyType(value?: string) {
 function buildFileHref(fileUrl: string) {
   if (!fileUrl) return '#';
   if (/^https?:\/\//.test(fileUrl)) return fileUrl;
-  const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-  const origin = apiBase.replace(/\/api\/?$/, '');
+  const origin = getApiOrigin();
   return `${origin}${fileUrl}`;
 }
 

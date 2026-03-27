@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { useAuth, api } from '../context/AuthContext';
+import { getAssetUrl } from '../lib/runtimeConfig';
 import {
   UserCircleIcon,
   CameraIcon,
@@ -12,8 +13,6 @@ import {
 } from '@heroicons/react/24/outline';
 
 const BLOOD_TYPES = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
-const API_BASE = import.meta.env.VITE_API_URL?.replace(/\/api\/?$/, '') || 'http://localhost:5000';
-
 interface PatientData {
   bloodType?: string;
   allergies?: string;
@@ -57,9 +56,7 @@ export default function PatientProfile() {
 
   const patient = profileData;
   const personal = patient?.user ?? user;
-  const profileImageUrl = patient?.profileImage
-    ? (patient.profileImage.startsWith('http') ? patient.profileImage : `${API_BASE}${patient.profileImage}`)
-    : null;
+  const profileImageUrl = getAssetUrl(patient?.profileImage);
   const previewUrl = localPreviewUrl ?? profileImageUrl;
 
   const personalForm = useForm<PersonalForm>({

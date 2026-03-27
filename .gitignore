@@ -44,3 +44,11 @@ coverage/
 #keep the readme
 !/README.md
 /backend/uploads/
+
+
+
+
+
+.env.deploy
+deploy/certs/*.key
+deploy/certs/*.crt

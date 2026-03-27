@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import { api } from '../context/AuthContext';
 import logo from '../assets/curenet_logo.png';
 import NotificationCenterModal from './NotificationCenterModal';
+import { getApiBase, getApiOrigin } from '../lib/runtimeConfig';
 
 const navLinks = [
   { to: '/', label: 'HOME' },
@@ -15,9 +16,7 @@ const navLinks = [
   { to: '/contact', label: 'CONTACT US' },
 ];
 
-const API_ORIGIN = import.meta.env.VITE_API_URL
-  ? new URL(import.meta.env.VITE_API_URL).origin
-  : 'http://localhost:5000';
+const API_ORIGIN = getApiOrigin();
 
 const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -57,7 +56,7 @@ const Navbar = () => {
       return;
     }
 
-    const base = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+    const base = getApiBase();
     const streamUrl = `${base.replace(/\/$/, '')}/notifications/stream`;
     const source = new EventSource(streamUrl, { withCredentials: true });
     eventSourceRef.current = source;

@@ -15,8 +15,12 @@ export const swaggerSpec = {
   },
   servers: [
     {
-      url: 'http://localhost:5000/api',
-      description: 'Local development server',
+      url: '/api',
+      description: 'Same-origin API',
+    },
+    {
+      url: `${process.env.APP_BASE_URL || 'http://localhost:5000'}/api`,
+      description: 'Configured application origin',
     },
   ],
   tags: [

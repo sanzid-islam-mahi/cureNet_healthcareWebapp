@@ -14,9 +14,6 @@
     "create-admin": "node scripts/create-admin.mjs"
   },
   "dependencies": {
-    "@adminjs/express": "^6.1.1",
-    "@adminjs/sequelize": "^4.1.1",
-    "adminjs": "^7.8.17",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",

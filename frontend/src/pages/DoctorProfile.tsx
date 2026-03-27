@@ -19,10 +19,9 @@ import {
   CheckBadgeIcon
 } from '@heroicons/react/24/outline';
 import { LanguageIcon, StarIcon, ShieldCheckIcon } from '@heroicons/react/24/solid';
+import { getApiOrigin } from '../lib/runtimeConfig';
 
-const API_ORIGIN = import.meta.env.VITE_API_URL
-  ? new URL(import.meta.env.VITE_API_URL).origin
-  : 'http://localhost:5000';
+const API_ORIGIN = getApiOrigin();
 
 interface ChamberWindowConfig {
   enabled: boolean;

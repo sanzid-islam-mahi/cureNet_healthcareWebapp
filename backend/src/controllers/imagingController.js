@@ -1,14 +1,12 @@
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import db from '../models/index.js';
 import { MEDICAL_IMAGING_STUDY_TYPES, serializeMedicalImagingRecord } from '../lib/medicalImaging.js';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+import { getUploadsDir } from '../config/appPaths.js';
 const { MedicalImagingRecord, Patient, Appointment, User, Clinic } = db;
 
 function uploadsRoot() {
-  return path.join(__dirname, '../../uploads');
+  return getUploadsDir();
 }
 
 function removeUploadedFile(fileUrl) {

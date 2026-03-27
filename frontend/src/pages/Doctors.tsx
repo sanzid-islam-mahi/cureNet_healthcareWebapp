@@ -6,8 +6,7 @@ import DoctorCard from '../components/DoctorCard';
 import BookAppointmentModal from '../components/BookAppointmentModal';
 import { MagnifyingGlassIcon, FunnelIcon } from '@heroicons/react/24/outline';
 import { Link } from 'react-router-dom';
-
-const API_BASE = import.meta.env.VITE_API_URL?.replace(/\/api\/?$/, '') || 'http://localhost:5000';
+import { getAssetUrl } from '../lib/runtimeConfig';
 
 interface DoctorListItem {
   id: number;
@@ -210,11 +209,7 @@ export default function Doctors() {
                 const name = doc.user
                   ? `Dr. ${doc.user.firstName} ${doc.user.lastName}`
                   : 'Doctor';
-                const imgSrc = doc.profileImage
-                  ? doc.profileImage.startsWith('http')
-                    ? doc.profileImage
-                    : `${API_BASE}${doc.profileImage}`
-                  : null;
+                const imgSrc = getAssetUrl(doc.profileImage);
                 return (
                   <DoctorCard
                     key={doc.id}

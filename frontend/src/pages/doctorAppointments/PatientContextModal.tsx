@@ -14,6 +14,7 @@ import {
 import { useState } from 'react';
 import PrescriptionView from '../../components/PrescriptionView';
 import MedicalImagingList from '../../components/MedicalImagingList';
+import { getAssetUrl } from '../../lib/runtimeConfig';
 
 interface PatientContextModalProps {
   doctorId: number;
@@ -75,7 +76,7 @@ export default function PatientContextModal({
                     <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-white shadow-sm ring-1 ring-slate-200">
                       {data.medical.profileImage ? (
                         <img
-                          src={data.medical.profileImage.startsWith('http') ? data.medical.profileImage : `${import.meta.env.VITE_API_URL?.replace(/\/api\/?$/, '') || 'http://localhost:5000'}${data.medical.profileImage}`}
+                          src={getAssetUrl(data.medical.profileImage) || undefined}
                           alt={`${data.user.firstName} ${data.user.lastName}`}
                           className="h-full w-full rounded-2xl object-cover"
                         />
