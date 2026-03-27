@@ -1,6 +1,7 @@
 import { DataTypes } from 'sequelize';
 import sequelize from '../config/database.js';
 import User from './User.js';
+import Clinic from './Clinic.js';
 
 const Doctor = sequelize.define(
   'Doctor',
@@ -42,6 +43,12 @@ const Doctor = sequelize.define(
       allowNull: false,
       defaultValue: false,
     },
+    clinicId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: { model: 'clinics', key: 'id' },
+      onDelete: 'SET NULL',
+    },
     chamberTimes: {
       type: DataTypes.JSON,
       allowNull: true,
@@ -71,5 +78,7 @@ const Doctor = sequelize.define(
 
 User.hasOne(Doctor, { foreignKey: 'userId' });
 Doctor.belongsTo(User, { foreignKey: 'userId' });
+Clinic.hasMany(Doctor, { foreignKey: 'clinicId' });
+Doctor.belongsTo(Clinic, { foreignKey: 'clinicId' });
 
 export default Doctor;

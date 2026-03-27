@@ -2,7 +2,7 @@ import { Op } from 'sequelize';
 import db from '../models/index.js';
 import { logAudit } from '../lib/auditLog.js';
 
-const { User, Doctor, Patient, Appointment, AuditLog } = db;
+const { User, Doctor, Patient, Appointment, AuditLog, Clinic } = db;
 
 const PASSWORD_POLICY = {
   minLength: 8,
@@ -27,6 +27,53 @@ function todayStr() {
   return new Date().toISOString().slice(0, 10);
 }
 
+function normalizeStringArray(value) {
+  if (Array.isArray(value)) {
+    return [...new Set(value.map((entry) => String(entry).trim()).filter(Boolean))];
+  }
+  if (typeof value === 'string') {
+    return [...new Set(value.split(',').map((entry) => entry.trim()).filter(Boolean))];
+  }
+  return [];
+}
+
+function formatClinicForAdmin(clinic) {
+  const value = clinic.toJSON ? clinic.toJSON() : clinic;
+  return {
+    id: value.id,
+    name: value.name,
+    type: value.type,
+    code: value.code,
+    phone: value.phone,
+    email: value.email,
+    addressLine: value.addressLine,
+    city: value.city,
+    area: value.area,
+    status: value.status,
+    departments: Array.isArray(value.departments) ? value.departments : [],
+    services: Array.isArray(value.services) ? value.services : [],
+    operatingHours: value.operatingHours,
+    notes: value.notes,
+    doctorCount: value.Doctors?.length ?? value.doctorCount ?? 0,
+    doctors: Array.isArray(value.Doctors)
+      ? value.Doctors.map((doctor) => ({
+          id: doctor.id,
+          userId: doctor.userId,
+          department: doctor.department,
+          verified: doctor.verified,
+          user: doctor.User
+            ? {
+                id: doctor.User.id,
+                firstName: doctor.User.firstName,
+                lastName: doctor.User.lastName,
+                email: doctor.User.email,
+              }
+            : null,
+        }))
+      : undefined,
+  };
+}
+
 export async function getStats(req, res) {
   try {
     const today = todayStr();
@@ -40,6 +87,7 @@ export async function getStats(req, res) {
       completedToday,
       pendingToday,
       pendingRequestsCount,
+      clinicCount,
     ] = await Promise.all([
       User.count(),
       Doctor.count(),
@@ -55,6 +103,7 @@ export async function getStats(req, res) {
         },
       }),
       Appointment.count({ where: { status: 'requested' } }),
+      Clinic.count(),
     ]);
     return res.json({
       success: true,
@@ -64,6 +113,7 @@ export async function getStats(req, res) {
           totalDoctors: doctorCount,
           totalPatients: patientCount,
           totalAppointments: appointmentCount,
+          totalClinics: clinicCount,
           pendingDoctorCount,
           todayAppointments,
           completedToday,
@@ -291,6 +341,179 @@ export async function unverifyDoctor(req, res) {
   }
 }
 
+export async function listClinics(req, res) {
+  try {
+    const status = typeof req.query.status === 'string' && req.query.status ? req.query.status : null;
+    const search = typeof req.query.search === 'string' ? req.query.search.trim() : '';
+    const includeDoctors = req.query.includeDoctors === 'true';
+    const where = {};
+
+    if (status) where.status = status;
+    if (search) {
+      const term = `%${search}%`;
+      where[Op.or] = [
+        { name: { [Op.like]: term } },
+        { city: { [Op.like]: term } },
+        { area: { [Op.like]: term } },
+        { code: { [Op.like]: term } },
+      ];
+    }
+
+    const clinics = await Clinic.findAll({
+      where,
+      include: includeDoctors
+        ? [
+            {
+              model: Doctor,
+              include: [{ model: User, as: 'User', attributes: ['id', 'firstName', 'lastName', 'email'] }],
+            },
+          ]
+        : [{ model: Doctor, attributes: ['id'] }],
+      order: [['name', 'ASC']],
+    });
+
+    return res.json({
+      success: true,
+      data: {
+        clinics: clinics.map(formatClinicForAdmin),
+      },
+    });
+  } catch (err) {
+    console.error('List clinics error:', err);
+    return res.status(500).json({ success: false, message: err.message || 'Failed to load clinics' });
+  }
+}
+
+export async function createClinic(req, res) {
+  try {
+    const payload = {
+      name: String(req.body.name || '').trim(),
+      type: req.body.type || 'clinic',
+      code: req.body.code ? String(req.body.code).trim() : null,
+      phone: req.body.phone ? String(req.body.phone).trim() : null,
+      email: req.body.email ? String(req.body.email).trim() : null,
+      addressLine: req.body.addressLine ? String(req.body.addressLine).trim() : null,
+      city: req.body.city ? String(req.body.city).trim() : null,
+      area: req.body.area ? String(req.body.area).trim() : null,
+      status: req.body.status || 'active',
+      departments: normalizeStringArray(req.body.departments),
+      services: normalizeStringArray(req.body.services),
+      operatingHours: req.body.operatingHours ? String(req.body.operatingHours).trim() : null,
+      notes: req.body.notes ? String(req.body.notes).trim() : null,
+    };
+    const doctorIds = Array.isArray(req.body.doctorIds)
+      ? req.body.doctorIds.map((id) => parseInt(id, 10)).filter(Boolean)
+      : [];
+
+    if (!payload.name) {
+      return res.status(400).json({ success: false, message: 'Clinic name is required' });
+    }
+
+    const clinic = await Clinic.create(payload);
+
+    if (doctorIds.length > 0) {
+      await Doctor.update({ clinicId: clinic.id }, { where: { id: { [Op.in]: doctorIds } } });
+    }
+
+    const fullClinic = await Clinic.findByPk(clinic.id, {
+      include: [
+        {
+          model: Doctor,
+          include: [{ model: User, as: 'User', attributes: ['id', 'firstName', 'lastName', 'email'] }],
+        },
+      ],
+    });
+
+    await logAudit({
+      action: 'clinic_created',
+      userId: req.user?.id,
+      entityType: 'clinic',
+      entityId: clinic.id,
+      details: { clinicId: clinic.id, name: clinic.name },
+      ip: getClientIp(req),
+    });
+
+    return res.status(201).json({
+      success: true,
+      data: {
+        clinic: formatClinicForAdmin(fullClinic),
+      },
+    });
+  } catch (err) {
+    console.error('Create clinic error:', err);
+    return res.status(500).json({ success: false, message: err.message || 'Failed to create clinic' });
+  }
+}
+
+export async function updateClinic(req, res) {
+  try {
+    const clinic = await Clinic.findByPk(req.params.id);
+    if (!clinic) {
+      return res.status(404).json({ success: false, message: 'Clinic not found' });
+    }
+
+    const payload = {
+      name: req.body.name !== undefined ? String(req.body.name || '').trim() : clinic.name,
+      type: req.body.type !== undefined ? req.body.type : clinic.type,
+      code: req.body.code !== undefined ? (req.body.code ? String(req.body.code).trim() : null) : clinic.code,
+      phone: req.body.phone !== undefined ? (req.body.phone ? String(req.body.phone).trim() : null) : clinic.phone,
+      email: req.body.email !== undefined ? (req.body.email ? String(req.body.email).trim() : null) : clinic.email,
+      addressLine: req.body.addressLine !== undefined ? (req.body.addressLine ? String(req.body.addressLine).trim() : null) : clinic.addressLine,
+      city: req.body.city !== undefined ? (req.body.city ? String(req.body.city).trim() : null) : clinic.city,
+      area: req.body.area !== undefined ? (req.body.area ? String(req.body.area).trim() : null) : clinic.area,
+      status: req.body.status !== undefined ? req.body.status : clinic.status,
+      departments: req.body.departments !== undefined ? normalizeStringArray(req.body.departments) : clinic.departments,
+      services: req.body.services !== undefined ? normalizeStringArray(req.body.services) : clinic.services,
+      operatingHours: req.body.operatingHours !== undefined ? (req.body.operatingHours ? String(req.body.operatingHours).trim() : null) : clinic.operatingHours,
+      notes: req.body.notes !== undefined ? (req.body.notes ? String(req.body.notes).trim() : null) : clinic.notes,
+    };
+
+    if (!payload.name) {
+      return res.status(400).json({ success: false, message: 'Clinic name is required' });
+    }
+
+    await clinic.update(payload);
+
+    if (req.body.doctorIds !== undefined) {
+      const doctorIds = Array.isArray(req.body.doctorIds)
+        ? req.body.doctorIds.map((id) => parseInt(id, 10)).filter(Boolean)
+        : [];
+      await Doctor.update({ clinicId: null }, { where: { clinicId: clinic.id } });
+      if (doctorIds.length > 0) {
+        await Doctor.update({ clinicId: clinic.id }, { where: { id: { [Op.in]: doctorIds } } });
+      }
+    }
+
+    const fullClinic = await Clinic.findByPk(clinic.id, {
+      include: [
+        {
+          model: Doctor,
+          include: [{ model: User, as: 'User', attributes: ['id', 'firstName', 'lastName', 'email'] }],
+        },
+      ],
+    });
+
+    await logAudit({
+      action: 'clinic_updated',
+      userId: req.user?.id,
+      entityType: 'clinic',
+      entityId: clinic.id,
+      details: { clinicId: clinic.id, name: clinic.name },
+      ip: getClientIp(req),
+    });
+
+    return res.json({
+      success: true,
+      data: {
+        clinic: formatClinicForAdmin(fullClinic),
+      },
+    });
+  } catch (err) {
+    console.error('Update clinic error:', err);
+    return res.status(500).json({ success: false, message: err.message || 'Failed to update clinic' });
+  }
+}
+
 // ----- Users (admin CRUD) -----
 
 function formatUserForAdmin(user, doctorId = null, patientId = null, doctorDetails = null) {
@@ -328,7 +551,8 @@ export async function listUsers(req, res) {
       model: Doctor,
       as: 'Doctor',
       required: false,
-      attributes: ['id', 'department', 'verified', 'bmdcRegistrationNumber', 'experience'],
+      attributes: ['id', 'department', 'verified', 'bmdcRegistrationNumber', 'experience', 'clinicId'],
+      include: [{ model: Clinic, attributes: ['id', 'name', 'type', 'city', 'status'], required: false }],
     };
     if (typeof verified !== 'undefined' && verified !== '') {
       doctorInclude.required = true;
@@ -361,6 +585,16 @@ export async function listUsers(req, res) {
             verified: u.Doctor.verified,
             bmdcRegistrationNumber: u.Doctor.bmdcRegistrationNumber,
             experience: u.Doctor.experience,
+            clinicId: u.Doctor.clinicId,
+            clinic: u.Doctor.Clinic
+              ? {
+                  id: u.Doctor.Clinic.id,
+                  name: u.Doctor.Clinic.name,
+                  type: u.Doctor.Clinic.type,
+                  city: u.Doctor.Clinic.city,
+                  status: u.Doctor.Clinic.status,
+                }
+              : null,
           }
           : null
       );
@@ -391,6 +625,7 @@ export async function createUser(req, res) {
       bmdcRegistrationNumber,
       department,
       experience,
+      clinicId,
     } = req.body;
 
     if (!email || !password || !firstName || !lastName) {
@@ -431,6 +666,7 @@ export async function createUser(req, res) {
         bmdcRegistrationNumber: bmdcRegistrationNumber || null,
         department: department || null,
         experience: experience != null ? parseInt(experience, 10) : null,
+        clinicId: clinicId ? parseInt(clinicId, 10) : null,
         verified: false,
       });
     }
@@ -441,7 +677,7 @@ export async function createUser(req, res) {
     const full = await User.findByPk(user.id, {
       attributes: { exclude: ['password'] },
       include: [
-        { model: Doctor, as: 'Doctor', required: false, attributes: ['id', 'department', 'verified', 'bmdcRegistrationNumber', 'experience'] },
+        { model: Doctor, as: 'Doctor', required: false, attributes: ['id', 'department', 'verified', 'bmdcRegistrationNumber', 'experience', 'clinicId'], include: [{ model: Clinic, attributes: ['id', 'name', 'type', 'city', 'status'], required: false }] },
         { model: Patient, as: 'Patient', required: false, attributes: ['id'] },
       ],
     });
@@ -469,6 +705,16 @@ export async function createUser(req, res) {
               verified: full.Doctor.verified,
               bmdcRegistrationNumber: full.Doctor.bmdcRegistrationNumber,
               experience: full.Doctor.experience,
+              clinicId: full.Doctor.clinicId,
+              clinic: full.Doctor.Clinic
+                ? {
+                    id: full.Doctor.Clinic.id,
+                    name: full.Doctor.Clinic.name,
+                    type: full.Doctor.Clinic.type,
+                    city: full.Doctor.Clinic.city,
+                    status: full.Doctor.Clinic.status,
+                  }
+                : null,
             }
             : null
         ),
@@ -507,6 +753,7 @@ export async function updateUser(req, res) {
       'bmdcRegistrationNumber',
       'department',
       'experience',
+      'clinicId',
       'verified',
     ];
     const updates = {};
@@ -570,6 +817,7 @@ export async function updateUser(req, res) {
           bmdcRegistrationNumber: updates.bmdcRegistrationNumber || null,
           department: updates.department || null,
           experience: updates.experience != null ? parseInt(updates.experience, 10) : null,
+          clinicId: updates.clinicId ? parseInt(updates.clinicId, 10) : null,
         });
       }
       if (newRole === 'patient') {
@@ -586,12 +834,18 @@ export async function updateUser(req, res) {
           ? null
           : parseInt(updates.experience, 10);
       }
+      if (updates.clinicId !== undefined) {
+        doctorFieldUpdates.clinicId = updates.clinicId === '' || updates.clinicId == null
+          ? null
+          : parseInt(updates.clinicId, 10);
+      }
       if (updates.verified !== undefined) doctorFieldUpdates.verified = updates.verified;
     }
 
     delete updates.bmdcRegistrationNumber;
     delete updates.department;
     delete updates.experience;
+    delete updates.clinicId;
     delete updates.verified;
 
     await user.update(updates);
@@ -608,7 +862,7 @@ export async function updateUser(req, res) {
     const full = await User.findByPk(user.id, {
       attributes: { exclude: ['password'] },
       include: [
-        { model: Doctor, as: 'Doctor', required: false, attributes: ['id', 'department', 'verified', 'bmdcRegistrationNumber', 'experience'] },
+        { model: Doctor, as: 'Doctor', required: false, attributes: ['id', 'department', 'verified', 'bmdcRegistrationNumber', 'experience', 'clinicId'], include: [{ model: Clinic, attributes: ['id', 'name', 'type', 'city', 'status'], required: false }] },
         { model: Patient, as: 'Patient', required: false, attributes: ['id'] },
       ],
     });
@@ -636,6 +890,16 @@ export async function updateUser(req, res) {
               verified: full.Doctor.verified,
               bmdcRegistrationNumber: full.Doctor.bmdcRegistrationNumber,
               experience: full.Doctor.experience,
+              clinicId: full.Doctor.clinicId,
+              clinic: full.Doctor.Clinic
+                ? {
+                    id: full.Doctor.Clinic.id,
+                    name: full.Doctor.Clinic.name,
+                    type: full.Doctor.Clinic.type,
+                    city: full.Doctor.Clinic.city,
+                    status: full.Doctor.Clinic.status,
+                  }
+                : null,
             }
             : null
         ),

@@ -27,7 +27,7 @@
   formalize medical history tracking as a clearer longitudinal patient record instead of leaving it spread across appointments, prescriptions, and profile details.
 - [x] Doctor dashboard:
   appointment management, patient record access, and prescription workflows are implemented.
-- [ ] Administrative features:
+- [x] Administrative features:
   strengthen hospital/clinic management so it is a real module, not just scattered admin settings and doctor availability data.
 
 ### Additional Features

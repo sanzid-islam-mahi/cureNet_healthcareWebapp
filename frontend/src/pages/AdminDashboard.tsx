@@ -25,6 +25,7 @@ interface Stats {
   totalPatients?: number;
   totalAppointments?: number;
   totalUsers?: number;
+  totalClinics?: number;
   pendingDoctorCount?: number;
   todayAppointments?: number;
   completedToday?: number;
@@ -211,6 +212,13 @@ export default function AdminDashboard() {
               Add user
             </Link>
             <Link
+              to="/app/admin-clinics"
+              className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            >
+              <Cog6ToothIcon className="h-5 w-5" />
+              Clinics
+            </Link>
+            <Link
               to="/app/admin-analytics"
               className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
             >
@@ -253,9 +261,9 @@ export default function AdminDashboard() {
           icon={ClockIcon}
         />
         <StatCard
-          label="Reports Generated"
-          value={stats.reportsGenerated ?? 0}
-          sub="this month"
+          label="Clinics"
+          value={stats.totalClinics ?? 0}
+          sub="managed facilities"
           icon={DocumentChartBarIcon}
         />
       </div>

@@ -1,5 +1,6 @@
 import sequelize from '../config/database.js';
 import User from './User.js';
+import Clinic from './Clinic.js';
 import Doctor from './Doctor.js';
 import Patient from './Patient.js';
 import PatientMedicalHistory from './PatientMedicalHistory.js';
@@ -16,6 +17,7 @@ import Notification from './Notification.js';
 const db = {
   sequelize,
   User,
+  Clinic,
   Doctor,
   Patient,
   PatientMedicalHistory,

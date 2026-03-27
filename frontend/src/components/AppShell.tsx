@@ -1,4 +1,5 @@
 import {
+  BuildingOffice2Icon,
   BellAlertIcon,
   CalendarDaysIcon,
   ChartBarIcon,
@@ -67,6 +68,7 @@ const shellByRole: Record<Role, NavGroup[]> = {
       items: [
         { to: '/app/admin-dashboard', label: 'Dashboard', icon: HomeIcon, description: 'System control center' },
         { to: '/app/users', label: 'Users', icon: UserGroupIcon, description: 'Access and verification' },
+        { to: '/app/admin-clinics', label: 'Clinics', icon: BuildingOffice2Icon, description: 'Facilities and doctor rosters' },
       ],
     },
     {

@@ -21,6 +21,8 @@ interface DoctorProfileSummary {
   verified?: boolean;
   bmdcRegistrationNumber?: string | null;
   experience?: number | null;
+  clinicId?: number | null;
+  clinic?: { id: number; name: string } | null;
 }
 
 interface UserRow {
@@ -60,7 +62,14 @@ interface UserFormValues {
   department: string;
   bmdcRegistrationNumber: string;
   experience: string;
+  clinicId: string;
   verified: boolean;
+}
+
+interface ClinicOption {
+  id: number;
+  name: string;
+  status: 'active' | 'inactive';
 }
 
 function getRoleBadgeClasses(role: UserRole) {
@@ -84,6 +93,7 @@ function emptyFormValues(role: UserRole = 'patient'): UserFormValues {
     department: '',
     bmdcRegistrationNumber: '',
     experience: '',
+    clinicId: '',
     verified: false,
   };
 }
@@ -103,6 +113,7 @@ function formValuesFromUser(user: UserRow): UserFormValues {
     department: user.doctorProfile?.department ?? '',
     bmdcRegistrationNumber: user.doctorProfile?.bmdcRegistrationNumber ?? '',
     experience: user.doctorProfile?.experience != null ? String(user.doctorProfile.experience) : '',
+    clinicId: user.doctorProfile?.clinicId != null ? String(user.doctorProfile.clinicId) : '',
     verified: Boolean(user.doctorProfile?.verified),
   };
 }
@@ -128,6 +139,7 @@ function buildUserPayload(values: UserFormValues, includePassword: boolean) {
     payload.department = values.department || null;
     payload.bmdcRegistrationNumber = values.bmdcRegistrationNumber.trim() || null;
     payload.experience = values.experience.trim() ? parseInt(values.experience, 10) : null;
+    payload.clinicId = values.clinicId || null;
     payload.verified = values.verified;
   }
 
@@ -140,12 +152,14 @@ function UserFormFields({
   includePassword,
   currentRole,
   isSelf,
+  clinics = [],
 }: {
   values: UserFormValues;
   onChange: (patch: Partial<UserFormValues>) => void;
   includePassword: boolean;
   currentRole?: UserRole;
   isSelf?: boolean;
+  clinics?: ClinicOption[];
 }) {
   const roleChanging = currentRole && currentRole !== values.role;
 
@@ -289,6 +303,18 @@ function UserFormFields({
             onChange={(e) => onChange({ experience: e.target.value })}
             className="w-full rounded-lg border border-blue-200 px-3 py-2 text-sm"
           />
+          <select
+            value={values.clinicId}
+            onChange={(e) => onChange({ clinicId: e.target.value })}
+            className="w-full rounded-lg border border-blue-200 px-3 py-2 text-sm"
+          >
+            <option value="">Assign clinic</option>
+            {clinics
+              .filter((clinic) => clinic.status === 'active')
+              .map((clinic) => (
+                <option key={clinic.id} value={clinic.id}>{clinic.name}</option>
+              ))}
+          </select>
           <label className="flex items-center gap-2 rounded-lg bg-white px-3 py-2">
             <input
               type="checkbox"
@@ -315,6 +341,7 @@ function UserModal({
   includePassword,
   currentRole,
   isSelf,
+  clinics = [],
 }: {
   title: string;
   description: string;
@@ -327,6 +354,7 @@ function UserModal({
   includePassword: boolean;
   currentRole?: UserRole;
   isSelf?: boolean;
+  clinics?: ClinicOption[];
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
@@ -347,6 +375,7 @@ function UserModal({
             includePassword={includePassword}
             currentRole={currentRole}
             isSelf={isSelf}
+            clinics={clinics}
           />
 
           <div className="flex gap-2 pt-2">
@@ -401,6 +430,14 @@ export default function AdminUsers() {
       if (verifiedFilter && roleFilter === 'doctor') params.verified = verifiedFilter;
       const { data: res } = await api.get<{ success: boolean; data: UserListResponse }>('/admin/users', { params });
       return res.data;
+    },
+  });
+
+  const { data: clinics = [] } = useQuery({
+    queryKey: ['admin', 'clinics', 'options'],
+    queryFn: async () => {
+      const { data: res } = await api.get<{ success: boolean; data: { clinics: ClinicOption[] } }>('/admin/clinics');
+      return res.data?.clinics ?? [];
     },
   });
 
@@ -765,6 +802,9 @@ export default function AdminUsers() {
                         <p className="mt-1 text-blue-800">
                           BMDC: {entry.doctorProfile?.bmdcRegistrationNumber || 'Not recorded'}
                         </p>
+                        <p className="mt-1 text-blue-800">
+                          Clinic: {entry.doctorProfile?.clinic?.name || 'Not assigned'}
+                        </p>
                       </div>
                     ) : null}
 
@@ -843,6 +883,7 @@ export default function AdminUsers() {
           isSubmitting={createUser.isPending}
           submitLabel="Create User"
           includePassword
+          clinics={clinics}
         />
       ) : null}
 
@@ -859,6 +900,7 @@ export default function AdminUsers() {
           includePassword={false}
           currentRole={editingUser.role}
           isSelf={currentUser?.id === editingUser.id}
+          clinics={clinics}
         />
       ) : null}
     </div>

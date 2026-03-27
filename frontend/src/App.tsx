@@ -22,6 +22,7 @@ const PatientDashboard = lazy(() => import('./pages/PatientDashboard'));
 const DoctorDashboard = lazy(() => import('./pages/DoctorDashboard'));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 const AdminUsers = lazy(() => import('./pages/AdminUsers'));
+const AdminClinics = lazy(() => import('./pages/AdminClinics'));
 const AdminAnalytics = lazy(() => import('./pages/AdminAnalytics'));
 const AdminLogs = lazy(() => import('./pages/AdminLogs'));
 const Notifications = lazy(() => import('./pages/Notifications'));
@@ -79,6 +80,7 @@ function AppRoutes() {
                 <Route path="patient-dashboard" element={<PatientDashboard />} />
                 <Route path="doctor-dashboard" element={<DoctorDashboard />} />
                 <Route path="admin-dashboard" element={<ProtectedRoute requiredRole="admin"><AdminDashboard /></ProtectedRoute>} />
+                <Route path="admin-clinics" element={<ProtectedRoute requiredRole="admin"><AdminClinics /></ProtectedRoute>} />
                 <Route path="patient-profile" element={<ProtectedRoute requiredRole="patient"><PatientProfile /></ProtectedRoute>} />
                 <Route path="patient-medical-history" element={<ProtectedRoute requiredRole="patient"><PatientMedicalHistory /></ProtectedRoute>} />
                 <Route path="doctor-profile" element={<ProtectedRoute requiredRole="doctor"><DoctorProfile /></ProtectedRoute>} />
