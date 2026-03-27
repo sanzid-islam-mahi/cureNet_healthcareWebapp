@@ -35,7 +35,12 @@ coverage/
 .cache/
 
 #faltu
-/*.md
+/ADMIN_IMPLEMENTATION_PLAN.md
+/APPOINTMENTS_DESIGN.md
+/FIRST_MESSAGE_PROMPT_FOR_NEW_CHAT.md
+/Medical_History_Module_Plan.md
+/Phase_1_Plan:_Email_Verification_Auth_via_SMTP_Abstraction.md
+/PLAN.md
 #keep the readme
 !/README.md
 /backend/uploads/
