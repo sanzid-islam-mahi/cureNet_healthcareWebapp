@@ -6,7 +6,9 @@ import {
   CheckCircleIcon,
   ClockIcon,
   FunnelIcon,
-  UserGroupIcon,
+  IdentificationIcon,
+  PhoneIcon,
+  UserCircleIcon,
   XCircleIcon,
 } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
@@ -31,7 +33,7 @@ interface QueueAppointment {
 }
 
 const STATUS_OPTIONS: Array<{ value: QueueStatus; label: string }> = [
-  { value: 'all', label: 'All appointments' },
+  { value: 'all', label: 'All statuses' },
   { value: 'requested', label: 'Requested' },
   { value: 'approved', label: 'Approved' },
   { value: 'in_progress', label: 'In progress' },
@@ -62,6 +64,23 @@ function statusPillClasses(status: string) {
   return 'bg-slate-100 text-slate-600';
 }
 
+function sortAppointments(appointments: QueueAppointment[]) {
+  const rank: Record<string, number> = {
+    requested: 0,
+    approved: 1,
+    in_progress: 2,
+    completed: 3,
+    rejected: 4,
+    cancelled: 5,
+  };
+
+  return [...appointments].sort((a, b) => {
+    const statusDiff = (rank[a.status] ?? 99) - (rank[b.status] ?? 99);
+    if (statusDiff !== 0) return statusDiff;
+    return `${a.appointmentDate} ${a.window || ''}`.localeCompare(`${b.appointmentDate} ${b.window || ''}`);
+  });
+}
+
 export default function ReceptionistAppointments() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -83,7 +102,8 @@ export default function ReceptionistAppointments() {
     enabled: !!user?.clinicId,
   });
 
-  const appointments = data?.appointments ?? [];
+  const appointments = useMemo(() => sortAppointments(data?.appointments ?? []), [data?.appointments]);
+  const clinic = appointments[0]?.clinic ?? null;
   const stats = useMemo(() => {
     const requested = appointments.filter((item) => item.status === 'requested').length;
     const active = appointments.filter((item) => ['approved', 'in_progress'].includes(item.status)).length;
@@ -107,27 +127,28 @@ export default function ReceptionistAppointments() {
   return (
     <div className="space-y-8">
       <AppPageHeader
-        eyebrow="Reception Operations"
-        title="Clinic Appointment Queue"
-        description="Review patient requests, route them into the approved queue, and keep the clinic schedule moving without giving reception broad admin access."
+        eyebrow="Reception Queue"
+        title="Clinic Appointment Board"
+        description="Work from the newest requests first, confirm patient identity and contact details, and verify the assigned doctor before approving."
       />
 
-      <div className="grid gap-4 md:grid-cols-4">
-        <MetricCard icon={BuildingOffice2Icon} label="Assigned clinic" value={appointments[0]?.clinic?.name || (user?.clinicId ? `Clinic #${user.clinicId}` : 'Not assigned')} />
-        <MetricCard icon={ClockIcon} label="Requested" value={`${stats.requested}`} />
-        <MetricCard icon={CalendarDaysIcon} label="Active queue" value={`${stats.active}`} />
-        <MetricCard icon={CheckCircleIcon} label="Completed" value={`${stats.completed}`} />
-      </div>
-
-      <section className="rounded-3xl border border-slate-200 bg-white shadow-sm">
-        <div className="flex flex-col gap-4 border-b border-slate-200 px-5 py-4 lg:flex-row lg:items-end lg:justify-between">
+      <section className="rounded-[28px] border border-slate-200 bg-white shadow-sm">
+        <div className="grid gap-4 border-b border-slate-200 px-5 py-5 lg:grid-cols-[1fr_auto] lg:items-end">
           <div>
-            <h2 className="text-base font-semibold text-slate-900">Front-desk queue</h2>
-            <p className="mt-1 text-sm text-slate-500">Only appointments for the receptionist&apos;s assigned clinic are visible here.</p>
+            <div className="flex items-center gap-2 text-slate-500">
+              <BuildingOffice2Icon className="h-5 w-5" />
+              <p className="text-xs font-semibold uppercase tracking-[0.16em]">Clinic</p>
+            </div>
+            <h2 className="mt-2 text-xl font-semibold text-slate-900">
+              {clinic?.name || (user?.clinicId ? `Clinic #${user.clinicId}` : 'Clinic assignment pending')}
+            </h2>
+            <p className="mt-1 text-sm text-slate-500">
+              {[clinic?.addressLine, clinic?.area, clinic?.city].filter(Boolean).join(', ') || 'Clinic address not added yet'}
+            </p>
           </div>
 
           <div className="flex flex-col gap-3 sm:flex-row">
-            <label className="min-w-[180px]">
+            <label className="min-w-[190px]">
               <span className="mb-1 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
                 <FunnelIcon className="h-4 w-4" />
                 Status
@@ -157,6 +178,12 @@ export default function ReceptionistAppointments() {
           </div>
         </div>
 
+        <div className="grid gap-4 border-b border-slate-200 px-5 py-4 md:grid-cols-3">
+          <SummaryCard icon={ClockIcon} label="Requested" value={`${stats.requested}`} tint="amber" />
+          <SummaryCard icon={CalendarDaysIcon} label="Active" value={`${stats.active}`} tint="sky" />
+          <SummaryCard icon={CheckCircleIcon} label="Completed" value={`${stats.completed}`} tint="emerald" />
+        </div>
+
         {appointments.length === 0 ? (
           <div className="px-5 py-12 text-sm text-slate-500">No clinic appointments match the current filters.</div>
         ) : (
@@ -168,54 +195,57 @@ export default function ReceptionistAppointments() {
 
               return (
                 <article key={appointment.id} className="px-5 py-5">
-                  <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+                  <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="text-base font-semibold text-slate-900">{patientName}</h3>
+                        <h3 className="text-lg font-semibold text-slate-900">{patientName}</h3>
                         <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${statusPillClasses(appointment.status)}`}>
                           {appointment.status.replace('_', ' ')}
                         </span>
                       </div>
 
-                      <div className="mt-3 grid gap-3 lg:grid-cols-2 2xl:grid-cols-4">
-                        <MetaBlock label="Doctor" value={`Dr. ${doctorName}`} />
-                        <MetaBlock label="Date" value={formatDate(appointment.appointmentDate)} />
-                        <MetaBlock
-                          label="Session"
-                          value={[
-                            appointment.window || null,
-                            appointment.serial ? `Serial ${appointment.serial}` : null,
-                            appointment.type.replace('_', ' '),
-                          ].filter(Boolean).join(' • ') || 'Unspecified'}
+                      <div className="mt-4 grid gap-3 lg:grid-cols-2">
+                        <ContextCard
+                          icon={UserCircleIcon}
+                          title="Patient"
+                          primary={patientName}
+                          secondary={appointment.patient?.user?.phone || 'Phone not recorded'}
+                          detail={[formatDate(appointment.appointmentDate), appointment.type.replace('_', ' ')].join(' • ')}
                         />
-                        <MetaBlock label="Clinic" value={appointment.clinic?.name || `Clinic #${appointment.clinicId || '—'}`} />
+                        <ContextCard
+                          icon={IdentificationIcon}
+                          title="Doctor"
+                          primary={`Dr. ${doctorName}`}
+                          secondary={appointment.doctor?.department || 'Department not listed'}
+                          detail={[
+                            appointment.window || 'Session not selected',
+                            appointment.serial ? `Serial ${appointment.serial}` : null,
+                          ].filter(Boolean).join(' • ')}
+                        />
                       </div>
 
-                      {clinicAddress ? (
-                        <p className="mt-3 text-sm text-slate-600">
-                          <span className="font-medium text-slate-700">Location:</span> {clinicAddress}
-                        </p>
-                      ) : null}
-
-                      {appointment.reason ? (
-                        <p className="mt-3 text-sm text-slate-600">
-                          <span className="font-medium text-slate-700">Reason:</span> {appointment.reason}
-                        </p>
-                      ) : null}
-
-                      {appointment.symptoms ? (
-                        <p className="mt-1 text-sm text-slate-600">
-                          <span className="font-medium text-slate-700">Symptoms:</span> {appointment.symptoms}
-                        </p>
-                      ) : null}
+                      <div className="mt-4 grid gap-3 lg:grid-cols-[1.05fr_0.95fr]">
+                        <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Visit notes</p>
+                          <div className="mt-2 space-y-2 text-sm text-slate-600">
+                            <p><span className="font-medium text-slate-700">Reason:</span> {appointment.reason || 'Not added'}</p>
+                            <p><span className="font-medium text-slate-700">Symptoms:</span> {appointment.symptoms || 'Not added'}</p>
+                          </div>
+                        </div>
+                        <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Clinic location</p>
+                          <p className="mt-2 text-sm font-medium text-slate-900">{appointment.clinic?.name || `Clinic #${appointment.clinicId || '—'}`}</p>
+                          <p className="mt-1 text-sm text-slate-600">{clinicAddress || 'Address not listed'}</p>
+                        </div>
+                      </div>
                     </div>
 
                     {appointment.status === 'requested' ? (
-                      <div className="flex shrink-0 gap-2">
+                      <div className="flex shrink-0 flex-col gap-2 xl:w-44">
                         <button
                           type="button"
                           onClick={() => updateMutation.mutate({ id: appointment.id, action: 'approve' })}
-                          className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500"
+                          className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-emerald-500"
                         >
                           <CheckCircleIcon className="h-4 w-4" />
                           Approve
@@ -223,28 +253,31 @@ export default function ReceptionistAppointments() {
                         <button
                           type="button"
                           onClick={() => updateMutation.mutate({ id: appointment.id, action: 'reject' })}
-                          className="inline-flex items-center gap-2 rounded-xl border border-rose-300 bg-rose-50 px-4 py-2 text-sm font-medium text-rose-700 hover:bg-rose-100"
+                          className="inline-flex items-center justify-center gap-2 rounded-xl border border-rose-300 bg-rose-50 px-4 py-2.5 text-sm font-medium text-rose-700 hover:bg-rose-100"
                         >
                           <XCircleIcon className="h-4 w-4" />
                           Reject
                         </button>
+                        <p className="text-xs leading-5 text-slate-500">
+                          Confirm the patient details and doctor assignment before clearing the request.
+                        </p>
                       </div>
                     ) : (
-                      <div className="shrink-0 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                      <div className="shrink-0 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-600 xl:w-52">
                         <div className="flex items-center gap-2 text-slate-700">
-                          <UserGroupIcon className="h-4 w-4" />
-                          Front desk status
+                          <PhoneIcon className="h-4 w-4" />
+                          Queue status
                         </div>
-                        <p className="mt-2 text-sm">
+                        <p className="mt-2 leading-6">
                           {appointment.status === 'approved'
                             ? 'Approved and ready for doctor workflow.'
                             : appointment.status === 'in_progress'
                               ? 'Doctor has already started the consultation.'
                               : appointment.status === 'completed'
-                                ? 'Visit completed.'
+                                ? 'Visit completed and cleared from the live queue.'
                                 : appointment.status === 'rejected'
-                                  ? 'Request was rejected.'
-                                  : 'No front-desk action needed.'}
+                                  ? 'Rejected at the front desk.'
+                                  : 'No immediate desk action needed.'}
                         </p>
                       </div>
                     )}
@@ -259,23 +292,57 @@ export default function ReceptionistAppointments() {
   );
 }
 
-function MetricCard({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: string }) {
+function SummaryCard({
+  icon: Icon,
+  label,
+  value,
+  tint,
+}: {
+  icon: React.ElementType;
+  label: string;
+  value: string;
+  tint: 'amber' | 'sky' | 'emerald';
+}) {
+  const classes =
+    tint === 'amber'
+      ? 'bg-amber-50 text-amber-800 ring-amber-100'
+      : tint === 'sky'
+        ? 'bg-sky-50 text-sky-800 ring-sky-100'
+        : 'bg-emerald-50 text-emerald-800 ring-emerald-100';
+
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm">
-      <div className="flex items-center gap-2 text-slate-500">
+    <div className={`rounded-2xl px-4 py-4 ring-1 ${classes}`}>
+      <div className="flex items-center gap-2">
         <Icon className="h-5 w-5" />
-        <p className="text-xs font-semibold uppercase tracking-wide">{label}</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.14em]">{label}</p>
       </div>
-      <p className="mt-3 text-base font-semibold text-slate-900">{value}</p>
+      <p className="mt-3 text-2xl font-semibold">{value}</p>
     </div>
   );
 }
 
-function MetaBlock({ label, value }: { label: string; value: string }) {
+function ContextCard({
+  icon: Icon,
+  title,
+  primary,
+  secondary,
+  detail,
+}: {
+  icon: React.ElementType;
+  title: string;
+  primary: string;
+  secondary: string;
+  detail: string;
+}) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">{label}</p>
-      <p className="mt-1 text-sm font-medium text-slate-900">{value}</p>
+    <div className="rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-sm">
+      <div className="flex items-center gap-2 text-slate-500">
+        <Icon className="h-4 w-4" />
+        <p className="text-[11px] font-semibold uppercase tracking-[0.14em]">{title}</p>
+      </div>
+      <p className="mt-3 text-sm font-semibold text-slate-900">{primary}</p>
+      <p className="mt-1 text-sm text-slate-600">{secondary}</p>
+      <p className="mt-2 text-xs text-slate-500">{detail}</p>
     </div>
   );
 }
