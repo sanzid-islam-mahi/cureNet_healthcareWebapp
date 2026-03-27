@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Bars3Icon, BellIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../context/AuthContext';
 import logo from '../assets/curenet_logo.png';
+import NotificationCenterModal from './NotificationCenterModal';
 
 const navLinks = [
   { to: '/', label: 'HOME' },
@@ -19,8 +21,11 @@ const API_ORIGIN = import.meta.env.VITE_API_URL
 
 const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [notificationOpen, setNotificationOpen] = useState(false);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const eventSourceRef = useRef<EventSource | null>(null);
   const { data: notificationsData } = useQuery({
     queryKey: ['notifications', 'summary'],
     queryFn: async () => {
@@ -38,6 +43,42 @@ const Navbar = () => {
       : `${API_ORIGIN}${user.profileImage}`
     : null;
   const unreadCount = notificationsData?.unreadCount ?? 0;
+
+  useEffect(() => {
+    if (!user) {
+      eventSourceRef.current?.close();
+      eventSourceRef.current = null;
+      return;
+    }
+
+    const base = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+    const streamUrl = `${base.replace(/\/$/, '')}/notifications/stream`;
+    const source = new EventSource(streamUrl, { withCredentials: true });
+    eventSourceRef.current = source;
+
+    source.addEventListener('notification', (event) => {
+      try {
+        const payload = JSON.parse((event as MessageEvent<string>).data) as {
+          id: number;
+          title: string;
+          message: string;
+        };
+        queryClient.invalidateQueries({ queryKey: ['notifications'] });
+        queryClient.invalidateQueries({ queryKey: ['notifications', 'summary'] });
+        toast(payload.title, {
+          icon: '🔔',
+        });
+      } catch {
+        queryClient.invalidateQueries({ queryKey: ['notifications'] });
+        queryClient.invalidateQueries({ queryKey: ['notifications', 'summary'] });
+      }
+    });
+
+    return () => {
+      source.close();
+      if (eventSourceRef.current === source) eventSourceRef.current = null;
+    };
+  }, [queryClient, user]);
 
   const dashboardPath =
     user?.role === 'patient'
@@ -85,7 +126,11 @@ const Navbar = () => {
           {user ? (
             <>
               <Link
-                to="/app/notifications"
+                to="#"
+                onClick={(event) => {
+                  event.preventDefault();
+                  setNotificationOpen(true);
+                }}
                 className="relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600"
                 aria-label={unreadCount > 0 ? `${unreadCount} unread notifications` : 'Notifications'}
               >
@@ -174,9 +219,13 @@ const Navbar = () => {
             {user ? (
               <div className="flex flex-col gap-2">
                 <Link
-                  to="/app/notifications"
+                  to="#"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    setNotificationOpen(true);
+                    closeMobileMenu();
+                  }}
                   className="flex items-center justify-between rounded-2xl bg-slate-50 px-5 py-4 text-slate-800 transition-colors hover:text-blue-600"
-                  onClick={closeMobileMenu}
                 >
                   <span className="inline-flex items-center gap-3 font-bold">
                     <BellIcon className="h-5 w-5" />
@@ -239,6 +288,8 @@ const Navbar = () => {
           </div>
         </div>
       )}
+
+      {notificationOpen ? <NotificationCenterModal onClose={() => setNotificationOpen(false)} /> : null}
     </nav>
   );
 };

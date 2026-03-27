@@ -1,4 +1,5 @@
 import db from '../models/index.js';
+import notificationEvents from '../lib/notificationEvents.js';
 
 const { Notification } = db;
 
@@ -51,6 +52,41 @@ export async function list(req, res) {
     console.error('List notifications error:', err);
     return res.status(500).json({ success: false, message: err.message || 'Failed' });
   }
+}
+
+export async function stream(req, res) {
+  const userId = req.user?.id;
+  if (!userId) {
+    return res.status(401).json({ success: false, message: 'Unauthorized' });
+  }
+
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache, no-transform');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders?.();
+
+  const sendEvent = (event, payload) => {
+    res.write(`event: ${event}\n`);
+    res.write(`data: ${JSON.stringify(payload)}\n\n`);
+  };
+
+  sendEvent('connected', { ok: true });
+
+  const heartbeat = setInterval(() => {
+    res.write(': keep-alive\n\n');
+  }, 25000);
+
+  const listener = (payload) => {
+    sendEvent('notification', payload);
+  };
+
+  notificationEvents.on(`user:${userId}`, listener);
+
+  req.on('close', () => {
+    clearInterval(heartbeat);
+    notificationEvents.off(`user:${userId}`, listener);
+    res.end();
+  });
 }
 
 export async function markRead(req, res) {

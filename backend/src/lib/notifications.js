@@ -1,4 +1,5 @@
 import db from '../models/index.js';
+import notificationEvents from './notificationEvents.js';
 
 const { Notification } = db;
 
@@ -12,7 +13,7 @@ export async function createNotification({
 }) {
   if (!userId || !type || !title || !message) return null;
 
-  return Notification.create({
+  const notification = await Notification.create({
     userId,
     type,
     title,
@@ -20,4 +21,18 @@ export async function createNotification({
     link,
     metadata,
   });
+
+  notificationEvents.emit(`user:${userId}`, {
+    id: notification.id,
+    type: notification.type,
+    title: notification.title,
+    message: notification.message,
+    link: notification.link,
+    metadata: notification.metadata,
+    readAt: notification.readAt,
+    createdAt: notification.createdAt,
+    updatedAt: notification.updatedAt,
+  });
+
+  return notification;
 }
