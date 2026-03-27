@@ -6,7 +6,6 @@ import {
   ClipboardDocumentListIcon,
   DocumentTextIcon,
   HomeIcon,
-  ShieldCheckIcon,
   UserCircleIcon,
   UserGroupIcon,
 } from '@heroicons/react/24/outline';
@@ -158,16 +157,6 @@ export default function AppShell() {
                   </div>
                 </div>
               ))}
-
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
-                <div className="flex items-center gap-2 text-slate-700">
-                  <ShieldCheckIcon className="h-4 w-4" />
-                  <p className="text-xs font-semibold uppercase tracking-[0.16em]">Workspace Notice</p>
-                </div>
-                <p className="mt-2 text-sm leading-6 text-slate-600">
-                  Keep the app shell for navigation. Pages should focus on task flow, not re-creating tabs and page framing.
-                </p>
-              </div>
             </div>
           </div>
         </aside>
