@@ -14,7 +14,7 @@ import toast from 'react-hot-toast';
 import { api, useAuth } from '../context/AuthContext';
 import { MEDICAL_DEPARTMENTS } from '../utils/departments';
 
-type UserRole = 'admin' | 'patient' | 'doctor';
+type UserRole = 'admin' | 'patient' | 'doctor' | 'receptionist';
 
 interface DoctorProfileSummary {
   department?: string | null;
@@ -22,6 +22,13 @@ interface DoctorProfileSummary {
   bmdcRegistrationNumber?: string | null;
   experience?: number | null;
   clinicId?: number | null;
+  clinic?: { id: number; name: string } | null;
+}
+
+interface ReceptionistProfileSummary {
+  clinicId?: number | null;
+  employeeCode?: string | null;
+  isActive?: boolean;
   clinic?: { id: number; name: string } | null;
 }
 
@@ -39,6 +46,7 @@ interface UserRow {
   doctorId?: number | null;
   patientId?: number | null;
   doctorProfile?: DoctorProfileSummary | null;
+  receptionistProfile?: ReceptionistProfileSummary | null;
 }
 
 interface UserListResponse {
@@ -63,6 +71,7 @@ interface UserFormValues {
   bmdcRegistrationNumber: string;
   experience: string;
   clinicId: string;
+  employeeCode: string;
   verified: boolean;
 }
 
@@ -75,6 +84,7 @@ interface ClinicOption {
 function getRoleBadgeClasses(role: UserRole) {
   if (role === 'admin') return 'bg-violet-100 text-violet-800';
   if (role === 'doctor') return 'bg-blue-100 text-blue-800';
+  if (role === 'receptionist') return 'bg-sky-100 text-sky-800';
   return 'bg-emerald-100 text-emerald-800';
 }
 
@@ -94,6 +104,7 @@ function emptyFormValues(role: UserRole = 'patient'): UserFormValues {
     bmdcRegistrationNumber: '',
     experience: '',
     clinicId: '',
+    employeeCode: '',
     verified: false,
   };
 }
@@ -114,6 +125,7 @@ function formValuesFromUser(user: UserRow): UserFormValues {
     bmdcRegistrationNumber: user.doctorProfile?.bmdcRegistrationNumber ?? '',
     experience: user.doctorProfile?.experience != null ? String(user.doctorProfile.experience) : '',
     clinicId: user.doctorProfile?.clinicId != null ? String(user.doctorProfile.clinicId) : '',
+    employeeCode: user.receptionistProfile?.employeeCode ?? '',
     verified: Boolean(user.doctorProfile?.verified),
   };
 }
@@ -141,6 +153,10 @@ function buildUserPayload(values: UserFormValues, includePassword: boolean) {
     payload.experience = values.experience.trim() ? parseInt(values.experience, 10) : null;
     payload.clinicId = values.clinicId || null;
     payload.verified = values.verified;
+  }
+  if (values.role === 'receptionist') {
+    payload.clinicId = values.clinicId || null;
+    payload.employeeCode = values.employeeCode.trim() || null;
   }
 
   return payload;
@@ -248,6 +264,7 @@ function UserFormFields({
           <option value="admin">Admin</option>
           <option value="patient">Patient</option>
           <option value="doctor">Doctor</option>
+          <option value="receptionist">Receptionist</option>
         </select>
       </div>
 
@@ -323,6 +340,34 @@ function UserFormFields({
             />
             <span className="text-sm text-gray-700">Doctor verified for public listing</span>
           </label>
+        </div>
+      ) : null}
+
+      {values.role === 'receptionist' ? (
+        <div className="space-y-3 rounded-xl border border-sky-100 bg-sky-50 p-4">
+          <p className="text-sm font-semibold text-sky-900">Reception Desk Assignment</p>
+          <select
+            value={values.clinicId}
+            onChange={(e) => onChange({ clinicId: e.target.value })}
+            className="w-full rounded-lg border border-sky-200 px-3 py-2 text-sm"
+          >
+            <option value="">Assign clinic</option>
+            {clinics
+              .filter((clinic) => clinic.status === 'active')
+              .map((clinic) => (
+                <option key={clinic.id} value={clinic.id}>{clinic.name}</option>
+              ))}
+          </select>
+          <input
+            type="text"
+            placeholder="Employee code"
+            value={values.employeeCode}
+            onChange={(e) => onChange({ employeeCode: e.target.value })}
+            className="w-full rounded-lg border border-sky-200 px-3 py-2 text-sm"
+          />
+          <p className="text-xs text-sky-700">
+            Receptionists should be clinic-scoped staff, not platform-wide operators.
+          </p>
         </div>
       ) : null}
     </div>
@@ -679,6 +724,7 @@ export default function AdminUsers() {
             <option value="">All roles</option>
             <option value="admin">Admin</option>
             <option value="doctor">Doctor</option>
+            <option value="receptionist">Receptionist</option>
             <option value="patient">Patient</option>
           </select>
           <select
@@ -777,6 +823,8 @@ export default function AdminUsers() {
                         <p className="mt-1 text-sm font-medium text-slate-900">
                           {entry.role === 'doctor'
                             ? (entry.doctorId ? `Doctor #${entry.doctorId}` : 'Doctor profile pending')
+                            : entry.role === 'receptionist'
+                              ? (entry.receptionistProfile?.clinicId ? `Receptionist • Clinic #${entry.receptionistProfile.clinicId}` : 'Reception desk assignment pending')
                             : entry.role === 'patient'
                               ? (entry.patientId ? `Patient #${entry.patientId}` : 'Patient profile pending')
                               : 'Admin account'}
@@ -788,6 +836,8 @@ export default function AdminUsers() {
                         <p className="mt-1 text-sm font-medium text-slate-900">
                           {entry.role === 'doctor'
                             ? (entry.doctorProfile?.verified ? 'Verified doctor' : 'Pending verification')
+                            : entry.role === 'receptionist'
+                              ? (entry.receptionistProfile?.clinic?.name || 'Clinic not assigned')
                             : entry.isActive ? 'Can sign in' : 'Blocked from sign-in'}
                         </p>
                       </div>
@@ -804,6 +854,17 @@ export default function AdminUsers() {
                         </p>
                         <p className="mt-1 text-blue-800">
                           Clinic: {entry.doctorProfile?.clinic?.name || 'Not assigned'}
+                        </p>
+                      </div>
+                    ) : null}
+
+                    {entry.role === 'receptionist' ? (
+                      <div className="mt-4 rounded-xl border border-sky-100 bg-sky-50 px-3 py-3 text-sm text-sky-900">
+                        <p className="font-medium">
+                          Clinic: {entry.receptionistProfile?.clinic?.name || 'Not assigned'}
+                        </p>
+                        <p className="mt-1 text-sky-800">
+                          Employee code: {entry.receptionistProfile?.employeeCode || 'Not recorded'}
                         </p>
                       </div>
                     ) : null}

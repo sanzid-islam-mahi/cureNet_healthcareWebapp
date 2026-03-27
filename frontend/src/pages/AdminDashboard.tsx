@@ -45,7 +45,15 @@ interface DoctorRow {
   department?: string;
   experience?: number;
   verified: boolean;
+  clinicId?: number | null;
+  clinic?: { id: number; name: string; status: 'active' | 'inactive' } | null;
   user?: { id: number; firstName: string; lastName: string; email: string };
+}
+
+interface ClinicOption {
+  id: number;
+  name: string;
+  status: 'active' | 'inactive';
 }
 
 interface PatientRow {
@@ -83,6 +91,8 @@ export default function AdminDashboard() {
   const [doctorSearch, setDoctorSearch] = useState('');
   const [patientSearch, setPatientSearch] = useState('');
   const [appointmentTab, setAppointmentTab] = useState<'completed' | 'pending'>('completed');
+  const [approvalTarget, setApprovalTarget] = useState<DoctorRow | null>(null);
+  const [approvalClinicId, setApprovalClinicId] = useState('');
 
   const { data: statsData } = useQuery({
     queryKey: ['admin', 'stats'],
@@ -100,6 +110,14 @@ export default function AdminDashboard() {
         { params: { search: doctorSearch || undefined, limit: 50 } }
       );
       return data.data?.doctors ?? [];
+    },
+  });
+
+  const { data: clinicsData = [] } = useQuery({
+    queryKey: ['admin', 'clinics', 'approval-options'],
+    queryFn: async () => {
+      const { data } = await api.get<{ success: boolean; data: { clinics: ClinicOption[] } }>('/admin/clinics');
+      return data.data?.clinics ?? [];
     },
   });
 
@@ -137,10 +155,12 @@ export default function AdminDashboard() {
   });
 
   const verifyDoctor = useMutation({
-    mutationFn: (id: number) => api.put(`/admin/doctors/${id}/verify`),
+    mutationFn: ({ id, clinicId }: { id: number; clinicId: number }) => api.put(`/admin/doctors/${id}/verify`, { clinicId }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'doctor-verifications'] });
       queryClient.invalidateQueries({ queryKey: ['admin', 'stats'] });
+      setApprovalTarget(null);
+      setApprovalClinicId('');
       toast.success('Doctor verified');
     },
     onError: (e: { response?: { data?: { message?: string } } }) => {
@@ -162,6 +182,7 @@ export default function AdminDashboard() {
 
   const stats = (statsData ?? {}) as Stats;
   const doctors = (doctorsData ?? []) as DoctorRow[];
+  const clinics = (clinicsData ?? []) as ClinicOption[];
   const patients = (patientsData ?? []) as PatientRow[];
   const appointments = (appointmentsData ?? []) as AppointmentRow[];
   const logs = (logsData ?? []) as LogRow[];
@@ -396,10 +417,13 @@ export default function AdminDashboard() {
                         ) : (
                           <button
                             type="button"
-                            onClick={() => verifyDoctor.mutate(d.id)}
+                            onClick={() => {
+                              setApprovalTarget(d);
+                              setApprovalClinicId(d.clinicId ? String(d.clinicId) : '');
+                            }}
                             disabled={verifyDoctor.isPending}
                             className="p-1.5 text-green-600 hover:bg-green-50 rounded"
-                            title="Verify"
+                            title="Approve doctor"
                           >
                             <CheckIcon className="h-4 w-4" />
                           </button>
@@ -416,6 +440,56 @@ export default function AdminDashboard() {
           </table>
         </div>
       </section>
+
+      {approvalTarget ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl">
+            <h3 className="text-lg font-semibold text-slate-900">Approve doctor and assign clinic</h3>
+            <p className="mt-1 text-sm text-slate-500">
+              Verified doctors must be attached to an active clinic before they become operationally bookable.
+            </p>
+            <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
+              <p className="font-medium text-slate-900">
+                Dr. {approvalTarget.user?.firstName} {approvalTarget.user?.lastName}
+              </p>
+              <p className="mt-1 text-slate-600">{approvalTarget.department || 'Department not set'}</p>
+            </div>
+            <div className="mt-4">
+              <label className="mb-1 block text-sm font-medium text-slate-700">Clinic assignment</label>
+              <select
+                value={approvalClinicId}
+                onChange={(e) => setApprovalClinicId(e.target.value)}
+                className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm"
+              >
+                <option value="">Select active clinic</option>
+                {clinics.filter((clinic) => clinic.status === 'active').map((clinic) => (
+                  <option key={clinic.id} value={clinic.id}>{clinic.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setApprovalTarget(null);
+                  setApprovalClinicId('');
+                }}
+                className="rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={!approvalClinicId || verifyDoctor.isPending}
+                onClick={() => verifyDoctor.mutate({ id: approvalTarget.id, clinicId: Number(approvalClinicId) })}
+                className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50"
+              >
+                Approve doctor
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {/* Patient overview */}
       <section className="rounded-xl bg-white border border-gray-200 overflow-hidden">

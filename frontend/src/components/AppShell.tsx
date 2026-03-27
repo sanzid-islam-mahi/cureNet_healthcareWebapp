@@ -13,7 +13,7 @@ import {
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-type Role = 'patient' | 'doctor' | 'admin';
+type Role = 'patient' | 'doctor' | 'admin' | 'receptionist';
 
 interface NavItem {
   to: string;
@@ -79,10 +79,20 @@ const shellByRole: Record<Role, NavGroup[]> = {
       ],
     },
   ],
+  receptionist: [
+    {
+      label: 'Clinic Desk',
+      items: [
+        { to: '/app/receptionist-dashboard', label: 'Dashboard', icon: HomeIcon, description: 'Clinic front-desk overview' },
+        { to: '/app/receptionist-appointments', label: 'Appointments', icon: CalendarDaysIcon, description: 'Clinic request queue and approvals' },
+      ],
+    },
+  ],
 };
 
 function roleLabel(role?: string) {
   if (role === 'doctor') return 'Doctor Workspace';
+  if (role === 'receptionist') return 'Receptionist Workspace';
   if (role === 'admin') return 'Admin Workspace';
   return 'Patient Workspace';
 }

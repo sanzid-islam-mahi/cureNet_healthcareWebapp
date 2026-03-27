@@ -94,7 +94,7 @@ export default function LandingPage() {
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center md:justify-start gap-4">
                 <Link
-                  to={user ? (user.role === 'patient' ? '/app/patient-dashboard' : user.role === 'doctor' ? '/app/doctor-dashboard' : '/app/admin-dashboard') : '/register'}
+                  to={user ? (user.role === 'patient' ? '/app/patient-dashboard' : user.role === 'doctor' ? '/app/doctor-dashboard' : user.role === 'receptionist' ? '/app/receptionist-dashboard' : '/app/admin-dashboard') : '/register'}
                   className="w-full sm:w-auto inline-flex items-center justify-center bg-blue-600 text-white text-lg font-semibold py-3 px-8 rounded-full shadow-lg hover:bg-blue-700 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300"
                 >
                   {user ? 'Go to Dashboard' : 'Get Started Now'}
@@ -294,7 +294,7 @@ export default function LandingPage() {
             <div className="relative z-10 shrink-0">
               {user ? (
                 <Link
-                  to={user.role === 'patient' ? '/app/patient-dashboard' : user.role === 'doctor' ? '/app/doctor-dashboard' : '/app/admin-dashboard'}
+                  to={user.role === 'patient' ? '/app/patient-dashboard' : user.role === 'doctor' ? '/app/doctor-dashboard' : user.role === 'receptionist' ? '/app/receptionist-dashboard' : '/app/admin-dashboard'}
                   className="inline-flex items-center justify-center bg-white text-blue-700 text-lg font-bold py-4 px-10 rounded-full shadow-xl hover:bg-slate-50 hover:scale-105 transition-all duration-300 whitespace-nowrap"
                 >
                   Go to Dashboard

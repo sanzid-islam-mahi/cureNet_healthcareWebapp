@@ -4,7 +4,7 @@ import { logAudit } from '../lib/auditLog.js';
 import sequelize from '../config/database.js';
 import { createNotification } from '../lib/notifications.js';
 
-const { Appointment, Doctor, Patient, User } = db;
+const { Appointment, Doctor, Patient, User, Clinic } = db;
 const RED_FLAG_TERMS = [
   'chest pain',
   'shortness of breath',
@@ -147,6 +147,9 @@ export async function create(req, res) {
         lock: transaction.LOCK.UPDATE,
       });
       if (!doctor) return { error: { status: 404, message: 'Doctor not found' } };
+      if (!doctor.clinicId) {
+        return { error: { status: 409, message: 'This doctor is not assigned to an active clinic yet' } };
+      }
       const doctorUnavailableDates = Array.isArray(doctor.unavailableDates) ? doctor.unavailableDates : [];
       if (doctorUnavailableDates.includes(appointmentDate)) {
         return { error: { status: 409, message: 'Doctor is unavailable on this date' } };
@@ -233,6 +236,7 @@ export async function create(req, res) {
       const created = await Appointment.create({
         patientId: user.patientId,
         doctorId: docId,
+        clinicId: doctor.clinicId,
         appointmentDate,
         window: windowName,
         serial: serialNum,
@@ -264,6 +268,7 @@ export async function create(req, res) {
     const withAssocs = await Appointment.findByPk(appointment.created.id, {
       include: [
         { model: Doctor, as: 'Doctor', include: [{ model: User, as: 'User', attributes: ['id', 'firstName', 'lastName'] }] },
+        { model: Clinic, as: 'Clinic' },
         { model: Patient, as: 'Patient', include: [{ model: User, as: 'User', attributes: ['id', 'firstName', 'lastName'] }] },
       ],
     });
@@ -291,6 +296,7 @@ function formatAppointment(a) {
     id: d.id,
     patientId: d.patientId,
     doctorId: d.doctorId,
+    clinicId: d.clinicId,
     appointmentDate: d.appointmentDate,
     timeBlock: d.timeBlock,
     window: d.window,
@@ -302,6 +308,13 @@ function formatAppointment(a) {
     createdAt: d.createdAt,
     updatedAt: d.updatedAt,
     doctor: doctor.User ? { id: doctor.id, user: doctor.User } : { id: doctor.id },
+    clinic: d.Clinic ? {
+      id: d.Clinic.id,
+      name: d.Clinic.name,
+      addressLine: d.Clinic.addressLine,
+      city: d.Clinic.city,
+      area: d.Clinic.area,
+    } : null,
     patient: patient.User ? { id: patient.id, user: patient.User } : { id: patient.id },
   };
 }
@@ -328,6 +341,7 @@ export async function listForPatient(req, res) {
       order,
       include: [
         { model: Doctor, as: 'Doctor', include: [{ model: User, as: 'User', attributes: { exclude: ['password'] } }] },
+        { model: Clinic, as: 'Clinic' },
       ],
     });
     const list = rows.map((a) => formatAppointment(a));
@@ -365,6 +379,7 @@ export async function listForDoctor(req, res) {
       order: [['appointment_date', 'ASC'], ['time_block', 'ASC']],
       include: [
         { model: Patient, as: 'Patient', include: [{ model: User, as: 'User', attributes: { exclude: ['password'] } }] },
+        { model: Clinic, as: 'Clinic' },
       ],
     });
     const list = rows.map((a) => formatAppointment(a));
@@ -386,6 +401,7 @@ export async function getOne(req, res) {
     const appointment = await Appointment.findByPk(id, {
       include: [
         { model: Doctor, as: 'Doctor', include: [{ model: User, as: 'User', attributes: { exclude: ['password'] } }] },
+        { model: Clinic, as: 'Clinic' },
         { model: Patient, as: 'Patient', include: [{ model: User, as: 'User', attributes: { exclude: ['password'] } }] },
       ],
     });
@@ -394,8 +410,9 @@ export async function getOne(req, res) {
     }
     const isPatient = user.role === 'patient' && user.patientId === appointment.patientId;
     const isDoctor = user.role === 'doctor' && user.doctorId === appointment.doctorId;
+    const isReceptionist = user.role === 'receptionist' && user.clinicId && appointment.clinicId === user.clinicId;
     const isAdmin = user.role === 'admin';
-    if (!isPatient && !isDoctor && !isAdmin) {
+    if (!isPatient && !isDoctor && !isReceptionist && !isAdmin) {
       return res.status(403).json({ success: false, message: 'Not authorized to view this appointment' });
     }
     return res.json({ success: true, data: { appointment: formatAppointment(appointment) } });
@@ -408,14 +425,17 @@ export async function getOne(req, res) {
 export async function approve(req, res) {
   try {
     const user = req.user;
-    if (user.role !== 'doctor' || !user.doctorId) {
-      return res.status(403).json({ success: false, message: 'Not a doctor' });
+    if (!['doctor', 'receptionist'].includes(user.role)) {
+      return res.status(403).json({ success: false, message: 'Not authorized to approve appointments' });
     }
     const id = parseInt(req.params.id, 10);
     const appointment = await Appointment.findByPk(id);
     if (!appointment) return res.status(404).json({ success: false, message: 'Appointment not found' });
-    if (appointment.doctorId !== user.doctorId) {
+    if (user.role === 'doctor' && appointment.doctorId !== user.doctorId) {
       return res.status(403).json({ success: false, message: 'Not your appointment' });
+    }
+    if (user.role === 'receptionist' && appointment.clinicId !== user.clinicId) {
+      return res.status(403).json({ success: false, message: 'Not in your clinic queue' });
     }
     if (appointment.status !== 'requested') {
       return res.status(400).json({ success: false, message: 'Only requested appointments can be approved' });
@@ -441,14 +461,17 @@ export async function approve(req, res) {
 export async function reject(req, res) {
   try {
     const user = req.user;
-    if (user.role !== 'doctor' || !user.doctorId) {
-      return res.status(403).json({ success: false, message: 'Not a doctor' });
+    if (!['doctor', 'receptionist'].includes(user.role)) {
+      return res.status(403).json({ success: false, message: 'Not authorized to reject appointments' });
     }
     const id = parseInt(req.params.id, 10);
     const appointment = await Appointment.findByPk(id);
     if (!appointment) return res.status(404).json({ success: false, message: 'Appointment not found' });
-    if (appointment.doctorId !== user.doctorId) {
+    if (user.role === 'doctor' && appointment.doctorId !== user.doctorId) {
       return res.status(403).json({ success: false, message: 'Not your appointment' });
+    }
+    if (user.role === 'receptionist' && appointment.clinicId !== user.clinicId) {
+      return res.status(403).json({ success: false, message: 'Not in your clinic queue' });
     }
     if (appointment.status !== 'requested') {
       return res.status(400).json({ success: false, message: 'Only requested appointments can be rejected' });
@@ -467,6 +490,42 @@ export async function reject(req, res) {
     return res.json({ success: true, data: { appointment: formatAppointment(appointment) } });
   } catch (err) {
     console.error('Reject appointment error:', err);
+    return res.status(500).json({ success: false, message: err.message || 'Failed' });
+  }
+}
+
+export async function listForReceptionist(req, res) {
+  try {
+    const user = req.user;
+    if (user.role !== 'receptionist' || !user.clinicId) {
+      return res.status(403).json({ success: false, message: 'Not a receptionist' });
+    }
+    const { date, status, limit = 50, page = 1 } = req.query;
+    const where = { clinicId: user.clinicId };
+    if (date) where.appointmentDate = date;
+    if (status) where.status = status;
+    const limitNum = Math.min(parseInt(limit, 10) || 50, 100);
+    const offset = (Math.max(1, parseInt(page, 10)) - 1) * limitNum;
+
+    const { rows, count } = await Appointment.findAndCountAll({
+      where,
+      limit: limitNum,
+      offset,
+      order: [['appointment_date', 'ASC'], ['time_block', 'ASC']],
+      include: [
+        { model: Doctor, as: 'Doctor', include: [{ model: User, as: 'User', attributes: { exclude: ['password'] } }] },
+        { model: Patient, as: 'Patient', include: [{ model: User, as: 'User', attributes: { exclude: ['password'] } }] },
+        { model: Clinic, as: 'Clinic' },
+      ],
+    });
+
+    return res.json({
+      success: true,
+      data: { appointments: rows.map((row) => formatAppointment(row)), clinicId: user.clinicId },
+      pagination: { page: parseInt(page, 10), limit: limitNum, total: count },
+    });
+  } catch (err) {
+    console.error('List receptionist appointments error:', err);
     return res.status(500).json({ success: false, message: err.message || 'Failed' });
   }
 }

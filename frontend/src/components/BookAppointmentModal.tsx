@@ -33,6 +33,20 @@ interface BookAppointmentModalProps {
   onClose: () => void;
 }
 
+interface BookingDoctorOption {
+  id: number;
+  department?: string;
+  consultationFee?: number | null;
+  user?: { firstName: string; lastName: string };
+  clinic?: {
+    id: number;
+    name?: string | null;
+    addressLine?: string | null;
+    area?: string | null;
+    city?: string | null;
+  } | null;
+}
+
 function profileFieldLabel(field: string): string {
   return PROFILE_FIELD_LABELS[field as keyof typeof PROFILE_FIELD_LABELS] ?? field;
 }
@@ -76,7 +90,7 @@ export default function BookAppointmentModal({
       const { data: res } = await api.get<{
         success: boolean;
         data: {
-          doctors: { id: number; user?: { firstName: string; lastName: string }; department?: string }[];
+          doctors: BookingDoctorOption[];
         };
       }>('/doctors');
       return res.data?.doctors ?? [];
@@ -143,6 +157,10 @@ export default function BookAppointmentModal({
   const availableWindows = windowData?.windows ?? [];
   const selectableWindows = availableWindows.filter((window) => window.available);
   const selectedDoctor = doctors.find((doctor) => doctor.id === doctorId);
+  const selectedClinicName = selectedDoctor?.clinic?.name || 'Clinic not assigned yet';
+  const selectedClinicAddress = [selectedDoctor?.clinic?.addressLine, selectedDoctor?.clinic?.area, selectedDoctor?.clinic?.city]
+    .filter(Boolean)
+    .join(', ');
   const resolvedHasExistingAppointments = hasExistingAppointments ?? appointments.length > 0;
   const profileMissingFields = useMemo(() => {
     if (resolvedHasExistingAppointments || !patientProfile) return [];
@@ -317,7 +335,7 @@ export default function BookAppointmentModal({
               </div>
             </div>
 
-            <div className="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 sm:grid-cols-3">
+            <div className="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 sm:grid-cols-2 xl:grid-cols-4">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Doctor</p>
                 <p className="mt-1 text-sm font-medium text-slate-900">
@@ -331,6 +349,10 @@ export default function BookAppointmentModal({
                 <p className="mt-1 text-sm font-medium text-slate-900">{formatBookingDate(date)}</p>
               </div>
               <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Clinic</p>
+                <p className="mt-1 text-sm font-medium text-slate-900">{selectedDoctor ? selectedClinicName : 'Select a doctor'}</p>
+              </div>
+              <div>
                 <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Selected window</p>
                 <p className="mt-1 text-sm font-medium text-slate-900">
                   {selectedWindow
@@ -339,6 +361,17 @@ export default function BookAppointmentModal({
                 </p>
               </div>
             </div>
+
+            {selectedDoctor ? (
+              <div className={`rounded-2xl border px-4 py-3 text-sm ${selectedDoctor.clinic ? 'border-sky-200 bg-sky-50 text-sky-900' : 'border-amber-200 bg-amber-50 text-amber-900'}`}>
+                <p className="font-semibold">{selectedDoctor.clinic ? 'Booking location' : 'Clinic assignment required'}</p>
+                <p className="mt-1">
+                  {selectedDoctor.clinic
+                    ? `${selectedClinicName}${selectedClinicAddress ? ` • ${selectedClinicAddress}` : ''}`
+                    : 'This doctor needs an active clinic assignment before new appointments can be requested.'}
+                </p>
+              </div>
+            ) : null}
 
             {date ? (
               <div>

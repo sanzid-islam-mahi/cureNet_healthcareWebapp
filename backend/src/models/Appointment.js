@@ -2,6 +2,7 @@ import { DataTypes } from 'sequelize';
 import sequelize from '../config/database.js';
 import Patient from './Patient.js';
 import Doctor from './Doctor.js';
+import Clinic from './Clinic.js';
 
 const statusEnum = ['requested', 'approved', 'rejected', 'in_progress', 'completed', 'cancelled'];
 const typeEnum = ['in_person', 'video', 'phone'];
@@ -25,6 +26,12 @@ const Appointment = sequelize.define(
       allowNull: false,
       references: { model: 'doctors', key: 'id' },
       onDelete: 'CASCADE',
+    },
+    clinicId: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: { model: 'clinics', key: 'id' },
+      onDelete: 'SET NULL',
     },
     appointmentDate: {
       type: DataTypes.DATEONLY,
@@ -74,6 +81,8 @@ Patient.hasMany(Appointment, { foreignKey: 'patientId' });
 Appointment.belongsTo(Patient, { foreignKey: 'patientId' });
 Doctor.hasMany(Appointment, { foreignKey: 'doctorId' });
 Appointment.belongsTo(Doctor, { foreignKey: 'doctorId' });
+Clinic.hasMany(Appointment, { foreignKey: 'clinicId' });
+Appointment.belongsTo(Clinic, { foreignKey: 'clinicId' });
 
 export default Appointment;
 export { statusEnum, typeEnum };

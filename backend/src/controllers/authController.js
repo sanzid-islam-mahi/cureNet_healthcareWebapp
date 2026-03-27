@@ -7,7 +7,7 @@ import { logAudit } from '../lib/auditLog.js';
 import { getJwtSecret } from '../config/security.js';
 import { sendPasswordResetEmail, sendVerificationCodeEmail } from '../lib/mail.js';
 
-const { User, Doctor, Patient, EmailVerificationCode, sequelize } = db;
+const { User, Doctor, Patient, Receptionist, EmailVerificationCode, sequelize } = db;
 
 const JWT_SECRET = getJwtSecret();
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
@@ -71,6 +71,11 @@ function formatUserResponse(user) {
   const payload = { ...rest };
   if (doctor) payload.doctorId = doctor.id;
   if (patient) payload.patientId = patient.id;
+  if (u.Receptionist) {
+    payload.receptionistId = u.Receptionist.id;
+    payload.clinicId = u.Receptionist.clinicId;
+  }
+  if (!payload.clinicId && doctor?.clinicId) payload.clinicId = doctor.clinicId;
   if (doctor?.profileImage) payload.profileImage = doctor.profileImage;
   if (!payload.profileImage && patient?.profileImage) payload.profileImage = patient.profileImage;
   return payload;
@@ -90,6 +95,7 @@ async function loadAuthUser(userId) {
     include: [
       { model: Doctor, as: 'Doctor', required: false },
       { model: Patient, as: 'Patient', required: false },
+      { model: Receptionist, as: 'Receptionist', required: false },
     ],
   });
 }
@@ -298,6 +304,7 @@ export async function login(req, res) {
       include: [
         { model: Doctor, as: 'Doctor', required: false },
         { model: Patient, as: 'Patient', required: false },
+        { model: Receptionist, as: 'Receptionist', required: false },
       ],
     });
 
@@ -358,6 +365,7 @@ export async function updateProfile(req, res) {
       include: [
         { model: Doctor, as: 'Doctor', required: false },
         { model: Patient, as: 'Patient', required: false },
+        { model: Receptionist, as: 'Receptionist', required: false },
       ],
     });
 
@@ -428,6 +436,7 @@ export async function verifyEmail(req, res) {
       include: [
         { model: Doctor, as: 'Doctor', required: false },
         { model: Patient, as: 'Patient', required: false },
+        { model: Receptionist, as: 'Receptionist', required: false },
       ],
     });
 

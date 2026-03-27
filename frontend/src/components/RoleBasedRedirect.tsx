@@ -23,6 +23,8 @@ export default function RoleBasedRedirect() {
       return <Navigate to="/app/doctor-dashboard" replace />;
     case 'admin':
       return <Navigate to="/app/admin-dashboard" replace />;
+    case 'receptionist':
+      return <Navigate to="/app/receptionist-dashboard" replace />;
     default:
       return <Navigate to="/app/patient-dashboard" replace />;
   }

@@ -40,7 +40,7 @@ export const operationsPaths = {
         400: errorResponse('Validation, triage, or profile error'),
         403: errorResponse('Not a patient'),
         404: errorResponse('Doctor not found'),
-        409: errorResponse('Booking conflict'),
+        409: errorResponse('Booking conflict or doctor is not assigned to an active clinic'),
         500: errorResponse('Failed'),
       },
     },
@@ -73,6 +73,40 @@ export const operationsPaths = {
           },
         }),
         403: errorResponse('Not a patient'),
+        500: errorResponse('Failed'),
+      },
+    },
+  },
+  '/appointments/clinic-queue': {
+    get: {
+      tags: ['Appointments'],
+      summary: 'List clinic-scoped appointments for the authenticated receptionist',
+      security: authSecurity,
+      parameters: [
+        { name: 'date', in: 'query', schema: { type: 'string', format: 'date' } },
+        { name: 'status', in: 'query', schema: { type: 'string' } },
+        { name: 'limit', in: 'query', schema: { type: 'integer' } },
+        { name: 'page', in: 'query', schema: { type: 'integer' } },
+      ],
+      responses: {
+        200: successResponse('Clinic receptionist queue', {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            data: {
+              type: 'object',
+              properties: {
+                clinicId: { type: 'integer', nullable: true },
+                appointments: {
+                  type: 'array',
+                  items: { $ref: '#/components/schemas/AppointmentRecord' },
+                },
+              },
+            },
+            pagination: paginationSchema,
+          },
+        }),
+        403: errorResponse('Not a receptionist'),
         500: errorResponse('Failed'),
       },
     },
@@ -131,7 +165,7 @@ export const operationsPaths = {
   '/appointments/{id}/approve': {
     put: {
       tags: ['Appointments'],
-      summary: 'Approve appointment as doctor',
+      summary: 'Approve appointment as doctor or assigned clinic receptionist',
       security: authSecurity,
       parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }],
       responses: {
@@ -148,7 +182,7 @@ export const operationsPaths = {
           },
         }),
         400: errorResponse('Only requested appointments can be approved'),
-        403: errorResponse('Not a doctor or not your appointment'),
+        403: errorResponse('Not authorized for this appointment'),
         404: errorResponse('Appointment not found'),
         500: errorResponse('Failed'),
       },
@@ -157,7 +191,7 @@ export const operationsPaths = {
   '/appointments/{id}/reject': {
     put: {
       tags: ['Appointments'],
-      summary: 'Reject appointment as doctor',
+      summary: 'Reject appointment as doctor or assigned clinic receptionist',
       security: authSecurity,
       parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }],
       responses: {
@@ -174,7 +208,7 @@ export const operationsPaths = {
           },
         }),
         400: errorResponse('Only requested appointments can be rejected'),
-        403: errorResponse('Not a doctor or not your appointment'),
+        403: errorResponse('Not authorized for this appointment'),
         404: errorResponse('Appointment not found'),
         500: errorResponse('Failed'),
       },

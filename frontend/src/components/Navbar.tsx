@@ -91,6 +91,8 @@ const Navbar = () => {
       ? '/app/patient-dashboard'
       : user?.role === 'doctor'
         ? '/app/doctor-dashboard'
+        : user?.role === 'receptionist'
+          ? '/app/receptionist-dashboard'
         : '/app/admin-dashboard';
 
   const handleLogout = async () => {

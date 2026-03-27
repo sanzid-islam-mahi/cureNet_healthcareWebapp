@@ -2,7 +2,7 @@ import { Op } from 'sequelize';
 import db from '../models/index.js';
 import { logAudit } from '../lib/auditLog.js';
 
-const { User, Doctor, Patient, Appointment, AuditLog, Clinic } = db;
+const { User, Doctor, Patient, Appointment, AuditLog, Clinic, Receptionist } = db;
 
 const PASSWORD_POLICY = {
   minLength: 8,
@@ -302,16 +302,25 @@ export async function verifyDoctor(req, res) {
     if (!doctor) {
       return res.status(404).json({ success: false, message: 'Doctor not found' });
     }
-    await doctor.update({ verified: true });
+    const requestedClinicId = req.body?.clinicId != null ? parseInt(req.body.clinicId, 10) : null;
+    const resolvedClinicId = requestedClinicId || doctor.clinicId;
+    if (!resolvedClinicId) {
+      return res.status(400).json({ success: false, message: 'Doctor must be assigned to a clinic before approval' });
+    }
+    const clinic = await Clinic.findByPk(resolvedClinicId);
+    if (!clinic || clinic.status !== 'active') {
+      return res.status(400).json({ success: false, message: 'Doctor must be assigned to an active clinic before approval' });
+    }
+    await doctor.update({ verified: true, clinicId: resolvedClinicId });
     await logAudit({
       action: 'doctor_verified',
       userId: req.user?.id,
       entityType: 'doctor',
       entityId: doctor.id,
-      details: { doctorId: doctor.id },
+      details: { doctorId: doctor.id, clinicId: resolvedClinicId },
       ip: getClientIp(req),
     });
-    return res.json({ success: true, data: { doctor: { id: doctor.id, verified: true } } });
+    return res.json({ success: true, data: { doctor: { id: doctor.id, verified: true, clinicId: resolvedClinicId } } });
   } catch (err) {
     console.error('Verify doctor error:', err);
     return res.status(500).json({ success: false, message: err.message || 'Failed' });
@@ -516,13 +525,14 @@ export async function updateClinic(req, res) {
 
 // ----- Users (admin CRUD) -----
 
-function formatUserForAdmin(user, doctorId = null, patientId = null, doctorDetails = null) {
+function formatUserForAdmin(user, doctorId = null, patientId = null, doctorDetails = null, receptionistDetails = null) {
   const u = user.toJSON ? user.toJSON() : user;
   return {
     ...u,
     doctorId: doctorId ?? u.doctorId ?? null,
     patientId: patientId ?? u.patientId ?? null,
     doctorProfile: doctorDetails ?? u.doctorProfile ?? null,
+    receptionistProfile: receptionistDetails ?? u.receptionistProfile ?? null,
   };
 }
 
@@ -534,7 +544,7 @@ export async function listUsers(req, res) {
     const { role, search, isActive, verified } = req.query;
 
     const where = {};
-    if (role && ['admin', 'patient', 'doctor'].includes(role)) where.role = role;
+    if (role && ['admin', 'patient', 'doctor', 'receptionist'].includes(role)) where.role = role;
     if (typeof isActive !== 'undefined' && isActive !== '') {
       where.isActive = isActive === 'true' || isActive === true;
     }
@@ -564,6 +574,7 @@ export async function listUsers(req, res) {
       attributes: { exclude: ['password'] },
       include: [
         doctorInclude,
+        { model: Receptionist, as: 'Receptionist', required: false, attributes: ['id', 'clinicId', 'employeeCode', 'isActive'], include: [{ model: Clinic, attributes: ['id', 'name', 'type', 'city', 'status'], required: false }] },
         { model: Patient, as: 'Patient', required: false, attributes: ['id'] },
       ],
       order: [['id', 'ASC']],
@@ -574,7 +585,7 @@ export async function listUsers(req, res) {
     const users = rows.map((u) => {
       const doctorId = u.Doctor ? u.Doctor.id : null;
       const patientId = u.Patient ? u.Patient.id : null;
-      const { Doctor: _d, Patient: _p, ...rest } = u.toJSON();
+      const { Doctor: _d, Patient: _p, Receptionist: _r, ...rest } = u.toJSON();
       return formatUserForAdmin(
         { ...rest },
         doctorId,
@@ -596,6 +607,22 @@ export async function listUsers(req, res) {
                 }
               : null,
           }
+          : null,
+        u.Receptionist
+          ? {
+              clinicId: u.Receptionist.clinicId,
+              employeeCode: u.Receptionist.employeeCode,
+              isActive: u.Receptionist.isActive,
+              clinic: u.Receptionist.Clinic
+                ? {
+                    id: u.Receptionist.Clinic.id,
+                    name: u.Receptionist.Clinic.name,
+                    type: u.Receptionist.Clinic.type,
+                    city: u.Receptionist.Clinic.city,
+                    status: u.Receptionist.Clinic.status,
+                  }
+                : null,
+            }
           : null
       );
     });
@@ -626,6 +653,7 @@ export async function createUser(req, res) {
       department,
       experience,
       clinicId,
+      employeeCode,
     } = req.body;
 
     if (!email || !password || !firstName || !lastName) {
@@ -640,8 +668,11 @@ export async function createUser(req, res) {
         message: 'Password must be 8+ chars and include uppercase, lowercase, and a number',
       });
     }
-    const allowedRoles = ['admin', 'patient', 'doctor'];
+    const allowedRoles = ['admin', 'patient', 'doctor', 'receptionist'];
     const resolvedRole = allowedRoles.includes(role) ? role : 'patient';
+    if (resolvedRole === 'receptionist' && !clinicId) {
+      return res.status(400).json({ success: false, message: 'Receptionist must be assigned to a clinic' });
+    }
 
     const existing = await User.findOne({ where: { email } });
     if (existing) {
@@ -673,17 +704,29 @@ export async function createUser(req, res) {
     if (user.role === 'patient') {
       await Patient.create({ userId: user.id });
     }
+    if (user.role === 'receptionist') {
+      if (!clinicId) {
+        return res.status(400).json({ success: false, message: 'Receptionist must be assigned to a clinic' });
+      }
+      await Receptionist.create({
+        userId: user.id,
+        clinicId: parseInt(clinicId, 10),
+        employeeCode: employeeCode ? String(employeeCode).trim() : null,
+        isActive: true,
+      });
+    }
 
     const full = await User.findByPk(user.id, {
       attributes: { exclude: ['password'] },
       include: [
         { model: Doctor, as: 'Doctor', required: false, attributes: ['id', 'department', 'verified', 'bmdcRegistrationNumber', 'experience', 'clinicId'], include: [{ model: Clinic, attributes: ['id', 'name', 'type', 'city', 'status'], required: false }] },
+        { model: Receptionist, as: 'Receptionist', required: false, attributes: ['id', 'clinicId', 'employeeCode', 'isActive'], include: [{ model: Clinic, attributes: ['id', 'name', 'type', 'city', 'status'], required: false }] },
         { model: Patient, as: 'Patient', required: false, attributes: ['id'] },
       ],
     });
     const doctorId = full.Doctor ? full.Doctor.id : null;
     const patientId = full.Patient ? full.Patient.id : null;
-    const { Doctor: _d, Patient: _p, ...rest } = full.toJSON();
+    const { Doctor: _d, Patient: _p, Receptionist: _r, ...rest } = full.toJSON();
     await logAudit({
       action: 'user_created',
       userId: req.user?.id,
@@ -716,6 +759,22 @@ export async function createUser(req, res) {
                   }
                 : null,
             }
+            : null,
+          full.Receptionist
+            ? {
+                clinicId: full.Receptionist.clinicId,
+                employeeCode: full.Receptionist.employeeCode,
+                isActive: full.Receptionist.isActive,
+                clinic: full.Receptionist.Clinic
+                  ? {
+                      id: full.Receptionist.Clinic.id,
+                      name: full.Receptionist.Clinic.name,
+                      type: full.Receptionist.Clinic.type,
+                      city: full.Receptionist.Clinic.city,
+                      status: full.Receptionist.Clinic.status,
+                    }
+                  : null,
+              }
             : null
         ),
       },
@@ -732,6 +791,7 @@ export async function updateUser(req, res) {
     const user = await User.findByPk(id, {
       include: [
         { model: Doctor, as: 'Doctor', required: false },
+        { model: Receptionist, as: 'Receptionist', required: false },
         { model: Patient, as: 'Patient', required: false },
       ],
     });
@@ -754,6 +814,7 @@ export async function updateUser(req, res) {
       'department',
       'experience',
       'clinicId',
+      'employeeCode',
       'verified',
     ];
     const updates = {};
@@ -764,8 +825,13 @@ export async function updateUser(req, res) {
       }
     }
 
-    if (updates.role && !['admin', 'patient', 'doctor'].includes(updates.role)) {
+    if (updates.role && !['admin', 'patient', 'doctor', 'receptionist'].includes(updates.role)) {
       delete updates.role;
+    }
+    const currentRole = user.role;
+    const newRole = updates.role ?? currentRole;
+    if (newRole === 'receptionist' && (updates.clinicId === undefined ? !user.Receptionist?.clinicId : !updates.clinicId)) {
+      return res.status(400).json({ success: false, message: 'Receptionist must be assigned to a clinic' });
     }
     if (updates.email) {
       const existing = await User.findOne({
@@ -800,12 +866,13 @@ export async function updateUser(req, res) {
       }
     }
 
-    // Role change: create/remove Doctor or Patient
-    const currentRole = user.role;
-    const newRole = updates.role ?? currentRole;
+    // Role change: create/remove role-linked profiles
     if (newRole !== currentRole) {
       if (currentRole === 'doctor' && user.Doctor) {
         await user.Doctor.destroy();
+      }
+      if (currentRole === 'receptionist' && user.Receptionist) {
+        await user.Receptionist.destroy();
       }
       if (currentRole === 'patient' && user.Patient) {
         await user.Patient.destroy();
@@ -823,9 +890,18 @@ export async function updateUser(req, res) {
       if (newRole === 'patient') {
         await Patient.create({ userId: user.id });
       }
+      if (newRole === 'receptionist') {
+        await Receptionist.create({
+          userId: user.id,
+          clinicId: parseInt(updates.clinicId, 10),
+          employeeCode: updates.employeeCode ? String(updates.employeeCode).trim() : null,
+          isActive: true,
+        });
+      }
     }
 
     const doctorFieldUpdates = {};
+    const receptionistFieldUpdates = {};
     if (newRole === 'doctor') {
       if (updates.bmdcRegistrationNumber !== undefined) doctorFieldUpdates.bmdcRegistrationNumber = updates.bmdcRegistrationNumber || null;
       if (updates.department !== undefined) doctorFieldUpdates.department = updates.department || null;
@@ -841,11 +917,25 @@ export async function updateUser(req, res) {
       }
       if (updates.verified !== undefined) doctorFieldUpdates.verified = updates.verified;
     }
+    if (newRole === 'receptionist') {
+      if (updates.clinicId !== undefined) {
+        receptionistFieldUpdates.clinicId = updates.clinicId === '' || updates.clinicId == null
+          ? null
+          : parseInt(updates.clinicId, 10);
+      }
+      if (updates.employeeCode !== undefined) {
+        receptionistFieldUpdates.employeeCode = updates.employeeCode ? String(updates.employeeCode).trim() : null;
+      }
+      if (updates.isActive !== undefined) {
+        receptionistFieldUpdates.isActive = !!updates.isActive;
+      }
+    }
 
     delete updates.bmdcRegistrationNumber;
     delete updates.department;
     delete updates.experience;
     delete updates.clinicId;
+    delete updates.employeeCode;
     delete updates.verified;
 
     await user.update(updates);
@@ -858,17 +948,27 @@ export async function updateUser(req, res) {
         await doctorProfile.update(doctorFieldUpdates);
       }
     }
+    if (newRole === 'receptionist' && user.Receptionist && Object.keys(receptionistFieldUpdates).length > 0) {
+      await user.Receptionist.update(receptionistFieldUpdates);
+    }
+    if (newRole === 'receptionist' && !user.Receptionist) {
+      const receptionistProfile = await Receptionist.findOne({ where: { userId: user.id } });
+      if (receptionistProfile && Object.keys(receptionistFieldUpdates).length > 0) {
+        await receptionistProfile.update(receptionistFieldUpdates);
+      }
+    }
 
     const full = await User.findByPk(user.id, {
       attributes: { exclude: ['password'] },
       include: [
         { model: Doctor, as: 'Doctor', required: false, attributes: ['id', 'department', 'verified', 'bmdcRegistrationNumber', 'experience', 'clinicId'], include: [{ model: Clinic, attributes: ['id', 'name', 'type', 'city', 'status'], required: false }] },
+        { model: Receptionist, as: 'Receptionist', required: false, attributes: ['id', 'clinicId', 'employeeCode', 'isActive'], include: [{ model: Clinic, attributes: ['id', 'name', 'type', 'city', 'status'], required: false }] },
         { model: Patient, as: 'Patient', required: false, attributes: ['id'] },
       ],
     });
     const doctorId = full.Doctor ? full.Doctor.id : null;
     const patientId = full.Patient ? full.Patient.id : null;
-    const { Doctor: _d, Patient: _p, ...rest } = full.toJSON();
+    const { Doctor: _d, Patient: _p, Receptionist: _r, ...rest } = full.toJSON();
     await logAudit({
       action: 'user_updated',
       userId: req.user?.id,
@@ -901,6 +1001,22 @@ export async function updateUser(req, res) {
                   }
                 : null,
             }
+            : null,
+          full.Receptionist
+            ? {
+                clinicId: full.Receptionist.clinicId,
+                employeeCode: full.Receptionist.employeeCode,
+                isActive: full.Receptionist.isActive,
+                clinic: full.Receptionist.Clinic
+                  ? {
+                      id: full.Receptionist.Clinic.id,
+                      name: full.Receptionist.Clinic.name,
+                      type: full.Receptionist.Clinic.type,
+                      city: full.Receptionist.Clinic.city,
+                      status: full.Receptionist.Clinic.status,
+                    }
+                  : null,
+              }
             : null
         ),
       },

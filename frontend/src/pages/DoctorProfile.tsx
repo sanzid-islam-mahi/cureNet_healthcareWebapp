@@ -39,6 +39,7 @@ interface DoctorForm {
   certifications?: string;
   hospital?: string;
   location?: string;
+  personalAddress?: string;
   consultationFee?: number;
   bio?: string;
   profileImage?: string;
@@ -48,6 +49,17 @@ interface DoctorForm {
   languages?: string[];
   services?: string[];
   unavailableDates?: string[];
+  clinic?: {
+    id: number;
+    name: string;
+    type?: string;
+    addressLine?: string;
+    area?: string;
+    city?: string;
+    phone?: string;
+    email?: string;
+    operatingHours?: string;
+  } | null;
 }
 
 const WINDOWS = [
@@ -175,6 +187,7 @@ export default function DoctorProfile() {
       certifications: '',
       hospital: '',
       location: '',
+      personalAddress: '',
       consultationFee: undefined,
       bio: '',
       degrees: [],
@@ -194,6 +207,7 @@ export default function DoctorProfile() {
         certifications: doctor.certifications ?? '',
         hospital: doctor.hospital ?? '',
         location: doctor.location ?? '',
+        personalAddress: doctor.personalAddress ?? '',
         consultationFee: doctor.consultationFee != null ? Number(doctor.consultationFee) : undefined,
         bio: doctor.bio ?? '',
         degrees: Array.isArray(doctor.degrees) ? doctor.degrees : [],
@@ -601,6 +615,30 @@ export default function DoctorProfile() {
                     className="block w-full rounded-xl border border-slate-300 px-4 py-2.5 text-slate-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent read-only:bg-slate-50 read-only:border-slate-200 read-only:text-slate-600 read-only:shadow-none transition-all shadow-sm font-medium"
                   />
                 </div>
+              </div>
+
+              {doctor?.clinic ? (
+                <div className="rounded-2xl border border-sky-100 bg-sky-50 px-4 py-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-sky-700">Assigned Clinic</p>
+                  <p className="mt-2 text-base font-semibold text-slate-900">{doctor.clinic.name}</p>
+                  <p className="mt-1 text-sm text-slate-600">
+                    {[doctor.clinic.addressLine, doctor.clinic.area, doctor.clinic.city].filter(Boolean).join(', ') || 'Clinic address not configured'}
+                  </p>
+                  <p className="mt-2 text-sm text-sky-800">
+                    Patients will see this clinic address while booking. Your personal address stays private.
+                  </p>
+                </div>
+              ) : null}
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Personal Address (Private)</label>
+                <textarea
+                  {...form.register('personalAddress')}
+                  readOnly={!editingProfessional}
+                  rows={3}
+                  placeholder="Private personal address for admin and your own records. Patients cannot see this."
+                  className="block w-full rounded-xl border border-slate-300 px-4 py-3 text-slate-900 bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent read-only:bg-slate-50 read-only:border-slate-200 read-only:text-slate-600 read-only:shadow-none transition-all shadow-sm resize-none"
+                />
               </div>
 
               <div>

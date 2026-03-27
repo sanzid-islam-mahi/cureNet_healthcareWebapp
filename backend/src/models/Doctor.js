@@ -35,6 +35,7 @@ const Doctor = sequelize.define(
     certifications: { type: DataTypes.TEXT, allowNull: true },
     hospital: { type: DataTypes.STRING(200), allowNull: true },
     location: { type: DataTypes.STRING(300), allowNull: true },
+    personalAddress: { type: DataTypes.STRING(500), allowNull: true },
     consultationFee: { type: DataTypes.DECIMAL(10, 2), allowNull: true },
     bio: { type: DataTypes.TEXT, allowNull: true },
     profileImage: { type: DataTypes.STRING(500), allowNull: true },

@@ -2,6 +2,7 @@ import sequelize from '../config/database.js';
 import User from './User.js';
 import Clinic from './Clinic.js';
 import Doctor from './Doctor.js';
+import Receptionist from './Receptionist.js';
 import Patient from './Patient.js';
 import PatientMedicalHistory from './PatientMedicalHistory.js';
 import './PasswordResetToken.js';
@@ -19,6 +20,7 @@ const db = {
   User,
   Clinic,
   Doctor,
+  Receptionist,
   Patient,
   PatientMedicalHistory,
   EmailVerificationCode,

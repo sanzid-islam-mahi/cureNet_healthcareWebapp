@@ -2,7 +2,7 @@ import jwt from 'jsonwebtoken';
 import db from '../models/index.js';
 import { getJwtSecret } from '../config/security.js';
 
-const { User, Doctor, Patient } = db;
+const { User, Doctor, Patient, Receptionist } = db;
 const JWT_SECRET = getJwtSecret();
 const AUTH_COOKIE_NAME = process.env.AUTH_COOKIE_NAME || 'curenet_auth';
 
@@ -37,6 +37,7 @@ export const authenticateToken = async (req, res, next) => {
       include: [
         { model: Doctor, as: 'Doctor', required: false },
         { model: Patient, as: 'Patient', required: false },
+        { model: Receptionist, as: 'Receptionist', required: false },
       ],
     });
 
@@ -49,6 +50,8 @@ export const authenticateToken = async (req, res, next) => {
 
     user.patientId = user.Patient?.id ?? null;
     user.doctorId = user.Doctor?.id ?? null;
+    user.receptionistId = user.Receptionist?.id ?? null;
+    user.clinicId = user.Receptionist?.clinicId ?? user.Doctor?.clinicId ?? null;
     req.user = user;
     next();
   } catch (err) {

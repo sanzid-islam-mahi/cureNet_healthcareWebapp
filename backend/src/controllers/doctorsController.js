@@ -4,7 +4,7 @@ import { fileURLToPath } from 'url';
 import { Op } from 'sequelize';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const { User, Doctor, Appointment, Rating, Prescription, Patient, PatientMedicalHistory, MedicationReminderPlan } = db;
+const { User, Doctor, Appointment, Rating, Prescription, Patient, PatientMedicalHistory, MedicationReminderPlan, Clinic } = db;
 
 const WEEKDAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 function getWeekday(dateStr) {
@@ -17,10 +17,33 @@ function normalizeUnavailableDates(value) {
   return Array.from(new Set(value.filter((d) => typeof d === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(d))));
 }
 
-function formatDoctorResponse(doctor, user) {
+function serializeClinic(clinic) {
+  if (!clinic) return null;
+  const value = clinic.toJSON ? clinic.toJSON() : clinic;
+  return {
+    id: value.id,
+    name: value.name,
+    type: value.type,
+    phone: value.phone,
+    email: value.email,
+    addressLine: value.addressLine,
+    city: value.city,
+    area: value.area,
+    status: value.status,
+    operatingHours: value.operatingHours,
+  };
+}
+
+function formatDoctorResponse(doctor, user, { includePrivate = false } = {}) {
   const u = user ? (user.toJSON ? user.toJSON() : user) : {};
   const { password: _, ...userSafe } = u;
   const d = doctor ? (doctor.toJSON ? doctor.toJSON() : doctor) : {};
+  if (!includePrivate) {
+    delete d.personalAddress;
+  }
+  if (d.Clinic) {
+    d.clinic = serializeClinic(d.Clinic);
+  }
   return { ...d, user: userSafe };
 }
 
@@ -40,7 +63,10 @@ export async function list(req, res) {
     if (department) where.department = department;
     const options = {
       where,
-      include: [{ model: User, as: 'User', attributes: { exclude: ['password'] } }],
+      include: [
+        { model: User, as: 'User', attributes: { exclude: ['password'] } },
+        { model: Clinic, attributes: ['id', 'name', 'type', 'phone', 'email', 'addressLine', 'city', 'area', 'status', 'operatingHours'], required: false },
+      ],
     };
     const num = parseInt(limit, 10);
     if (Number.isFinite(num) && num > 0) options.limit = Math.min(num, 100);
@@ -60,14 +86,17 @@ export async function getProfile(req, res) {
       return res.status(403).json({ success: false, message: 'Not a doctor' });
     }
     const doctor = await Doctor.findByPk(user.doctorId, {
-      include: [{ model: User, as: 'User', attributes: { exclude: ['password'] } }],
+      include: [
+        { model: User, as: 'User', attributes: { exclude: ['password'] } },
+        { model: Clinic, attributes: ['id', 'name', 'type', 'phone', 'email', 'addressLine', 'city', 'area', 'status', 'operatingHours'], required: false },
+      ],
     });
     if (!doctor) {
       return res.status(404).json({ success: false, message: 'Doctor profile not found' });
     }
     return res.json({
       success: true,
-      data: { doctor: formatDoctorResponse(doctor, doctor.User) },
+      data: { doctor: formatDoctorResponse(doctor, doctor.User, { includePrivate: true }) },
     });
   } catch (err) {
     console.error('Get doctor profile error:', err);
@@ -87,7 +116,7 @@ export async function updateProfile(req, res) {
     }
     const allowed = [
       'bmdcRegistrationNumber', 'department', 'experience', 'education', 'certifications',
-      'hospital', 'location', 'consultationFee', 'bio', 'chamberTimes', 'chamberWindows', 'degrees', 'awards',
+      'hospital', 'location', 'personalAddress', 'consultationFee', 'bio', 'chamberTimes', 'chamberWindows', 'degrees', 'awards',
       'languages', 'services', 'unavailableDates',
     ];
     const updates = {};
@@ -99,11 +128,14 @@ export async function updateProfile(req, res) {
     }
     await doctor.update(updates);
     const updated = await Doctor.findByPk(doctor.id, {
-      include: [{ model: User, as: 'User', attributes: { exclude: ['password'] } }],
+      include: [
+        { model: User, as: 'User', attributes: { exclude: ['password'] } },
+        { model: Clinic, attributes: ['id', 'name', 'type', 'phone', 'email', 'addressLine', 'city', 'area', 'status', 'operatingHours'], required: false },
+      ],
     });
     return res.json({
       success: true,
-      data: { doctor: formatDoctorResponse(updated, updated.User) },
+      data: { doctor: formatDoctorResponse(updated, updated.User, { includePrivate: true }) },
     });
   } catch (err) {
     console.error('Update doctor profile error:', err);
@@ -551,7 +583,10 @@ export async function getPublicProfile(req, res) {
       return res.status(400).json({ success: false, message: 'Invalid doctor id' });
     }
     const doctor = await Doctor.findByPk(id, {
-      include: [{ model: User, as: 'User', attributes: { exclude: ['password'] } }],
+      include: [
+        { model: User, as: 'User', attributes: { exclude: ['password'] } },
+        { model: Clinic, attributes: ['id', 'name', 'type', 'phone', 'email', 'addressLine', 'city', 'area', 'status', 'operatingHours'], required: false },
+      ],
     });
     if (!doctor || !doctor.verified) {
       return res.status(404).json({ success: false, message: 'Doctor not found' });

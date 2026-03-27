@@ -13,9 +13,11 @@ export interface User {
   dateOfBirth?: string;
   gender?: string;
   address?: string;
-  role: 'patient' | 'doctor' | 'admin';
+  role: 'patient' | 'doctor' | 'admin' | 'receptionist';
   doctorId?: number;
   patientId?: number;
+  receptionistId?: number;
+  clinicId?: number;
   profileImage?: string;
   emailVerifiedAt?: string | null;
 }
@@ -40,7 +42,7 @@ export interface RegisterData {
   password: string;
   firstName: string;
   lastName: string;
-  role?: 'patient' | 'doctor' | 'admin';
+  role?: 'patient' | 'doctor' | 'admin' | 'receptionist';
   phone?: string;
   dateOfBirth?: string;
   gender?: string;

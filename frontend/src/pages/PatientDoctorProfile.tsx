@@ -33,6 +33,17 @@ interface DoctorProfileData {
   languages?: string[] | null;
   services?: string[] | null;
   patientCount?: number;
+  clinic?: {
+    id: number;
+    name: string;
+    type?: string;
+    addressLine?: string;
+    area?: string;
+    city?: string;
+    phone?: string;
+    email?: string;
+    operatingHours?: string;
+  } | null;
   user?: { firstName: string; lastName: string; email?: string; phone?: string };
 }
 
@@ -96,6 +107,10 @@ export default function PatientDoctorProfile() {
   const languages = Array.isArray(doctor?.languages) ? doctor.languages : [];
   const expertise = Array.isArray(doctor?.services) ? doctor.services : [];
   const availabilityPreview = upcomingSlots.slice(0, 3);
+  const publicAddress = doctor?.clinic
+    ? [doctor.clinic.addressLine, doctor.clinic.area, doctor.clinic.city].filter(Boolean).join(', ')
+    : doctor?.location;
+  const publicFacilityName = doctor?.clinic?.name || doctor?.hospital;
 
   if (loadingProfile || (id && !doctor && !profileError)) {
     return (
@@ -185,12 +200,12 @@ export default function PatientDoctorProfile() {
                   <p className="mt-1 text-sm font-semibold text-slate-900">{doctor.department || 'General physician'}</p>
                 </div>
                 <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Hospital</p>
-                  <p className="mt-1 text-sm font-semibold text-slate-900">{doctor.hospital || 'Private practice'}</p>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Clinic</p>
+                  <p className="mt-1 text-sm font-semibold text-slate-900">{publicFacilityName || 'Private practice'}</p>
                 </div>
                 <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Location</p>
-                  <p className="mt-1 text-sm font-semibold text-slate-900">{doctor.location || 'Location not listed'}</p>
+                  <p className="mt-1 text-sm font-semibold text-slate-900">{publicAddress || 'Location not listed'}</p>
                 </div>
                 <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Consultation fee</p>
@@ -301,10 +316,10 @@ export default function PatientDoctorProfile() {
                         {doctor.user.phone}
                       </p>
                     ) : null}
-                    {doctor.location ? (
+                    {publicAddress ? (
                       <p className="flex items-center gap-2">
                         <MapPinIcon className="h-4 w-4 text-slate-400" />
-                        {doctor.hospital ? `${doctor.hospital}, ` : ''}{doctor.location}
+                        {publicFacilityName ? `${publicFacilityName}, ` : ''}{publicAddress}
                       </p>
                     ) : null}
                   </div>
