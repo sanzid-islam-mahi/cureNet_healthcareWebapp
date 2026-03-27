@@ -43,7 +43,7 @@ const Receptionist = sequelize.define(
 
 User.hasOne(Receptionist, { foreignKey: 'userId' });
 Receptionist.belongsTo(User, { foreignKey: 'userId' });
-Clinic.hasMany(Receptionist, { foreignKey: 'clinicId' });
-Receptionist.belongsTo(Clinic, { foreignKey: 'clinicId' });
+Clinic.hasMany(Receptionist, { foreignKey: 'clinicId', as: 'Receptionists' });
+Receptionist.belongsTo(Clinic, { foreignKey: 'clinicId', as: 'Clinic' });
 
 export default Receptionist;

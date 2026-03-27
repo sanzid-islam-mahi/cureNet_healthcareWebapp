@@ -81,8 +81,8 @@ Patient.hasMany(Appointment, { foreignKey: 'patientId' });
 Appointment.belongsTo(Patient, { foreignKey: 'patientId' });
 Doctor.hasMany(Appointment, { foreignKey: 'doctorId' });
 Appointment.belongsTo(Doctor, { foreignKey: 'doctorId' });
-Clinic.hasMany(Appointment, { foreignKey: 'clinicId' });
-Appointment.belongsTo(Clinic, { foreignKey: 'clinicId' });
+Clinic.hasMany(Appointment, { foreignKey: 'clinicId', as: 'Appointments' });
+Appointment.belongsTo(Clinic, { foreignKey: 'clinicId', as: 'Clinic' });
 
 export default Appointment;
 export { statusEnum, typeEnum };

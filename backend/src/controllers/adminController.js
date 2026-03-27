@@ -270,7 +270,14 @@ export async function getDoctorVerifications(req, res) {
 
     const { count, rows: doctors } = await Doctor.findAndCountAll({
       where,
-      include,
+      include: [
+        ...include,
+        {
+          model: Clinic,
+          attributes: ['id', 'name', 'type', 'city', 'status'],
+          required: false,
+        },
+      ],
       order: [['id', 'ASC']],
       limit,
       offset,
@@ -283,6 +290,8 @@ export async function getDoctorVerifications(req, res) {
       department: d.department,
       experience: d.experience,
       verified: d.verified,
+      clinicId: d.clinicId,
+      clinic: serializeClinicSummary(d.Clinic || d.clinic || d.dataValues?.Clinic),
       user: d.User ? d.User.toJSON() : null,
     }));
     return res.json({
@@ -536,6 +545,40 @@ function formatUserForAdmin(user, doctorId = null, patientId = null, doctorDetai
   };
 }
 
+function serializeClinicSummary(clinic) {
+  const value = clinic?.toJSON ? clinic.toJSON() : clinic;
+  if (!value) return null;
+  return {
+    id: value.id,
+    name: value.name,
+    type: value.type,
+    city: value.city,
+    status: value.status,
+  };
+}
+
+function buildDoctorAdminProfile(doctor) {
+  if (!doctor) return null;
+  return {
+    department: doctor.department,
+    verified: doctor.verified,
+    bmdcRegistrationNumber: doctor.bmdcRegistrationNumber,
+    experience: doctor.experience,
+    clinicId: doctor.clinicId,
+    clinic: serializeClinicSummary(doctor.Clinic || doctor.clinic || doctor.dataValues?.Clinic),
+  };
+}
+
+function buildReceptionistAdminProfile(receptionist) {
+  if (!receptionist) return null;
+  return {
+    clinicId: receptionist.clinicId,
+    employeeCode: receptionist.employeeCode,
+    isActive: receptionist.isActive,
+    clinic: serializeClinicSummary(receptionist.Clinic || receptionist.clinic || receptionist.dataValues?.Clinic),
+  };
+}
+
 export async function listUsers(req, res) {
   try {
     const page = Math.max(1, parseInt(req.query.page, 10) || 1);
@@ -562,7 +605,7 @@ export async function listUsers(req, res) {
       as: 'Doctor',
       required: false,
       attributes: ['id', 'department', 'verified', 'bmdcRegistrationNumber', 'experience', 'clinicId'],
-      include: [{ model: Clinic, attributes: ['id', 'name', 'type', 'city', 'status'], required: false }],
+      include: [{ model: Clinic, as: 'Clinic', attributes: ['id', 'name', 'type', 'city', 'status'], required: false }],
     };
     if (typeof verified !== 'undefined' && verified !== '') {
       doctorInclude.required = true;
@@ -574,7 +617,7 @@ export async function listUsers(req, res) {
       attributes: { exclude: ['password'] },
       include: [
         doctorInclude,
-        { model: Receptionist, as: 'Receptionist', required: false, attributes: ['id', 'clinicId', 'employeeCode', 'isActive'], include: [{ model: Clinic, attributes: ['id', 'name', 'type', 'city', 'status'], required: false }] },
+        { model: Receptionist, as: 'Receptionist', required: false, attributes: ['id', 'clinicId', 'employeeCode', 'isActive'], include: [{ model: Clinic, as: 'Clinic', attributes: ['id', 'name', 'type', 'city', 'status'], required: false }] },
         { model: Patient, as: 'Patient', required: false, attributes: ['id'] },
       ],
       order: [['id', 'ASC']],
@@ -590,40 +633,8 @@ export async function listUsers(req, res) {
         { ...rest },
         doctorId,
         patientId,
-        u.Doctor
-          ? {
-            department: u.Doctor.department,
-            verified: u.Doctor.verified,
-            bmdcRegistrationNumber: u.Doctor.bmdcRegistrationNumber,
-            experience: u.Doctor.experience,
-            clinicId: u.Doctor.clinicId,
-            clinic: u.Doctor.Clinic
-              ? {
-                  id: u.Doctor.Clinic.id,
-                  name: u.Doctor.Clinic.name,
-                  type: u.Doctor.Clinic.type,
-                  city: u.Doctor.Clinic.city,
-                  status: u.Doctor.Clinic.status,
-                }
-              : null,
-          }
-          : null,
-        u.Receptionist
-          ? {
-              clinicId: u.Receptionist.clinicId,
-              employeeCode: u.Receptionist.employeeCode,
-              isActive: u.Receptionist.isActive,
-              clinic: u.Receptionist.Clinic
-                ? {
-                    id: u.Receptionist.Clinic.id,
-                    name: u.Receptionist.Clinic.name,
-                    type: u.Receptionist.Clinic.type,
-                    city: u.Receptionist.Clinic.city,
-                    status: u.Receptionist.Clinic.status,
-                  }
-                : null,
-            }
-          : null
+        buildDoctorAdminProfile(u.Doctor),
+        buildReceptionistAdminProfile(u.Receptionist)
       );
     });
 
@@ -719,8 +730,8 @@ export async function createUser(req, res) {
     const full = await User.findByPk(user.id, {
       attributes: { exclude: ['password'] },
       include: [
-        { model: Doctor, as: 'Doctor', required: false, attributes: ['id', 'department', 'verified', 'bmdcRegistrationNumber', 'experience', 'clinicId'], include: [{ model: Clinic, attributes: ['id', 'name', 'type', 'city', 'status'], required: false }] },
-        { model: Receptionist, as: 'Receptionist', required: false, attributes: ['id', 'clinicId', 'employeeCode', 'isActive'], include: [{ model: Clinic, attributes: ['id', 'name', 'type', 'city', 'status'], required: false }] },
+        { model: Doctor, as: 'Doctor', required: false, attributes: ['id', 'department', 'verified', 'bmdcRegistrationNumber', 'experience', 'clinicId'], include: [{ model: Clinic, as: 'Clinic', attributes: ['id', 'name', 'type', 'city', 'status'], required: false }] },
+        { model: Receptionist, as: 'Receptionist', required: false, attributes: ['id', 'clinicId', 'employeeCode', 'isActive'], include: [{ model: Clinic, as: 'Clinic', attributes: ['id', 'name', 'type', 'city', 'status'], required: false }] },
         { model: Patient, as: 'Patient', required: false, attributes: ['id'] },
       ],
     });
@@ -742,40 +753,8 @@ export async function createUser(req, res) {
           { ...rest },
           doctorId,
           patientId,
-          full.Doctor
-            ? {
-              department: full.Doctor.department,
-              verified: full.Doctor.verified,
-              bmdcRegistrationNumber: full.Doctor.bmdcRegistrationNumber,
-              experience: full.Doctor.experience,
-              clinicId: full.Doctor.clinicId,
-              clinic: full.Doctor.Clinic
-                ? {
-                    id: full.Doctor.Clinic.id,
-                    name: full.Doctor.Clinic.name,
-                    type: full.Doctor.Clinic.type,
-                    city: full.Doctor.Clinic.city,
-                    status: full.Doctor.Clinic.status,
-                  }
-                : null,
-            }
-            : null,
-          full.Receptionist
-            ? {
-                clinicId: full.Receptionist.clinicId,
-                employeeCode: full.Receptionist.employeeCode,
-                isActive: full.Receptionist.isActive,
-                clinic: full.Receptionist.Clinic
-                  ? {
-                      id: full.Receptionist.Clinic.id,
-                      name: full.Receptionist.Clinic.name,
-                      type: full.Receptionist.Clinic.type,
-                      city: full.Receptionist.Clinic.city,
-                      status: full.Receptionist.Clinic.status,
-                    }
-                  : null,
-              }
-            : null
+          buildDoctorAdminProfile(full.Doctor),
+          buildReceptionistAdminProfile(full.Receptionist)
         ),
       },
     });
@@ -961,8 +940,8 @@ export async function updateUser(req, res) {
     const full = await User.findByPk(user.id, {
       attributes: { exclude: ['password'] },
       include: [
-        { model: Doctor, as: 'Doctor', required: false, attributes: ['id', 'department', 'verified', 'bmdcRegistrationNumber', 'experience', 'clinicId'], include: [{ model: Clinic, attributes: ['id', 'name', 'type', 'city', 'status'], required: false }] },
-        { model: Receptionist, as: 'Receptionist', required: false, attributes: ['id', 'clinicId', 'employeeCode', 'isActive'], include: [{ model: Clinic, attributes: ['id', 'name', 'type', 'city', 'status'], required: false }] },
+        { model: Doctor, as: 'Doctor', required: false, attributes: ['id', 'department', 'verified', 'bmdcRegistrationNumber', 'experience', 'clinicId'], include: [{ model: Clinic, as: 'Clinic', attributes: ['id', 'name', 'type', 'city', 'status'], required: false }] },
+        { model: Receptionist, as: 'Receptionist', required: false, attributes: ['id', 'clinicId', 'employeeCode', 'isActive'], include: [{ model: Clinic, as: 'Clinic', attributes: ['id', 'name', 'type', 'city', 'status'], required: false }] },
         { model: Patient, as: 'Patient', required: false, attributes: ['id'] },
       ],
     });
@@ -984,40 +963,8 @@ export async function updateUser(req, res) {
           { ...rest },
           doctorId,
           patientId,
-          full.Doctor
-            ? {
-              department: full.Doctor.department,
-              verified: full.Doctor.verified,
-              bmdcRegistrationNumber: full.Doctor.bmdcRegistrationNumber,
-              experience: full.Doctor.experience,
-              clinicId: full.Doctor.clinicId,
-              clinic: full.Doctor.Clinic
-                ? {
-                    id: full.Doctor.Clinic.id,
-                    name: full.Doctor.Clinic.name,
-                    type: full.Doctor.Clinic.type,
-                    city: full.Doctor.Clinic.city,
-                    status: full.Doctor.Clinic.status,
-                  }
-                : null,
-            }
-            : null,
-          full.Receptionist
-            ? {
-                clinicId: full.Receptionist.clinicId,
-                employeeCode: full.Receptionist.employeeCode,
-                isActive: full.Receptionist.isActive,
-                clinic: full.Receptionist.Clinic
-                  ? {
-                      id: full.Receptionist.Clinic.id,
-                      name: full.Receptionist.Clinic.name,
-                      type: full.Receptionist.Clinic.type,
-                      city: full.Receptionist.Clinic.city,
-                      status: full.Receptionist.Clinic.status,
-                    }
-                  : null,
-              }
-            : null
+          buildDoctorAdminProfile(full.Doctor),
+          buildReceptionistAdminProfile(full.Receptionist)
         ),
       },
     });

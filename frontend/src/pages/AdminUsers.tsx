@@ -124,10 +124,18 @@ function formValuesFromUser(user: UserRow): UserFormValues {
     department: user.doctorProfile?.department ?? '',
     bmdcRegistrationNumber: user.doctorProfile?.bmdcRegistrationNumber ?? '',
     experience: user.doctorProfile?.experience != null ? String(user.doctorProfile.experience) : '',
-    clinicId: user.doctorProfile?.clinicId != null ? String(user.doctorProfile.clinicId) : '',
+    clinicId: user.role === 'receptionist'
+      ? (user.receptionistProfile?.clinicId != null ? String(user.receptionistProfile.clinicId) : '')
+      : (user.doctorProfile?.clinicId != null ? String(user.doctorProfile.clinicId) : ''),
     employeeCode: user.receptionistProfile?.employeeCode ?? '',
     verified: Boolean(user.doctorProfile?.verified),
   };
+}
+
+function clinicDisplayName(profile?: { clinicId?: number | null; clinic?: { id: number; name: string } | null } | null) {
+  if (profile?.clinic?.name) return profile.clinic.name;
+  if (profile?.clinicId) return `Clinic #${profile.clinicId}`;
+  return 'Not assigned';
 }
 
 function buildUserPayload(values: UserFormValues, includePassword: boolean) {
@@ -837,7 +845,7 @@ export default function AdminUsers() {
                           {entry.role === 'doctor'
                             ? (entry.doctorProfile?.verified ? 'Verified doctor' : 'Pending verification')
                             : entry.role === 'receptionist'
-                              ? (entry.receptionistProfile?.clinic?.name || 'Clinic not assigned')
+                              ? clinicDisplayName(entry.receptionistProfile)
                             : entry.isActive ? 'Can sign in' : 'Blocked from sign-in'}
                         </p>
                       </div>
@@ -853,7 +861,7 @@ export default function AdminUsers() {
                           BMDC: {entry.doctorProfile?.bmdcRegistrationNumber || 'Not recorded'}
                         </p>
                         <p className="mt-1 text-blue-800">
-                          Clinic: {entry.doctorProfile?.clinic?.name || 'Not assigned'}
+                          Clinic: {clinicDisplayName(entry.doctorProfile)}
                         </p>
                       </div>
                     ) : null}
@@ -861,7 +869,7 @@ export default function AdminUsers() {
                     {entry.role === 'receptionist' ? (
                       <div className="mt-4 rounded-xl border border-sky-100 bg-sky-50 px-3 py-3 text-sm text-sky-900">
                         <p className="font-medium">
-                          Clinic: {entry.receptionistProfile?.clinic?.name || 'Not assigned'}
+                          Clinic: {clinicDisplayName(entry.receptionistProfile)}
                         </p>
                         <p className="mt-1 text-sky-800">
                           Employee code: {entry.receptionistProfile?.employeeCode || 'Not recorded'}

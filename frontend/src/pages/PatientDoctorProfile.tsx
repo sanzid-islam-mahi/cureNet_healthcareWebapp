@@ -18,6 +18,7 @@ const API_BASE = import.meta.env.VITE_API_URL?.replace(/\/api\/?$/, '') || 'http
 
 interface DoctorProfileData {
   id: number;
+  clinicId?: number | null;
   department?: string;
   experience?: number;
   education?: string;
@@ -110,7 +111,7 @@ export default function PatientDoctorProfile() {
   const publicAddress = doctor?.clinic
     ? [doctor.clinic.addressLine, doctor.clinic.area, doctor.clinic.city].filter(Boolean).join(', ')
     : doctor?.location;
-  const publicFacilityName = doctor?.clinic?.name || doctor?.hospital;
+  const publicFacilityName = doctor?.clinic?.name || (doctor?.clinicId ? `Clinic #${doctor.clinicId}` : doctor?.hospital);
 
   if (loadingProfile || (id && !doctor && !profileError)) {
     return (
@@ -201,7 +202,7 @@ export default function PatientDoctorProfile() {
                 </div>
                 <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Clinic</p>
-                  <p className="mt-1 text-sm font-semibold text-slate-900">{publicFacilityName || 'Private practice'}</p>
+                  <p className="mt-1 text-sm font-semibold text-slate-900">{publicFacilityName || 'Practice location not listed'}</p>
                 </div>
                 <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">Location</p>

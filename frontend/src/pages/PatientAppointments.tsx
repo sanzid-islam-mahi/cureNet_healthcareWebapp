@@ -10,6 +10,7 @@ import RatingModal from '../components/RatingModal';
 interface AppointmentItem {
   id: number;
   doctorId: number;
+  clinicId?: number | null;
   appointmentDate: string;
   timeBlock?: string;
   window?: string;
@@ -19,6 +20,7 @@ interface AppointmentItem {
   reason?: string;
   symptoms?: string;
   doctor?: { id: number; user?: { firstName: string; lastName: string } };
+  clinic?: { id: number; name?: string; addressLine?: string; area?: string; city?: string } | null;
 }
 
 interface PatientRatingItem {
@@ -123,6 +125,13 @@ function AppointmentsSection({
                       ) : null}
                       {' '}• {apt.type?.replace('_', ' ')}
                     </p>
+
+                    {apt.clinic ? (
+                      <p className="text-sm text-slate-600">
+                        <span className="font-medium text-slate-900">Clinic:</span> {apt.clinic.name}
+                        {([apt.clinic.addressLine, apt.clinic.area, apt.clinic.city].filter(Boolean).join(', ')) ? ` • ${[apt.clinic.addressLine, apt.clinic.area, apt.clinic.city].filter(Boolean).join(', ')}` : ''}
+                      </p>
+                    ) : null}
 
                     {apt.reason ? (
                       <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-gray-700">

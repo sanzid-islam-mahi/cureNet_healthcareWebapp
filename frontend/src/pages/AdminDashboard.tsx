@@ -46,7 +46,7 @@ interface DoctorRow {
   experience?: number;
   verified: boolean;
   clinicId?: number | null;
-  clinic?: { id: number; name: string; status: 'active' | 'inactive' } | null;
+  clinic?: { id: number; name: string; type?: string; city?: string; status: 'active' | 'inactive' } | null;
   user?: { id: number; firstName: string; lastName: string; email: string };
 }
 
@@ -344,73 +344,91 @@ export default function AdminDashboard() {
       </div>
 
       {/* Doctor management */}
-      <section className="rounded-xl bg-white border border-gray-200 overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between gap-4">
-          <h2 className="font-semibold text-gray-900">Doctor management</h2>
+      <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+        <div className="flex flex-col gap-4 border-b border-slate-200 px-5 py-4 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <h2 className="text-base font-semibold text-slate-900">Doctor approval desk</h2>
+            <p className="mt-1 text-sm text-slate-500">Approve clinicians only after assigning them to an active clinic. This is the point where public booking becomes operational.</p>
+          </div>
           <div className="relative">
-            <MagnifyingGlassIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <MagnifyingGlassIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <input
               type="text"
               placeholder="Search doctors..."
               value={doctorSearch}
               onChange={(e) => setDoctorSearch(e.target.value)}
-              className="pl-8 pr-3 py-1.5 rounded-lg border border-gray-300 text-sm w-56 focus:ring-2 focus:ring-[#3990D7] focus:border-[#3990D7]"
+              className="w-64 rounded-xl border border-slate-300 px-3 py-2 pl-8 text-sm focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
             />
           </div>
         </div>
-        <div className="overflow-x-auto max-h-80 overflow-y-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+        <div className="overflow-x-auto max-h-96 overflow-y-auto">
+          <table className="min-w-full divide-y divide-slate-200">
+            <thead className="bg-slate-50">
               <tr>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Doctor</th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Specialization</th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">License</th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Experience</th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500">Doctor</th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500">Specialization</th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500">License</th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500">Clinic readiness</th>
+                <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-500">Status</th>
+                <th className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wide text-slate-500">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200 bg-white">
+            <tbody className="divide-y divide-slate-100 bg-white">
               {doctors.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                  <td colSpan={6} className="px-4 py-10 text-center text-slate-500">
                     No doctors found.
                   </td>
                 </tr>
               ) : (
                 doctors.map((d) => (
                   <tr key={d.id}>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-4">
                       <div>
-                        <p className="font-medium text-gray-900">
+                        <p className="font-medium text-slate-900">
                           Dr. {d.user?.firstName} {d.user?.lastName}
                         </p>
-                        <p className="text-sm text-gray-500">{d.user?.email}</p>
+                        <p className="text-sm text-slate-500">{d.user?.email}</p>
+                        <p className="mt-1 text-xs text-slate-400">DR-{d.id}</p>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">DR-{d.id}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{d.department ?? '—'}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{d.bmdcRegistrationNumber ?? '—'}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{d.experience ?? '—'} yrs</td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-4 text-sm text-slate-600">
+                      <p>{d.department ?? 'General practice'}</p>
+                      <p className="mt-1 text-xs text-slate-400">{d.experience ?? '—'} years experience</p>
+                    </td>
+                    <td className="px-4 py-4 text-sm text-slate-600">{d.bmdcRegistrationNumber ?? '—'}</td>
+                    <td className="px-4 py-4 text-sm text-slate-600">
+                      {d.clinic || d.clinicId ? (
+                        <div>
+                          <p className="font-medium text-slate-900">{d.clinic?.name || `Clinic #${d.clinicId}`}</p>
+                          <p className="mt-1 text-xs text-slate-500">
+                            {[d.clinic?.type, d.clinic?.city].filter(Boolean).join(' • ') || 'Clinic assigned'}
+                          </p>
+                        </div>
+                      ) : (
+                        <span className="inline-flex rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800">
+                          Clinic not assigned
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-4 py-4">
                       <span
-                        className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${
-                          d.verified ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'
+                        className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${
+                          d.verified ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
                         }`}
                       >
-                        {d.verified ? 'Verified' : 'Pending'}
+                        {d.verified ? 'Verified and live' : 'Pending approval'}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-4 py-4 text-right">
                       <div className="flex items-center justify-end gap-1">
                         {d.verified ? (
                           <button
                             type="button"
                             onClick={() => unverifyDoctor.mutate(d.id)}
                             disabled={unverifyDoctor.isPending}
-                            className="p-1.5 text-amber-600 hover:bg-amber-50 rounded"
-                            title="Unverify"
+                            className="rounded-lg p-1.5 text-amber-600 hover:bg-amber-50"
+                            title="Unverify doctor"
                           >
                             <XMarkIcon className="h-4 w-4" />
                           </button>
@@ -422,13 +440,13 @@ export default function AdminDashboard() {
                               setApprovalClinicId(d.clinicId ? String(d.clinicId) : '');
                             }}
                             disabled={verifyDoctor.isPending}
-                            className="p-1.5 text-green-600 hover:bg-green-50 rounded"
-                            title="Approve doctor"
+                            className="rounded-lg p-1.5 text-emerald-600 hover:bg-emerald-50"
+                            title="Approve and assign clinic"
                           >
                             <CheckIcon className="h-4 w-4" />
                           </button>
                         )}
-                        <Link to={`/app/users?role=doctor&search=${encodeURIComponent(d.user?.email || '')}`} className="p-1.5 text-gray-500 hover:bg-gray-100 rounded">
+                        <Link to={`/app/users?role=doctor&search=${encodeURIComponent(d.user?.email || '')}`} className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100">
                           <PencilSquareIcon className="h-4 w-4" />
                         </Link>
                       </div>
@@ -446,13 +464,14 @@ export default function AdminDashboard() {
           <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl">
             <h3 className="text-lg font-semibold text-slate-900">Approve doctor and assign clinic</h3>
             <p className="mt-1 text-sm text-slate-500">
-              Verified doctors must be attached to an active clinic before they become operationally bookable.
+              This step makes the doctor publicly bookable. Choose the clinic patients will see during booking.
             </p>
-            <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
+            <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm">
               <p className="font-medium text-slate-900">
                 Dr. {approvalTarget.user?.firstName} {approvalTarget.user?.lastName}
               </p>
               <p className="mt-1 text-slate-600">{approvalTarget.department || 'Department not set'}</p>
+              <p className="mt-1 text-xs text-slate-500">BMDC {approvalTarget.bmdcRegistrationNumber || 'not added'} • {approvalTarget.experience ?? '—'} years experience</p>
             </div>
             <div className="mt-4">
               <label className="mb-1 block text-sm font-medium text-slate-700">Clinic assignment</label>
@@ -466,6 +485,9 @@ export default function AdminDashboard() {
                   <option key={clinic.id} value={clinic.id}>{clinic.name}</option>
                 ))}
               </select>
+              <p className="mt-2 text-xs text-slate-500">
+                The selected clinic becomes the public booking location patients will see on the doctor profile and appointment flow.
+              </p>
             </div>
             <div className="mt-6 flex justify-end gap-3">
               <button
@@ -484,7 +506,7 @@ export default function AdminDashboard() {
                 onClick={() => verifyDoctor.mutate({ id: approvalTarget.id, clinicId: Number(approvalClinicId) })}
                 className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:opacity-50"
               >
-                Approve doctor
+                Approve and publish
               </button>
             </div>
           </div>

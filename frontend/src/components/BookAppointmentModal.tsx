@@ -35,6 +35,7 @@ interface BookAppointmentModalProps {
 
 interface BookingDoctorOption {
   id: number;
+  clinicId?: number | null;
   department?: string;
   consultationFee?: number | null;
   user?: { firstName: string; lastName: string };
@@ -157,7 +158,7 @@ export default function BookAppointmentModal({
   const availableWindows = windowData?.windows ?? [];
   const selectableWindows = availableWindows.filter((window) => window.available);
   const selectedDoctor = doctors.find((doctor) => doctor.id === doctorId);
-  const selectedClinicName = selectedDoctor?.clinic?.name || 'Clinic not assigned yet';
+  const selectedClinicName = selectedDoctor?.clinic?.name || (selectedDoctor?.clinicId ? `Clinic #${selectedDoctor.clinicId}` : 'Clinic not assigned yet');
   const selectedClinicAddress = [selectedDoctor?.clinic?.addressLine, selectedDoctor?.clinic?.area, selectedDoctor?.clinic?.city]
     .filter(Boolean)
     .join(', ');
@@ -366,7 +367,7 @@ export default function BookAppointmentModal({
               <div className={`rounded-2xl border px-4 py-3 text-sm ${selectedDoctor.clinic ? 'border-sky-200 bg-sky-50 text-sky-900' : 'border-amber-200 bg-amber-50 text-amber-900'}`}>
                 <p className="font-semibold">{selectedDoctor.clinic ? 'Booking location' : 'Clinic assignment required'}</p>
                 <p className="mt-1">
-                  {selectedDoctor.clinic
+                  {selectedDoctor.clinic || selectedDoctor.clinicId
                     ? `${selectedClinicName}${selectedClinicAddress ? ` • ${selectedClinicAddress}` : ''}`
                     : 'This doctor needs an active clinic assignment before new appointments can be requested.'}
                 </p>

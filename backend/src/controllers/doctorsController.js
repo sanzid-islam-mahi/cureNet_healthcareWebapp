@@ -65,7 +65,7 @@ export async function list(req, res) {
       where,
       include: [
         { model: User, as: 'User', attributes: { exclude: ['password'] } },
-        { model: Clinic, attributes: ['id', 'name', 'type', 'phone', 'email', 'addressLine', 'city', 'area', 'status', 'operatingHours'], required: false },
+        { model: Clinic, as: 'Clinic', attributes: ['id', 'name', 'type', 'phone', 'email', 'addressLine', 'city', 'area', 'status', 'operatingHours'], required: false },
       ],
     };
     const num = parseInt(limit, 10);
@@ -88,7 +88,7 @@ export async function getProfile(req, res) {
     const doctor = await Doctor.findByPk(user.doctorId, {
       include: [
         { model: User, as: 'User', attributes: { exclude: ['password'] } },
-        { model: Clinic, attributes: ['id', 'name', 'type', 'phone', 'email', 'addressLine', 'city', 'area', 'status', 'operatingHours'], required: false },
+        { model: Clinic, as: 'Clinic', attributes: ['id', 'name', 'type', 'phone', 'email', 'addressLine', 'city', 'area', 'status', 'operatingHours'], required: false },
       ],
     });
     if (!doctor) {
@@ -130,7 +130,7 @@ export async function updateProfile(req, res) {
     const updated = await Doctor.findByPk(doctor.id, {
       include: [
         { model: User, as: 'User', attributes: { exclude: ['password'] } },
-        { model: Clinic, attributes: ['id', 'name', 'type', 'phone', 'email', 'addressLine', 'city', 'area', 'status', 'operatingHours'], required: false },
+        { model: Clinic, as: 'Clinic', attributes: ['id', 'name', 'type', 'phone', 'email', 'addressLine', 'city', 'area', 'status', 'operatingHours'], required: false },
       ],
     });
     return res.json({
@@ -585,7 +585,7 @@ export async function getPublicProfile(req, res) {
     const doctor = await Doctor.findByPk(id, {
       include: [
         { model: User, as: 'User', attributes: { exclude: ['password'] } },
-        { model: Clinic, attributes: ['id', 'name', 'type', 'phone', 'email', 'addressLine', 'city', 'area', 'status', 'operatingHours'], required: false },
+        { model: Clinic, as: 'Clinic', attributes: ['id', 'name', 'type', 'phone', 'email', 'addressLine', 'city', 'area', 'status', 'operatingHours'], required: false },
       ],
     });
     if (!doctor || !doctor.verified) {
