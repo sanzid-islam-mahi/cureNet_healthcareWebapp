@@ -47,6 +47,25 @@ function formatDoctorResponse(doctor, user, { includePrivate = false } = {}) {
   return { ...d, user: userSafe };
 }
 
+function describeTodayWindows(chamberWindows, dateStr) {
+  if (!dateStr) return [];
+  const weekday = getWeekday(dateStr);
+  const dayWindows = chamberWindows?.[weekday] || {};
+  const labels = {
+    morning: 'Morning',
+    noon: 'Noon',
+    evening: 'Evening',
+  };
+
+  return Object.entries(dayWindows)
+    .filter(([, config]) => config?.enabled)
+    .map(([key, config]) => ({
+      key,
+      label: labels[key] || key,
+      maxPatients: config?.maxPatients ?? null,
+    }));
+}
+
 function ensureDoctorAccess(req, res, doctorId) {
   const user = req.user;
   if (user.role !== 'doctor' || user.doctorId !== doctorId) {
@@ -223,6 +242,115 @@ export async function getDashboardStats(req, res) {
     });
   } catch (err) {
     console.error('Get doctor dashboard stats error:', err);
+    return res.status(500).json({ success: false, message: err.message || 'Failed' });
+  }
+}
+
+export async function getClinicRosterForReceptionist(req, res) {
+  try {
+    const user = req.user;
+    if (user.role !== 'receptionist' || !user.clinicId) {
+      return res.status(403).json({ success: false, message: 'Not a receptionist' });
+    }
+
+    const today = new Date().toISOString().slice(0, 10);
+    const clinic = await Clinic.findByPk(user.clinicId, {
+      attributes: ['id', 'name', 'type', 'phone', 'email', 'addressLine', 'city', 'area', 'status', 'operatingHours'],
+    });
+
+    const doctors = await Doctor.findAll({
+      where: { clinicId: user.clinicId },
+      attributes: [
+        'id',
+        'userId',
+        'department',
+        'experience',
+        'verified',
+        'consultationFee',
+        'clinicId',
+        'chamberWindows',
+        'unavailableDates',
+      ],
+      include: [
+        { model: User, as: 'User', attributes: ['id', 'firstName', 'lastName', 'email', 'phone'] },
+      ],
+      order: [['id', 'ASC']],
+    });
+
+    const doctorIds = doctors.map((doctor) => doctor.id);
+    const todaysAppointments = doctorIds.length
+      ? await Appointment.findAll({
+          where: {
+            doctorId: { [Op.in]: doctorIds },
+            clinicId: user.clinicId,
+            appointmentDate: today,
+            status: { [Op.notIn]: ['cancelled', 'rejected'] },
+          },
+          attributes: ['doctorId', 'status', 'window'],
+          raw: true,
+        })
+      : [];
+
+    const queueByDoctor = new Map();
+    for (const appointment of todaysAppointments) {
+      const current = queueByDoctor.get(appointment.doctorId) || {
+        totalToday: 0,
+        requested: 0,
+        approved: 0,
+        inProgress: 0,
+        completed: 0,
+      };
+      current.totalToday += 1;
+      if (appointment.status === 'requested') current.requested += 1;
+      if (appointment.status === 'approved') current.approved += 1;
+      if (appointment.status === 'in_progress') current.inProgress += 1;
+      if (appointment.status === 'completed') current.completed += 1;
+      queueByDoctor.set(appointment.doctorId, current);
+    }
+
+    const roster = doctors.map((doctor) => {
+      const plain = doctor.get({ plain: true });
+      const counts = queueByDoctor.get(doctor.id) || {
+        totalToday: 0,
+        requested: 0,
+        approved: 0,
+        inProgress: 0,
+        completed: 0,
+      };
+      const unavailableDates = Array.isArray(plain.unavailableDates) ? plain.unavailableDates : [];
+
+      return {
+        id: plain.id,
+        userId: plain.userId,
+        department: plain.department,
+        experience: plain.experience,
+        verified: plain.verified,
+        consultationFee: plain.consultationFee,
+        isAvailableToday: !unavailableDates.includes(today),
+        todayWindows: describeTodayWindows(plain.chamberWindows, today),
+        queue: counts,
+        user: plain.User
+          ? {
+              id: plain.User.id,
+              firstName: plain.User.firstName,
+              lastName: plain.User.lastName,
+              email: plain.User.email,
+              phone: plain.User.phone,
+            }
+          : null,
+      };
+    });
+
+    return res.json({
+      success: true,
+      data: {
+        clinic: serializeClinic(clinic),
+        date: today,
+        doctors: roster,
+      },
+    });
+  } catch (err) {
+    console.error('Get receptionist clinic roster error:', err);
     return res.status(500).json({ success: false, message: err.message || 'Failed' });
   }
 }

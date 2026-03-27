@@ -9,6 +9,7 @@ const router = Router();
 router.get('/profile', authenticateToken, authorizeRoles('doctor'), doctorsController.getProfile);
 router.put('/profile', authenticateToken, authorizeRoles('doctor'), doctorsController.updateProfile);
 router.post('/upload-image', authenticateToken, authorizeRoles('doctor'), upload.single('profileImage'), doctorsController.uploadImage);
+router.get('/clinic-roster', authenticateToken, authorizeRoles('receptionist'), doctorsController.getClinicRosterForReceptionist);
 
 router.get('/', doctorsController.list);
 router.get('/:id/available-slots', doctorsController.getAvailableSlots);

@@ -84,13 +84,21 @@ export default function ReceptionistDashboard() {
         title="Clinic Front Desk"
         description="Review new requests, confirm who is coming in, and keep the clinic queue clean before it reaches the doctors."
         actions={
-          <Link
-            to="/app/receptionist-appointments"
-            className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
-          >
-            Open full queue
-            <ArrowRightIcon className="h-4 w-4" />
-          </Link>
+          <div className="flex flex-wrap items-center gap-3">
+            <Link
+              to="/app/receptionist-doctors"
+              className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+            >
+              Doctors and operations
+            </Link>
+            <Link
+              to="/app/receptionist-appointments"
+              className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
+            >
+              Open full queue
+              <ArrowRightIcon className="h-4 w-4" />
+            </Link>
+          </div>
         }
       />
 
@@ -209,6 +217,35 @@ export default function ReceptionistDashboard() {
           </div>
         )}
       </section>
+
+      <section className="rounded-3xl border border-slate-200 bg-white shadow-sm">
+        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+          <div>
+            <h2 className="text-base font-semibold text-slate-900">Clinic operations</h2>
+            <p className="mt-1 text-sm text-slate-500">Doctor roster, today’s windows, and queue load in one operational view.</p>
+          </div>
+          <Link to="/app/receptionist-doctors" className="text-sm font-medium text-sky-700 hover:text-sky-800">
+            Open doctors view
+          </Link>
+        </div>
+        <div className="grid gap-4 p-5 md:grid-cols-3">
+          <OperationTile
+            icon={UserGroupIcon}
+            title="Doctor roster"
+            description="See which doctors are assigned to this clinic and verify who is available today."
+          />
+          <OperationTile
+            icon={CalendarDaysIcon}
+            title="Published windows"
+            description="Confirm which doctors have active morning, noon, or evening blocks before approving patients."
+          />
+          <OperationTile
+            icon={ClockIcon}
+            title="Queue balancing"
+            description="Watch doctors with pending requests and move quickly before the clinic load gets lopsided."
+          />
+        </div>
+      </section>
     </div>
   );
 }
@@ -251,6 +288,26 @@ function FocusCard({ title, value, description }: { title: string; value: string
       <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">{title}</p>
       <p className="mt-2 text-xl font-semibold text-white">{value}</p>
       <p className="mt-2 text-sm leading-6 text-slate-300">{description}</p>
+    </div>
+  );
+}
+
+function OperationTile({
+  icon: Icon,
+  title,
+  description,
+}: {
+  icon: React.ElementType;
+  title: string;
+  description: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
+      <div className="flex items-center gap-2 text-slate-700">
+        <Icon className="h-5 w-5" />
+        <p className="text-sm font-semibold text-slate-900">{title}</p>
+      </div>
+      <p className="mt-3 text-sm leading-6 text-slate-600">{description}</p>
     </div>
   );
 }

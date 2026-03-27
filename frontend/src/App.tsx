@@ -22,6 +22,7 @@ const PatientDashboard = lazy(() => import('./pages/PatientDashboard'));
 const DoctorDashboard = lazy(() => import('./pages/DoctorDashboard'));
 const ReceptionistDashboard = lazy(() => import('./pages/ReceptionistDashboard'));
 const ReceptionistAppointments = lazy(() => import('./pages/ReceptionistAppointments'));
+const ReceptionistDoctors = lazy(() => import('./pages/ReceptionistDoctors'));
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'));
 const AdminUsers = lazy(() => import('./pages/AdminUsers'));
 const AdminClinics = lazy(() => import('./pages/AdminClinics'));
@@ -83,6 +84,7 @@ function AppRoutes() {
                 <Route path="doctor-dashboard" element={<DoctorDashboard />} />
                 <Route path="receptionist-dashboard" element={<ProtectedRoute requiredRole="receptionist"><ReceptionistDashboard /></ProtectedRoute>} />
                 <Route path="receptionist-appointments" element={<ProtectedRoute requiredRole="receptionist"><ReceptionistAppointments /></ProtectedRoute>} />
+                <Route path="receptionist-doctors" element={<ProtectedRoute requiredRole="receptionist"><ReceptionistDoctors /></ProtectedRoute>} />
                 <Route path="admin-dashboard" element={<ProtectedRoute requiredRole="admin"><AdminDashboard /></ProtectedRoute>} />
                 <Route path="admin-clinics" element={<ProtectedRoute requiredRole="admin"><AdminClinics /></ProtectedRoute>} />
                 <Route path="patient-profile" element={<ProtectedRoute requiredRole="patient"><PatientProfile /></ProtectedRoute>} />

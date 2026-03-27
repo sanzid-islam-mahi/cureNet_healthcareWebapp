@@ -85,6 +85,7 @@ const shellByRole: Record<Role, NavGroup[]> = {
       items: [
         { to: '/app/receptionist-dashboard', label: 'Dashboard', icon: HomeIcon, description: 'Clinic front-desk overview' },
         { to: '/app/receptionist-appointments', label: 'Appointments', icon: CalendarDaysIcon, description: 'Clinic request queue and approvals' },
+        { to: '/app/receptionist-doctors', label: 'Doctors', icon: UserGroupIcon, description: 'Doctor roster and clinic operations' },
       ],
     },
   ],

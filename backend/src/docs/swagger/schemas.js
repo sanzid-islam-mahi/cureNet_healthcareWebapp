@@ -649,6 +649,50 @@ export const schemas = {
       },
     },
   },
+  ReceptionistClinicDoctor: {
+    type: 'object',
+    properties: {
+      id: { type: 'integer' },
+      userId: { type: 'integer' },
+      department: { type: 'string', nullable: true },
+      experience: { type: 'integer', nullable: true },
+      verified: { type: 'boolean' },
+      consultationFee: { type: 'number', nullable: true },
+      isAvailableToday: { type: 'boolean' },
+      todayWindows: {
+        type: 'array',
+        items: {
+          type: 'object',
+          properties: {
+            key: { type: 'string' },
+            label: { type: 'string' },
+            maxPatients: { type: 'integer', nullable: true },
+          },
+        },
+      },
+      queue: {
+        type: 'object',
+        properties: {
+          totalToday: { type: 'integer' },
+          requested: { type: 'integer' },
+          approved: { type: 'integer' },
+          inProgress: { type: 'integer' },
+          completed: { type: 'integer' },
+        },
+      },
+      user: {
+        type: 'object',
+        nullable: true,
+        properties: {
+          id: { type: 'integer' },
+          firstName: { type: 'string', nullable: true },
+          lastName: { type: 'string', nullable: true },
+          email: { type: 'string', format: 'email', nullable: true },
+          phone: { type: 'string', nullable: true },
+        },
+      },
+    },
+  },
   AuditLogRecord: {
     type: 'object',
     properties: {
