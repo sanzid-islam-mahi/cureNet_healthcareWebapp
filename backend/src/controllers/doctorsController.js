@@ -4,7 +4,7 @@ import { fileURLToPath } from 'url';
 import { Op } from 'sequelize';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const { User, Doctor, Appointment, Rating, Prescription, Patient } = db;
+const { User, Doctor, Appointment, Rating, Prescription, Patient, PatientMedicalHistory, MedicationReminderPlan } = db;
 
 const WEEKDAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 function getWeekday(dateStr) {
@@ -349,12 +349,32 @@ export async function getPatientContext(req, res) {
       return res.status(404).json({ success: false, message: 'Patient not found' });
     }
 
-    const recentAppointments = await Appointment.findAll({
-      where: { doctorId, patientId },
-      include: [{ model: Prescription, as: 'Prescription', required: false }],
-      order: [['appointment_date', 'DESC'], ['created_at', 'DESC']],
-      limit: 8,
-    });
+    const [historyRecord, recentAppointments, recentPrescriptions, activeReminderPlans] = await Promise.all([
+      PatientMedicalHistory.findOne({ where: { patientId } }),
+      Appointment.findAll({
+        where: { doctorId, patientId },
+        include: [{ model: Prescription, as: 'Prescription', required: false }],
+        order: [['appointment_date', 'DESC'], ['created_at', 'DESC']],
+        limit: 8,
+      }),
+      Prescription.findAll({
+        include: [
+          {
+            model: Appointment,
+            as: 'Appointment',
+            where: { doctorId, patientId },
+            attributes: ['id', 'appointmentDate', 'status', 'type', 'reason', 'symptoms', 'window', 'serial'],
+            required: true,
+          },
+        ],
+        order: [['createdAt', 'DESC']],
+        limit: 8,
+      }),
+      MedicationReminderPlan.findAll({
+        where: { patientId, status: { [Op.in]: ['active', 'paused'] } },
+        attributes: ['id', 'prescriptionId', 'medicineIndex', 'medicineName', 'status', 'scheduleTimes'],
+      }),
+    ]);
 
     const appointments = recentAppointments.map((a) => {
       const p = a.get({ plain: true });
@@ -369,6 +389,41 @@ export async function getPatientContext(req, res) {
         symptoms: p.symptoms,
         hasPrescription: Boolean(p.Prescription),
         diagnosis: p.Prescription?.diagnosis || null,
+      };
+    });
+
+    const reminderPlansByPrescriptionMedicine = new Map(
+      activeReminderPlans.map((plan) => {
+        const plain = plan.get({ plain: true });
+        return [`${plain.prescriptionId}:${plain.medicineIndex}`, plain];
+      })
+    );
+
+    const prescriptions = recentPrescriptions.map((prescription) => {
+      const plain = prescription.get({ plain: true });
+      const medicines = Array.isArray(plain.medicines) ? plain.medicines : [];
+      return {
+        id: plain.id,
+        appointmentId: plain.appointmentId,
+        diagnosis: plain.diagnosis,
+        notes: plain.notes,
+        createdAt: plain.createdAt,
+        appointment: plain.Appointment
+          ? {
+              id: plain.Appointment.id,
+              appointmentDate: plain.Appointment.appointmentDate,
+              status: plain.Appointment.status,
+              type: plain.Appointment.type,
+              reason: plain.Appointment.reason,
+              symptoms: plain.Appointment.symptoms,
+              window: plain.Appointment.window,
+              serial: plain.Appointment.serial,
+            }
+          : null,
+        medicines: medicines.map((medicine, index) => ({
+          ...medicine,
+          activeReminder: reminderPlansByPrescriptionMedicine.get(`${plain.id}:${index}`) || null,
+        })),
       };
     });
 
@@ -388,10 +443,22 @@ export async function getPatientContext(req, res) {
             insuranceNumber: pj.insuranceNumber,
             profileImage: pj.profileImage,
           },
+          history: {
+            chronicConditions: historyRecord?.chronicConditions ?? [],
+            pastProcedures: historyRecord?.pastProcedures ?? [],
+            familyHistory: historyRecord?.familyHistory ?? [],
+            currentLongTermMedications: historyRecord?.currentLongTermMedications ?? [],
+            immunizationNotes: historyRecord?.immunizationNotes ?? '',
+            lifestyleRiskNotes: historyRecord?.lifestyleRiskNotes ?? '',
+            generalMedicalNotes: historyRecord?.generalMedicalNotes ?? '',
+          },
           summary: {
             totalVisitsWithDoctor: relationCount,
+            prescriptionCount: prescriptions.length,
+            activeReminderCount: activeReminderPlans.length,
             recentAppointments: appointments,
           },
+          prescriptions,
         },
       },
     });

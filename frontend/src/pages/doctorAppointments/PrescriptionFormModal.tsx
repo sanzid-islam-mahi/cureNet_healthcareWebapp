@@ -13,6 +13,7 @@ import {
   normalizeMedicine,
   ROUTE_OPTIONS,
 } from './utils';
+import { downloadPrescriptionPdf } from '../../lib/prescriptionPdf';
 
 interface PrescriptionFormModalProps {
   appointmentId: number;
@@ -130,6 +131,20 @@ export default function PrescriptionFormModal({ appointmentId, onClose }: Prescr
   };
 
   const isSubmitting = createMutation.isPending || updateMutation.isPending;
+
+  const downloadPdf = () => {
+    if (!existing) return;
+    downloadPrescriptionPdf({
+      appointmentId,
+      diagnosis: existing.diagnosis,
+      notes: existing.notes,
+      medicines: existing.medicines,
+      appointment: {
+        appointmentDate: undefined,
+        type: undefined,
+      },
+    });
+  };
 
   const applyFrequencyTemplate = (index: number, value: string) => {
     updateRow(index, 'frequency', value);
@@ -340,15 +355,22 @@ export default function PrescriptionFormModal({ appointmentId, onClose }: Prescr
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
               >
                 Close
               </button>
               <button
                 type="button"
+                onClick={downloadPdf}
+                className="rounded-lg bg-slate-700 px-4 py-2 text-sm font-medium text-white hover:bg-slate-600"
+              >
+                Download PDF
+              </button>
+              <button
+                type="button"
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => setMode('edit')}
-                className="flex-1 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
+                className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
               >
                 Edit prescription
               </button>

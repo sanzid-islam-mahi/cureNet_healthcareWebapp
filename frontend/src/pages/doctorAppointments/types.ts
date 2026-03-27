@@ -74,19 +74,62 @@ export interface PatientContextData {
     emergencyContact?: string;
     emergencyPhone?: string;
     insuranceProvider?: string;
+    insuranceNumber?: string;
+    profileImage?: string;
+  };
+  history: {
+    chronicConditions?: string[];
+    pastProcedures?: string[];
+    familyHistory?: string[];
+    currentLongTermMedications?: string[];
+    immunizationNotes?: string;
+    lifestyleRiskNotes?: string;
+    generalMedicalNotes?: string;
   };
   summary: {
     totalVisitsWithDoctor: number;
+    prescriptionCount?: number;
+    activeReminderCount?: number;
     recentAppointments: Array<{
       id: number;
       appointmentDate: string;
       status: string;
+      type?: string;
+      window?: string;
+      serial?: number;
       reason?: string;
       symptoms?: string;
       hasPrescription?: boolean;
       diagnosis?: string | null;
     }>;
   };
+  prescriptions: Array<{
+    id: number;
+    appointmentId: number;
+    diagnosis?: string | null;
+    notes?: string | null;
+    createdAt?: string;
+    appointment?: {
+      id: number;
+      appointmentDate?: string;
+      status?: string;
+      type?: string;
+      reason?: string;
+      symptoms?: string;
+      window?: string;
+      serial?: number;
+    } | null;
+    medicines?: Array<MedicineEntry & {
+      activeReminder?: {
+        id: number;
+        prescriptionId: number;
+        medicineIndex: number;
+        medicineName: string;
+        status: string;
+        scheduleTimes: string[];
+      } | null;
+    }>;
+  }>;
 }
 
 export type AppointmentAction = 'approve' | 'reject' | 'start' | 'complete';

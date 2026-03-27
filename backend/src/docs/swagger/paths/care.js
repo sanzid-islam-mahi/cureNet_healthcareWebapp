@@ -602,10 +602,13 @@ export const carePaths = {
                     id: { type: 'integer' },
                     user: { $ref: '#/components/schemas/User' },
                     medical: { $ref: '#/components/schemas/PatientMedicalProfile' },
+                    history: { $ref: '#/components/schemas/PatientHistoryRecord' },
                     summary: {
                       type: 'object',
                       properties: {
                         totalVisitsWithDoctor: { type: 'integer' },
+                        prescriptionCount: { type: 'integer' },
+                        activeReminderCount: { type: 'integer' },
                         recentAppointments: {
                           type: 'array',
                           items: {
@@ -625,6 +628,10 @@ export const carePaths = {
                           },
                         },
                       },
+                    },
+                    prescriptions: {
+                      type: 'array',
+                      items: { $ref: '#/components/schemas/PatientHistoryPrescription' },
                     },
                   },
                 },
