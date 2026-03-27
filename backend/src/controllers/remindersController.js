@@ -278,13 +278,17 @@ export async function update(req, res) {
       startDate: payload.startDate,
       endDate: payload.endDate,
     });
+    const now = new Date();
 
     const transaction = await sequelize.transaction();
     try {
       const preservedDoses = await MedicationReminderDose.findAll({
         where: {
           reminderPlanId: plan.id,
-          status: { [Op.in]: ['taken', 'missed', 'skipped'] },
+          [Op.or]: [
+            { status: { [Op.in]: ['taken', 'missed', 'skipped', 'sent'] } },
+            { scheduledAt: { [Op.lte]: now } },
+          ],
         },
         transaction,
       });
@@ -293,7 +297,8 @@ export async function update(req, res) {
       await MedicationReminderDose.destroy({
         where: {
           reminderPlanId: plan.id,
-          status: { [Op.notIn]: ['taken', 'missed', 'skipped'] },
+          status: 'scheduled',
+          scheduledAt: { [Op.gt]: now },
         },
         transaction,
       });
@@ -312,7 +317,9 @@ export async function update(req, res) {
       }, { transaction });
 
       const dosesToCreate = schedule.doses.filter(
-        (dose) => !preservedScheduledAt.has(new Date(dose.scheduledAt).toISOString()),
+        (dose) =>
+          new Date(dose.scheduledAt) > now &&
+          !preservedScheduledAt.has(new Date(dose.scheduledAt).toISOString()),
       );
 
       if (dosesToCreate.length > 0) {

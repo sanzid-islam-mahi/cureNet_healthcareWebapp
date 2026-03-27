@@ -54,7 +54,7 @@ async function loadMissedDoses(cutoff) {
     where: {
       status: 'sent',
       takenAt: null,
-      scheduledAt: { [Op.lte]: cutoff },
+      sentAt: { [Op.lte]: cutoff },
     },
     include: [
       {
