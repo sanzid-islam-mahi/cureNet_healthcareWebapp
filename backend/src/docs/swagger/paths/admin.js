@@ -122,9 +122,22 @@ export const adminPaths = {
   '/admin/doctors/{id}/verify': {
     put: {
       tags: ['Admin'],
-      summary: 'Verify doctor',
+      summary: 'Verify doctor and publish clinic assignment',
       security: authSecurity,
       parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }],
+      requestBody: {
+        required: false,
+        content: json({
+          type: 'object',
+          properties: {
+            clinicId: {
+              type: 'integer',
+              nullable: true,
+              description: 'Required if the doctor does not already have a clinic assignment.',
+            },
+          },
+        }),
+      },
       responses: {
         200: successResponse('Doctor verified', {
           type: 'object',
@@ -138,12 +151,14 @@ export const adminPaths = {
                   properties: {
                     id: { type: 'integer' },
                     verified: { type: 'boolean' },
+                    clinicId: { type: 'integer', nullable: true },
                   },
                 },
               },
             },
           },
         }),
+        400: errorResponse('Doctor must be assigned to an active clinic before approval'),
         404: errorResponse('Doctor not found'),
         500: errorResponse('Failed'),
       },
@@ -221,22 +236,10 @@ export const adminPaths = {
       requestBody: {
         required: true,
         content: json({
-          type: 'object',
-          properties: {
-            email: { type: 'string', format: 'email' },
-            password: { type: 'string', format: 'password' },
-            firstName: { type: 'string' },
-            lastName: { type: 'string' },
-            role: { type: 'string', enum: ['admin', 'patient', 'doctor'] },
-            phone: { type: 'string', nullable: true },
-            dateOfBirth: { type: 'string', format: 'date', nullable: true },
-            gender: { type: 'string', nullable: true },
-            address: { type: 'string', nullable: true },
-            bmdcRegistrationNumber: { type: 'string', nullable: true },
-            department: { type: 'string', nullable: true },
-            experience: { type: 'integer', nullable: true },
-          },
-          required: ['email', 'password', 'firstName', 'lastName', 'role'],
+          allOf: [
+            { $ref: '#/components/schemas/AdminUserUpsert' },
+            { type: 'object', required: ['email', 'password', 'firstName', 'lastName', 'role'] },
+          ],
         }),
       },
       responses: {
@@ -252,7 +255,7 @@ export const adminPaths = {
             },
           },
         }),
-        400: errorResponse('Validation error'),
+        400: errorResponse('Validation error, including receptionist clinic assignment rules'),
         500: errorResponse('Failed'),
       },
     },
@@ -265,10 +268,7 @@ export const adminPaths = {
       parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }],
       requestBody: {
         required: true,
-        content: json({
-          type: 'object',
-          additionalProperties: true,
-        }),
+        content: json({ $ref: '#/components/schemas/AdminUserUpsert' }),
       },
       responses: {
         200: successResponse('User updated', {
@@ -286,6 +286,127 @@ export const adminPaths = {
         400: errorResponse('Validation or self-update protection error'),
         404: errorResponse('User not found'),
         500: errorResponse('Failed'),
+      },
+    },
+  },
+  '/admin/clinics': {
+    get: {
+      tags: ['Admin'],
+      summary: 'List clinics with optional doctor roster',
+      security: authSecurity,
+      parameters: [
+        { name: 'status', in: 'query', schema: { type: 'string', enum: ['active', 'inactive'] } },
+        { name: 'search', in: 'query', schema: { type: 'string' } },
+        { name: 'includeDoctors', in: 'query', schema: { type: 'boolean' } },
+      ],
+      responses: {
+        200: successResponse('Clinic list', {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            data: {
+              type: 'object',
+              properties: {
+                clinics: {
+                  type: 'array',
+                  items: { $ref: '#/components/schemas/ClinicRecord' },
+                },
+              },
+            },
+          },
+        }),
+        500: errorResponse('Failed to load clinics'),
+      },
+    },
+    post: {
+      tags: ['Admin'],
+      summary: 'Create clinic and optionally assign doctors',
+      security: authSecurity,
+      requestBody: {
+        required: true,
+        content: json({
+          type: 'object',
+          properties: {
+            name: { type: 'string' },
+            type: { type: 'string', enum: ['hospital', 'clinic', 'diagnostic_center'] },
+            code: { type: 'string', nullable: true },
+            phone: { type: 'string', nullable: true },
+            email: { type: 'string', nullable: true },
+            addressLine: { type: 'string', nullable: true },
+            city: { type: 'string', nullable: true },
+            area: { type: 'string', nullable: true },
+            status: { type: 'string', enum: ['active', 'inactive'], nullable: true },
+            departments: { oneOf: [{ type: 'array', items: { type: 'string' } }, { type: 'string' }], nullable: true },
+            services: { oneOf: [{ type: 'array', items: { type: 'string' } }, { type: 'string' }], nullable: true },
+            operatingHours: { type: 'string', nullable: true },
+            notes: { type: 'string', nullable: true },
+            doctorIds: { type: 'array', items: { type: 'integer' }, nullable: true },
+          },
+          required: ['name'],
+        }),
+      },
+      responses: {
+        201: successResponse('Clinic created', {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            data: {
+              type: 'object',
+              properties: {
+                clinic: { $ref: '#/components/schemas/ClinicRecord' },
+              },
+            },
+          },
+        }),
+        400: errorResponse('Clinic name is required'),
+        500: errorResponse('Failed to create clinic'),
+      },
+    },
+  },
+  '/admin/clinics/{id}': {
+    put: {
+      tags: ['Admin'],
+      summary: 'Update clinic and doctor roster',
+      security: authSecurity,
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }],
+      requestBody: {
+        required: true,
+        content: json({
+          type: 'object',
+          properties: {
+            name: { type: 'string', nullable: true },
+            type: { type: 'string', enum: ['hospital', 'clinic', 'diagnostic_center'], nullable: true },
+            code: { type: 'string', nullable: true },
+            phone: { type: 'string', nullable: true },
+            email: { type: 'string', nullable: true },
+            addressLine: { type: 'string', nullable: true },
+            city: { type: 'string', nullable: true },
+            area: { type: 'string', nullable: true },
+            status: { type: 'string', enum: ['active', 'inactive'], nullable: true },
+            departments: { oneOf: [{ type: 'array', items: { type: 'string' } }, { type: 'string' }], nullable: true },
+            services: { oneOf: [{ type: 'array', items: { type: 'string' } }, { type: 'string' }], nullable: true },
+            operatingHours: { type: 'string', nullable: true },
+            notes: { type: 'string', nullable: true },
+            doctorIds: { type: 'array', items: { type: 'integer' }, nullable: true },
+          },
+        }),
+      },
+      responses: {
+        200: successResponse('Clinic updated', {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            data: {
+              type: 'object',
+              properties: {
+                clinic: { $ref: '#/components/schemas/ClinicRecord' },
+              },
+            },
+          },
+        }),
+        400: errorResponse('Clinic name is required'),
+        404: errorResponse('Clinic not found'),
+        500: errorResponse('Failed to update clinic'),
       },
     },
   },
