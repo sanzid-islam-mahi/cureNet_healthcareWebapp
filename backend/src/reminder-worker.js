@@ -3,7 +3,6 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import sequelize from './config/database.js';
 import './models/index.js';
-import { runMigrations } from './migrate.js';
 import { runReminderWorkerOnce } from './lib/reminderWorker.js';
 
 const REMINDER_WORKER_POLL_MS = parseInt(process.env.REMINDER_WORKER_POLL_MS || '60000', 10);
@@ -15,7 +14,6 @@ function sleep(ms) {
 
 async function start() {
   await sequelize.authenticate();
-  await runMigrations();
   console.log('Reminder worker connected to database.');
 
   do {
