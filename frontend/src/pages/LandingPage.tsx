@@ -12,11 +12,15 @@ import {
 import { api } from '../context/AuthContext';
 import DoctorCard from '../components/DoctorCard';
 import { getAssetUrl } from '../lib/runtimeConfig';
+import image390 from '../assets/image_390.png';
+import image391 from '../assets/image_391.png';
+import image392 from '../assets/image_392.png';
+import image393 from '../assets/image_393.png';
 
-const HERO_IMAGE = 'https://storage.googleapis.com/tagjs-prod.appspot.com/v1/v0o8XbXdnI/0ngpry2q_expires_30_days.png';
-const FEATURE_LEFT = 'https://storage.googleapis.com/tagjs-prod.appspot.com/v1/v0o8XbXdnI/z3yn2juq_expires_30_days.png';
-const FEATURE_CENTER = 'https://storage.googleapis.com/tagjs-prod.appspot.com/v1/v0o8XbXdnI/p01zq15x_expires_30_days.png';
-const FEATURE_RIGHT = 'https://storage.googleapis.com/tagjs-prod.appspot.com/v1/v0o8XbXdnI/w578ixvp_expires_30_days.png';
+const HERO_IMAGE = image390;
+const FEATURE_LEFT = image391;
+const FEATURE_CENTER = image392;
+const FEATURE_RIGHT = image393;
 
 const FEATURES = [
   { image: FEATURE_LEFT, title: 'Find a Doctor', description: 'Browse our list of trusted doctors and choose the right one for your needs.' },
