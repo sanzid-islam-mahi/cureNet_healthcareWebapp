@@ -70,7 +70,7 @@ services:
       mysql:
         condition: service_healthy
       backend:
-        condition: service_started
+        condition: service_healthy
     command: ["npm", "run", "reminder-worker"]
     environment:
       NODE_ENV: production
