@@ -15,13 +15,13 @@ Most commands below should be run from the repo root.
 Build and start everything:
 
 ```bash
-docker-compose --env-file .env.deploy up --build
+docker compose --env-file .env.deploy up --build
 ```
 
 Build and start in the background:
 
 ```bash
-docker-compose --env-file .env.deploy up -d --build
+docker compose --env-file .env.deploy up -d --build
 ```
 
 Services started:
@@ -37,13 +37,13 @@ Services started:
 Stop containers but keep data volumes:
 
 ```bash
-docker-compose --env-file .env.deploy down
+docker compose --env-file .env.deploy down
 ```
 
 Stop containers and remove volumes too:
 
 ```bash
-docker-compose --env-file .env.deploy down -v
+docker compose --env-file .env.deploy down -v
 ```
 
 Use `down -v` only when you intentionally want to reset:
@@ -56,51 +56,43 @@ Use `down -v` only when you intentionally want to reset:
 Start only the proxy:
 
 ```bash
-docker-compose --env-file .env.deploy up -d nginx-proxy
+docker compose --env-file .env.deploy up -d nginx-proxy
 ```
 
 Start only the frontend:
 
 ```bash
-docker-compose --env-file .env.deploy up -d frontend
+docker compose --env-file .env.deploy up -d frontend
 ```
 
 Start only the backend:
 
 ```bash
-docker-compose --env-file .env.deploy up -d backend
+docker compose --env-file .env.deploy up -d backend
 ```
 
 Rebuild frontend and restart it:
 
 ```bash
-docker-compose --env-file .env.deploy up -d --build frontend
-```
-
-If your machine uses `docker-compose` v1 and this recreate step fails, use the safer two-step flow:
-
-```bash
-docker-compose --env-file .env.deploy build frontend
-docker rm -f curenet_frontend_1
-docker-compose --env-file .env.deploy up -d frontend
+docker compose --env-file .env.deploy up -d --build frontend
 ```
 
 Or use the helper script:
 
 ```bash
-./scripts/docker-v1-rebuild-service.sh frontend
+./scripts/docker-rebuild-service.sh frontend
 ```
 
 Rebuild frontend and proxy together:
 
 ```bash
-docker-compose --env-file .env.deploy up -d --build frontend nginx-proxy
+docker compose --env-file .env.deploy up -d --build frontend nginx-proxy
 ```
 
 Rebuild backend and worker:
 
 ```bash
-docker-compose --env-file .env.deploy up -d --build backend reminder-worker
+docker compose --env-file .env.deploy up -d --build backend reminder-worker
 ```
 
 ## 4. Check Status
@@ -108,7 +100,7 @@ docker-compose --env-file .env.deploy up -d --build backend reminder-worker
 See service status:
 
 ```bash
-docker-compose --env-file .env.deploy ps
+docker compose --env-file .env.deploy ps
 ```
 
 See all Docker containers on the machine:
@@ -128,49 +120,49 @@ docker ps
 All stack logs:
 
 ```bash
-docker-compose --env-file .env.deploy logs
+docker compose --env-file .env.deploy logs
 ```
 
 Follow all logs live:
 
 ```bash
-docker-compose --env-file .env.deploy logs -f
+docker compose --env-file .env.deploy logs -f
 ```
 
 Backend logs:
 
 ```bash
-docker-compose --env-file .env.deploy logs -f backend
+docker compose --env-file .env.deploy logs -f backend
 ```
 
 Frontend logs:
 
 ```bash
-docker-compose --env-file .env.deploy logs -f frontend
+docker compose --env-file .env.deploy logs -f frontend
 ```
 
 Nginx proxy logs:
 
 ```bash
-docker-compose --env-file .env.deploy logs -f nginx-proxy
+docker compose --env-file .env.deploy logs -f nginx-proxy
 ```
 
 Reminder worker logs:
 
 ```bash
-docker-compose --env-file .env.deploy logs -f reminder-worker
+docker compose --env-file .env.deploy logs -f reminder-worker
 ```
 
 MySQL logs:
 
 ```bash
-docker-compose --env-file .env.deploy logs -f mysql
+docker compose --env-file .env.deploy logs -f mysql
 ```
 
 Last 200 backend log lines:
 
 ```bash
-docker-compose --env-file .env.deploy logs --tail=200 backend
+docker compose --env-file .env.deploy logs --tail=200 backend
 ```
 
 ## 6. Restart Services
@@ -178,25 +170,25 @@ docker-compose --env-file .env.deploy logs --tail=200 backend
 Restart everything:
 
 ```bash
-docker-compose --env-file .env.deploy restart
+docker compose --env-file .env.deploy restart
 ```
 
 Restart only backend:
 
 ```bash
-docker-compose --env-file .env.deploy restart backend
+docker compose --env-file .env.deploy restart backend
 ```
 
 Restart only worker:
 
 ```bash
-docker-compose --env-file .env.deploy restart reminder-worker
+docker compose --env-file .env.deploy restart reminder-worker
 ```
 
 Restart only proxy:
 
 ```bash
-docker-compose --env-file .env.deploy restart nginx-proxy
+docker compose --env-file .env.deploy restart nginx-proxy
 ```
 
 ## 7. Enter Containers
@@ -204,25 +196,25 @@ docker-compose --env-file .env.deploy restart nginx-proxy
 Open a shell in backend:
 
 ```bash
-docker-compose --env-file .env.deploy exec backend sh
+docker compose --env-file .env.deploy exec backend sh
 ```
 
 Open a shell in MySQL container:
 
 ```bash
-docker-compose --env-file .env.deploy exec mysql sh
+docker compose --env-file .env.deploy exec mysql sh
 ```
 
 Open MySQL client as root inside the container:
 
 ```bash
-docker-compose --env-file .env.deploy exec mysql mysql -uroot -p
+docker compose --env-file .env.deploy exec mysql mysql -uroot -p
 ```
 
 Open MySQL client as app user:
 
 ```bash
-docker-compose --env-file .env.deploy exec mysql mysql -u"$DB_USER" -p"$DB_PASSWORD" "$DB_NAME"
+docker compose --env-file .env.deploy exec mysql mysql -u"$DB_USER" -p"$DB_PASSWORD" "$DB_NAME"
 ```
 
 ## 8. Run Backend Commands Inside Docker
@@ -230,25 +222,25 @@ docker-compose --env-file .env.deploy exec mysql mysql -u"$DB_USER" -p"$DB_PASSW
 Run migrations inside backend container:
 
 ```bash
-docker-compose --env-file .env.deploy exec backend npm run migrate
+docker compose --env-file .env.deploy exec backend npm run migrate
 ```
 
 Run backend tests inside backend container:
 
 ```bash
-docker-compose --env-file .env.deploy exec backend npm test
+docker compose --env-file .env.deploy exec backend npm test
 ```
 
 Create admin inside backend container:
 
 ```bash
-docker-compose --env-file .env.deploy exec backend npm run create-admin
+docker compose --env-file .env.deploy exec backend npm run create-admin
 ```
 
 Run the reminder worker once manually:
 
 ```bash
-docker-compose --env-file .env.deploy exec reminder-worker sh
+docker compose --env-file .env.deploy exec reminder-worker sh
 ```
 
 If needed inside that shell:
@@ -328,8 +320,8 @@ because it can remove a lot more than this project.
 If the stack gets into a bad state and you want a clean restart:
 
 ```bash
-docker-compose --env-file .env.deploy down -v
-docker-compose --env-file .env.deploy up -d --build
+docker compose --env-file .env.deploy down -v
+docker compose --env-file .env.deploy up -d --build
 ```
 
 This resets:
@@ -339,49 +331,21 @@ This resets:
 
 Only use this if you are okay losing containerized DB data and uploaded files.
 
-## 12. Compose v1 Note
+## 12. Helper Scripts
 
-Your machine is using:
-
-```bash
-docker-compose version 1.29.2
-```
-
-That older Compose version can fail during container recreation with errors like:
-
-```text
-'ContainerConfig'
-```
-
-When that happens, the usual workaround is:
-
-1. build the image first
-2. remove the old service container
-3. start the service again
-
-Frontend example:
+Rebuild one service:
 
 ```bash
-docker-compose --env-file .env.deploy build frontend
-docker rm -f curenet_frontend_1
-docker-compose --env-file .env.deploy up -d frontend
+./scripts/docker-rebuild-service.sh frontend
+./scripts/docker-rebuild-service.sh backend
+./scripts/docker-rebuild-service.sh reminder-worker
+./scripts/docker-rebuild-service.sh nginx-proxy
 ```
 
-Helper scripts added for this repo:
-
-Rebuild one service safely:
+Refresh the full stack:
 
 ```bash
-./scripts/docker-v1-rebuild-service.sh frontend
-./scripts/docker-v1-rebuild-service.sh backend
-./scripts/docker-v1-rebuild-service.sh reminder-worker
-./scripts/docker-v1-rebuild-service.sh nginx-proxy
-```
-
-Safe full stack refresh:
-
-```bash
-./scripts/docker-v1-refresh-stack.sh
+./scripts/docker-refresh-stack.sh
 ```
 
 ## 13. Current Ports In This Project
@@ -413,29 +377,29 @@ For normal use, these are the ones you will use the most:
 Start:
 
 ```bash
-docker-compose --env-file .env.deploy up -d --build
+docker compose --env-file .env.deploy up -d --build
 ```
 
 Check status:
 
 ```bash
-docker-compose --env-file .env.deploy ps
+docker compose --env-file .env.deploy ps
 ```
 
 Watch backend logs:
 
 ```bash
-docker-compose --env-file .env.deploy logs -f backend
+docker compose --env-file .env.deploy logs -f backend
 ```
 
 Watch worker logs:
 
 ```bash
-docker-compose --env-file .env.deploy logs -f reminder-worker
+docker compose --env-file .env.deploy logs -f reminder-worker
 ```
 
 Stop:
 
 ```bash
-docker-compose --env-file .env.deploy down
+docker compose --env-file .env.deploy down
 ```

@@ -9,12 +9,9 @@ if [[ ! -f "$ENV_FILE" ]]; then
 fi
 
 echo "==> Building all services"
-docker-compose --env-file "$ENV_FILE" build
-
-echo "==> Stopping stack"
-docker-compose --env-file "$ENV_FILE" down
+docker compose --env-file "$ENV_FILE" build
 
 echo "==> Starting stack in background"
-docker-compose --env-file "$ENV_FILE" up -d
+docker compose --env-file "$ENV_FILE" up -d
 
 echo "==> Done"
