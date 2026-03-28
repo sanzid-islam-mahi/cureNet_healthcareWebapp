@@ -1,6 +1,4 @@
-import { Link } from 'react-router-dom';
 import doctorImage from '../assets/image_394.png';
-import logo from '../assets/curenet_logo.png';
 
 export default function About() {
   return (

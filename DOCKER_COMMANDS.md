@@ -77,6 +77,20 @@ Rebuild frontend and restart it:
 docker-compose --env-file .env.deploy up -d --build frontend
 ```
 
+If your machine uses `docker-compose` v1 and this recreate step fails, use the safer two-step flow:
+
+```bash
+docker-compose --env-file .env.deploy build frontend
+docker rm -f curenet_frontend_1
+docker-compose --env-file .env.deploy up -d frontend
+```
+
+Or use the helper script:
+
+```bash
+./scripts/docker-v1-rebuild-service.sh frontend
+```
+
 Rebuild frontend and proxy together:
 
 ```bash
@@ -325,7 +339,52 @@ This resets:
 
 Only use this if you are okay losing containerized DB data and uploaded files.
 
-## 12. Current Ports In This Project
+## 12. Compose v1 Note
+
+Your machine is using:
+
+```bash
+docker-compose version 1.29.2
+```
+
+That older Compose version can fail during container recreation with errors like:
+
+```text
+'ContainerConfig'
+```
+
+When that happens, the usual workaround is:
+
+1. build the image first
+2. remove the old service container
+3. start the service again
+
+Frontend example:
+
+```bash
+docker-compose --env-file .env.deploy build frontend
+docker rm -f curenet_frontend_1
+docker-compose --env-file .env.deploy up -d frontend
+```
+
+Helper scripts added for this repo:
+
+Rebuild one service safely:
+
+```bash
+./scripts/docker-v1-rebuild-service.sh frontend
+./scripts/docker-v1-rebuild-service.sh backend
+./scripts/docker-v1-rebuild-service.sh reminder-worker
+./scripts/docker-v1-rebuild-service.sh nginx-proxy
+```
+
+Safe full stack refresh:
+
+```bash
+./scripts/docker-v1-refresh-stack.sh
+```
+
+## 13. Current Ports In This Project
 
 Current host mapping from [docker-compose.yml](/home/sanzid/playground/curenet/docker-compose.yml):
 
@@ -337,7 +396,7 @@ So use:
 - `https://192.168.0.108/`
 - `http://192.168.0.108:8080/`
 
-## 13. Current Important Files
+## 14. Current Important Files
 
 - [docker-compose.yml](/home/sanzid/playground/curenet/docker-compose.yml)
 - [\.env.deploy](/home/sanzid/playground/curenet/.env.deploy)
@@ -347,7 +406,7 @@ So use:
 - [DEPLOYMENT_GUIDE.md](/home/sanzid/playground/curenet/DEPLOYMENT_GUIDE.md)
 - [DEPLOYMENT_RUN_LOG.md](/home/sanzid/playground/curenet/DEPLOYMENT_RUN_LOG.md)
 
-## 14. Recommended Daily Commands
+## 15. Recommended Daily Commands
 
 For normal use, these are the ones you will use the most:
 
