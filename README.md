@@ -70,6 +70,7 @@ The repo now includes feature/system guides for learning the codebase:
 - [VIVA_REQUIREMENT_MAPPING.md](/home/sanzid/playground/curenet/docs/viva/VIVA_REQUIREMENT_MAPPING.md)
 - [SECURITY_GUIDE.md](/home/sanzid/playground/curenet/docs/guides/SECURITY_GUIDE.md)
 - [PERFORMANCE_GUIDE.md](/home/sanzid/playground/curenet/docs/guides/PERFORMANCE_GUIDE.md)
+- [AZURE_PERFORMANCE_TUNING.md](/home/sanzid/playground/curenet/docs/guides/AZURE_PERFORMANCE_TUNING.md)
 - [BACKUP_AND_RECOVERY_PLAN.md](/home/sanzid/playground/curenet/docs/guides/BACKUP_AND_RECOVERY_PLAN.md)
 - [MONITORING_AND_LOGGING_GUIDE.md](/home/sanzid/playground/curenet/docs/guides/MONITORING_AND_LOGGING_GUIDE.md)
 - [USER_GUIDE.md](/home/sanzid/playground/curenet/docs/guides/USER_GUIDE.md)

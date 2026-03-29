@@ -22,6 +22,7 @@ Current implementation:
 - most route pages are loaded using `React.lazy(...)`
 - routes are wrapped in `Suspense`
 - users do not download every page bundle on the first load
+- deployment tuning now also uses browser caching and compressed static delivery through Nginx
 
 Examples of lazy-loaded pages:
 
@@ -54,12 +55,21 @@ Current implementation:
 - data refetching is selective rather than brute-force
 - mutation flows invalidate only the relevant queries
 - live notification flows refresh targeted caches instead of full page reloads
+- global query defaults now reduce unnecessary focus/reconnect refetches in deployment
 
 Why this helps:
 
 - reduces redundant API requests
 - improves responsiveness after navigation
 - keeps frequently viewed data available while avoiding excessive refetching
+
+Current defaults:
+
+- `staleTime: 60 seconds`
+- `gcTime: 10 minutes`
+- `refetchOnWindowFocus: false`
+- `refetchOnReconnect: false`
+- `retry: 1`
 
 Rubric mapping:
 
@@ -77,6 +87,7 @@ Current implementation:
 - in deployment, the frontend and backend are served behind the same Nginx entrypoint
 - the frontend uses `/api` in deployed mode
 - the browser avoids extra cross-origin complexity in the main deployed path
+- Nginx now applies gzip compression and cache headers for hashed frontend assets
 
 Why this helps:
 
@@ -141,6 +152,7 @@ The current project can responsibly claim:
 - React Query caching is implemented
 - same-origin deployment routing reduces overhead and complexity
 - background reminder work is separated from the main API process
+- deployment performance was improved with Nginx compression and static asset caching
 
 The current project should avoid claiming without measurement:
 
@@ -155,5 +167,10 @@ Suggested answer:
 - CureNet uses route-level lazy loading on the frontend so users only download the code for the pages they actually visit
 - the frontend uses React Query as its client-side caching strategy
 - the deployment uses Nginx as a single entrypoint with same-origin routing, which simplifies browser behavior and cookie handling
+- the deployment also now uses gzip compression and static asset cache headers to reduce browser load cost on Azure VM hosting
 - the reminder worker runs separately from the API so background tasks do not compete with interactive requests
 - we did not overclaim benchmark targets because formal load testing is not yet part of the repo, but the architecture already includes practical performance-aware choices
+
+Additional reference:
+
+- [AZURE_PERFORMANCE_TUNING.md](/home/sanzid/playground/curenet/docs/guides/AZURE_PERFORMANCE_TUNING.md)

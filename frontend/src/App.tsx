@@ -41,7 +41,17 @@ const DoctorMyPatients = lazy(() => import('./pages/DoctorMyPatients'));
 const Doctors = lazy(() => import('./pages/Doctors'));
 const PatientDoctorProfile = lazy(() => import('./pages/PatientDoctorProfile'));
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 60_000,
+      gcTime: 10 * 60_000,
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+      retry: 1,
+    },
+  },
+});
 
 function RouteFallback() {
   return (
