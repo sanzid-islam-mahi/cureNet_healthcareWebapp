@@ -10,6 +10,8 @@ This guide is for getting CureNet running with:
 
 It is written for the case where you are new to Docker and Nginx and want a practical path first.
 
+It now also includes the basic operational notes needed for a viva submission and for an Azure VM deployment path.
+
 ## 1. What We Are Deploying
 
 The project runs as 5 services:
@@ -259,6 +261,114 @@ Or if you started it detached later:
 ```bash
 docker compose --env-file .env.deploy down
 ```
+
+## 11. Azure VM Deployment Notes
+
+The same deployment model can be used on an Azure VM with minimal changes.
+
+Recommended Azure shape:
+
+- Ubuntu VM
+- Docker Engine
+- Docker Compose v2
+- DNS pointed to the VM public IP
+- Nginx reverse proxy in the same Compose stack
+
+Recommended process:
+
+1. copy the repo onto the VM
+2. create `.env.deploy`
+3. provide TLS certificate files
+4. run:
+
+```bash
+docker compose --env-file .env.deploy up -d --build
+```
+
+5. verify:
+
+- `https://<domain-or-ip>/`
+- `https://<domain-or-ip>/api/health`
+- `https://<domain-or-ip>/docs`
+
+### Azure-specific notes
+
+- use a real CA-issued certificate instead of a self-signed cert when the app is public
+- keep only `80` and `443` exposed publicly
+- keep MySQL private to the Docker network
+- store backups outside the running containers
+
+## 12. Uploads And Persistence
+
+The deployed stack persists key data through Docker volumes:
+
+- `mysql-data`
+- `uploads-data`
+
+This means:
+
+- database contents survive container restarts
+- uploaded profile images and medical files survive container restarts
+
+Recovery references:
+
+- [BACKUP_AND_RECOVERY_PLAN.md](/home/sanzid/playground/curenet/BACKUP_AND_RECOVERY_PLAN.md)
+- [DOCKER_COMMANDS.md](/home/sanzid/playground/curenet/DOCKER_COMMANDS.md)
+
+## 13. Environment Management Notes
+
+Deployment configuration is externalized from the codebase.
+
+Important env-driven deployment values include:
+
+- `APP_BASE_URL`
+- `CORS_ORIGIN`
+- `DB_NAME`
+- `DB_USER`
+- `DB_PASSWORD`
+- `DB_ROOT_PASSWORD`
+- `JWT_SECRET`
+- `MAIL_*`
+- `HTTP_PORT`
+- `HTTPS_PORT`
+
+This keeps the same codebase portable across:
+
+- local development
+- local network Docker deployment
+- Azure VM deployment
+
+## 14. HTTPS And Reverse Proxy Notes
+
+Nginx is the public entrypoint for the deployed app.
+
+It handles:
+
+- TLS termination
+- forwarding `/` to the frontend
+- forwarding `/api`, `/docs`, and `/uploads` to the backend
+
+Why this matters:
+
+- the browser sees one origin
+- auth cookies behave more cleanly
+- frontend and backend feel like one application
+
+## 15. Recovery Notes
+
+For viva and operational readiness, the deployment story now includes:
+
+- MySQL dump and restore script
+- uploads backup and restore script
+- a documented recovery checklist
+
+References:
+
+- [BACKUP_AND_RECOVERY_PLAN.md](/home/sanzid/playground/curenet/BACKUP_AND_RECOVERY_PLAN.md)
+- [scripts/backup-mysql.sh](/home/sanzid/playground/curenet/scripts/backup-mysql.sh)
+- [scripts/restore-mysql.sh](/home/sanzid/playground/curenet/scripts/restore-mysql.sh)
+- [scripts/backup-uploads.sh](/home/sanzid/playground/curenet/scripts/backup-uploads.sh)
+- [scripts/restore-uploads.sh](/home/sanzid/playground/curenet/scripts/restore-uploads.sh)
 
 ## 11. How To Run In The Background
 

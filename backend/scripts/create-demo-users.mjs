@@ -12,6 +12,7 @@ const {
   User,
   Doctor,
   Patient,
+  Receptionist,
   Clinic,
   PatientMedicalHistory,
   Appointment,
@@ -151,6 +152,32 @@ const DOCTORS = [
     },
   },
 ];
+
+const RECEPTIONIST = {
+  email: 'receptionist.maya@curenet.local',
+  password: 'Reception123',
+  firstName: 'Maya',
+  lastName: 'Islam',
+  phone: '+8801712222222',
+  dateOfBirth: '1991-11-02',
+  gender: 'female',
+  address: 'Lalmatia, Dhaka, Bangladesh',
+  profile: {
+    employeeCode: 'RCPT-1001',
+    isActive: true,
+  },
+};
+
+const ADMIN = {
+  email: 'admin.demo@curenet.local',
+  password: 'Admin123',
+  firstName: 'System',
+  lastName: 'Admin',
+  phone: '+8801713333333',
+  dateOfBirth: '1990-01-01',
+  gender: 'other',
+  address: 'Dhaka, Bangladesh',
+};
 
 const PATIENTS = [
   {
@@ -505,6 +532,26 @@ async function upsertPatient(seed, transaction) {
   return user;
 }
 
+async function upsertReceptionist(seed, clinic, transaction) {
+  const user = await upsertUser({ ...seed, role: 'receptionist' }, transaction);
+  const [receptionist] = await Receptionist.findOrCreate({
+    where: { userId: user.id },
+    defaults: {
+      userId: user.id,
+      clinicId: clinic.id,
+      ...seed.profile,
+    },
+    transaction,
+  });
+
+  await receptionist.update({
+    clinicId: clinic.id,
+    ...seed.profile,
+  }, { transaction });
+
+  return user;
+}
+
 async function upsertAppointment(seed, doctorByEmail, patientByEmail, clinic, transaction) {
   const doctor = doctorByEmail.get(seed.doctorEmail);
   const patient = patientByEmail.get(seed.patientEmail);
@@ -669,6 +716,9 @@ async function main() {
         patientByEmail.set(patientSeed.email, patientProfile);
       }
 
+      const receptionistUser = await upsertReceptionist(RECEPTIONIST, clinic, transaction);
+      const adminUser = await upsertUser({ ...ADMIN, role: 'admin' }, transaction);
+
       let appointmentsCreated = 0;
       let prescriptionsCreated = 0;
       let reminderPlansCreated = 0;
@@ -697,12 +747,18 @@ async function main() {
         console.log(`  - ${doctorSeed.email} / ${doctorSeed.password}`);
       }
       console.log('');
+      console.log('Receptionist credentials:');
+      console.log(`  - ${RECEPTIONIST.email} / ${RECEPTIONIST.password}`);
+      console.log('');
+      console.log('Admin credentials:');
+      console.log(`  - ${ADMIN.email} / ${ADMIN.password}`);
+      console.log('');
       console.log('Patient credentials:');
       for (const patientSeed of PATIENTS) {
         console.log(`  - ${patientSeed.email} / ${patientSeed.password}`);
       }
       console.log('');
-      console.log(`Created or refreshed ${doctorUsers.length} doctors and ${patientUsers.length} patients.`);
+      console.log(`Created or refreshed ${doctorUsers.length} doctors, ${patientUsers.length} patients, 1 receptionist, and 1 admin.`);
       console.log(`Created or refreshed ${appointmentsCreated} appointments, ${prescriptionsCreated} prescriptions, and ${reminderPlansCreated} reminder plans.`);
     } catch (error) {
       await transaction.rollback();

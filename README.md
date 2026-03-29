@@ -2,10 +2,76 @@
 
 CureNet is a full-stack healthcare platform for patients, doctors, receptionists, and administrators. It provides authentication, role-based dashboards, doctor discovery, clinic-based appointment booking, prescription handling, reminders, medical history, and imaging workflows.
 
+## Viva Summary
+
+This repository is structured to support both development and viva submission. In addition to the application code, it now includes:
+
+- a master viva report
+- role-based user documentation
+- subsystem guides for auth, reminders, notifications, and uploads
+- deployment, backup, and monitoring documentation
+- a requirement-to-evidence mapping for the rubric
+
+Primary viva references:
+
+- [VIVA_REPORT.md](/home/sanzid/playground/curenet/VIVA_REPORT.md)
+- [VIVA_REQUIREMENT_MAPPING.md](/home/sanzid/playground/curenet/VIVA_REQUIREMENT_MAPPING.md)
+
+## Requirement Snapshot
+
+- Security:
+  - JWT authentication
+  - bcrypt password hashing
+  - RBAC for patient, doctor, receptionist, and admin
+  - HTTPS deployment behind Nginx
+  - security headers and rate limiting
+- Performance:
+  - route-level lazy loading
+  - React Query caching
+  - same-origin production routing
+- Deployment:
+  - Dockerized multi-service stack
+  - environment-based configuration
+  - backup and restore scripts for MySQL and uploads
+  - health checks, logs, and audit trail support
+
+## Live Demo
+
+Before final submission, replace these placeholders with the real deployment links:
+
+- Application URL: `REPLACE_WITH_AZURE_URL`
+- Swagger URL: `REPLACE_WITH_AZURE_URL/docs`
+- Repository URL: `REPLACE_WITH_GIT_REPO_URL`
+- Video demo URL: `REPLACE_WITH_VIDEO_URL`
+
+## Azure Deployment
+
+The app is deployment-ready for Azure VM style hosting using:
+
+- Docker
+- Nginx reverse proxy
+- HTTPS
+- MySQL container
+- reminder worker container
+
+Primary deployment references:
+
+- [DEPLOYMENT_GUIDE.md](/home/sanzid/playground/curenet/DEPLOYMENT_GUIDE.md)
+- [DOCKER_COMMANDS.md](/home/sanzid/playground/curenet/DOCKER_COMMANDS.md)
+- [BACKUP_AND_RECOVERY_PLAN.md](/home/sanzid/playground/curenet/BACKUP_AND_RECOVERY_PLAN.md)
+- [MONITORING_AND_LOGGING_GUIDE.md](/home/sanzid/playground/curenet/MONITORING_AND_LOGGING_GUIDE.md)
+
 ## System Guides
 
 The repo now includes feature/system guides for learning the codebase:
 
+- [VIVA_REPORT.md](/home/sanzid/playground/curenet/VIVA_REPORT.md)
+- [VIVA_REQUIREMENT_MAPPING.md](/home/sanzid/playground/curenet/VIVA_REQUIREMENT_MAPPING.md)
+- [SECURITY_GUIDE.md](/home/sanzid/playground/curenet/SECURITY_GUIDE.md)
+- [PERFORMANCE_GUIDE.md](/home/sanzid/playground/curenet/PERFORMANCE_GUIDE.md)
+- [BACKUP_AND_RECOVERY_PLAN.md](/home/sanzid/playground/curenet/BACKUP_AND_RECOVERY_PLAN.md)
+- [MONITORING_AND_LOGGING_GUIDE.md](/home/sanzid/playground/curenet/MONITORING_AND_LOGGING_GUIDE.md)
+- [USER_GUIDE.md](/home/sanzid/playground/curenet/USER_GUIDE.md)
 - [AUTH_SYSTEM_GUIDE.md](/home/sanzid/playground/curenet/AUTH_SYSTEM_GUIDE.md)
 - [DEMO_CREDENTIALS.md](/home/sanzid/playground/curenet/DEMO_CREDENTIALS.md)
 - [REMINDER_SYSTEM_GUIDE.md](/home/sanzid/playground/curenet/REMINDER_SYSTEM_GUIDE.md)
@@ -258,6 +324,13 @@ On another device in the same LAN, use:
 You may need to:
 
 - open ports `80` and `443` in your OS firewall
+
+## Known Production Notes
+
+- HTTPS is implemented in deployment, but local LAN testing may use self-signed certificates and therefore show browser trust warnings
+- encryption in transit is implemented; encryption at rest is only partially addressed at infrastructure level and not through field-level app encryption
+- performance-aware patterns are in place, but strict benchmark targets are not formally measured in this repository
+- monitoring and logging are practical and useful, but not yet a full metrics-and-alerting platform
 - accept the browser warning for the self-signed certificate
 
 ### 4. Persistent data

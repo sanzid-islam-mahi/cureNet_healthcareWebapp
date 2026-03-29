@@ -13,6 +13,8 @@ npm run create-demo-users
 This script will create or refresh:
 - multiple demo doctors
 - multiple demo patients
+- one demo receptionist
+- one demo admin
 - one demo clinic
 - one structured medical history record per seeded patient
 - several appointments across different workflow states
@@ -34,6 +36,14 @@ It is safe to rerun. The script updates the same demo accounts instead of creati
 - `patient.nabil@curenet.local` / `Patient123`
 - `patient.sadia@curenet.local` / `Patient123`
 - `patient.rashed@curenet.local` / `Patient123`
+
+### Demo Receptionist
+
+- `receptionist.maya@curenet.local` / `Reception123`
+
+### Demo Admin
+
+- `admin.demo@curenet.local` / `Admin123`
 
 ## 3. What Gets Seeded
 
@@ -101,13 +111,14 @@ It seeds multiple patients with different:
 
 ### Clinic
 
-The doctor is assigned to:
+The seeded operational staff are assigned around:
 - `CureNet Central Clinic`
 
 That helps with:
 - doctor public profile
 - booking flow
 - receptionist and clinic-scoped operations
+- admin walkthroughs with clinic-aware data
 
 ### Appointments, Prescriptions, And Reminders
 
@@ -131,3 +142,5 @@ That helps populate:
 - The script marks all demo users as email verified.
 - Passwords are hashed through the normal `User` model hooks.
 - If a user already exists with the same email but the wrong role, the script will stop instead of silently changing roles.
+- The receptionist is assigned to the demo clinic.
+- The admin is created as a platform-wide admin account without a separate profile model.
