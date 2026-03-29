@@ -6,6 +6,7 @@ ENV_FILE="${ENV_FILE:-.env.deploy}"
 if [[ $# -ne 1 ]]; then
   echo "Usage: $0 <service>"
   echo "Example: $0 frontend"
+  echo "Available examples: frontend, backend, reminder-worker, nginx-proxy, redis"
   exit 1
 fi
 

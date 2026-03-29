@@ -1,10 +1,21 @@
 import db from '../models/index.js';
+import { delKey, getJson, setJson } from '../lib/cache.js';
 
 const { Rating, Appointment } = db;
+const PUBLIC_RATINGS_CACHE_TTL_SECONDS = 300;
+
+function buildDoctorRatingsCacheKey(doctorId) {
+  return `public:ratings:doctor:${doctorId}`;
+}
 
 export async function getByDoctor(req, res) {
   try {
     const doctorId = parseInt(req.params.id, 10);
+    const cacheKey = buildDoctorRatingsCacheKey(doctorId);
+    const cached = await getJson(cacheKey);
+    if (cached) {
+      return res.json(cached);
+    }
     const ratings = await Rating.findAll({
       where: { doctorId },
       attributes: ['id', 'rating', 'review', 'createdAt'],
@@ -13,13 +24,15 @@ export async function getByDoctor(req, res) {
     const total = ratings.length;
     const sum = ratings.reduce((s, r) => s + r.rating, 0);
     const averageRating = total ? Math.round((sum / total) * 10) / 10 : 0;
-    return res.json({
+    const payload = {
       success: true,
       data: {
         summary: { averageRating, totalRatings: total },
         ratings: ratings.map((r) => r.get({ plain: true })),
       },
-    });
+    };
+    await setJson(cacheKey, payload, PUBLIC_RATINGS_CACHE_TTL_SECONDS);
+    return res.json(payload);
   } catch (err) {
     console.error('Get doctor ratings error:', err);
     return res.status(500).json({ success: false, message: err.message || 'Failed' });
@@ -78,6 +91,7 @@ export async function create(req, res) {
       rating: parseInt(rating, 10),
       review: review || null,
     });
+    await delKey(buildDoctorRatingsCacheKey(docId));
     return res.status(201).json({
       success: true,
       data: { rating: created.get({ plain: true }) },

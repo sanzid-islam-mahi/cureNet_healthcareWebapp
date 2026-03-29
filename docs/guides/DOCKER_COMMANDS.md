@@ -27,6 +27,7 @@ docker compose --env-file .env.deploy up -d --build
 Services started:
 
 - `mysql`
+- `redis`
 - `backend`
 - `reminder-worker`
 - `frontend`
@@ -71,6 +72,12 @@ Start only the backend:
 docker compose --env-file .env.deploy up -d backend
 ```
 
+Start only Redis:
+
+```bash
+docker compose --env-file .env.deploy up -d redis
+```
+
 Rebuild frontend and restart it:
 
 ```bash
@@ -93,6 +100,12 @@ Rebuild backend and worker:
 
 ```bash
 docker compose --env-file .env.deploy up -d --build backend reminder-worker
+```
+
+Rebuild backend, worker, and Redis-backed API path:
+
+```bash
+docker compose --env-file .env.deploy up -d --build redis backend reminder-worker
 ```
 
 ## 4. Check Status
@@ -159,6 +172,12 @@ MySQL logs:
 docker compose --env-file .env.deploy logs -f mysql
 ```
 
+Redis logs:
+
+```bash
+docker compose --env-file .env.deploy logs -f redis
+```
+
 Last 200 backend log lines:
 
 ```bash
@@ -185,6 +204,12 @@ Restart only worker:
 docker compose --env-file .env.deploy restart reminder-worker
 ```
 
+Restart only Redis:
+
+```bash
+docker compose --env-file .env.deploy restart redis
+```
+
 Restart only proxy:
 
 ```bash
@@ -209,6 +234,18 @@ Open MySQL client as root inside the container:
 
 ```bash
 docker compose --env-file .env.deploy exec mysql mysql -uroot -p
+```
+
+Open a shell in Redis container:
+
+```bash
+docker compose --env-file .env.deploy exec redis sh
+```
+
+Ping Redis directly:
+
+```bash
+docker compose --env-file .env.deploy exec redis redis-cli ping
 ```
 
 Open MySQL client as app user:

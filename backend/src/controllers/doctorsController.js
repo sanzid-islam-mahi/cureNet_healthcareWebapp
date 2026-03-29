@@ -4,11 +4,14 @@ import { fileURLToPath } from 'url';
 import { Op } from 'sequelize';
 import { serializeMedicalImagingRecord } from '../lib/medicalImaging.js';
 import { optimizeProfileImage } from '../lib/profileImages.js';
+import { getJson, setJson } from '../lib/cache.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const { User, Doctor, Appointment, Rating, Prescription, Patient, PatientMedicalHistory, MedicationReminderPlan, Clinic, MedicalImagingRecord } = db;
 
 const WEEKDAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+const PUBLIC_DOCTORS_CACHE_TTL_SECONDS = 300;
+
 function getWeekday(dateStr) {
   const d = new Date(dateStr + 'T12:00:00');
   return WEEKDAY_NAMES[d.getDay()];
@@ -77,9 +80,22 @@ function ensureDoctorAccess(req, res, doctorId) {
   return true;
 }
 
+function buildPublicDoctorsCacheKey({ limit, department }) {
+  const normalizedLimit = Number.isFinite(limit) && limit > 0 ? limit : 'all';
+  const normalizedDepartment = department ? String(department).trim().toLowerCase() : 'all';
+  return `public:doctors:list:limit=${normalizedLimit}:department=${normalizedDepartment}`;
+}
+
 export async function list(req, res) {
   try {
     const { department, limit } = req.query;
+    const parsedLimit = parseInt(limit, 10);
+    const cacheKey = buildPublicDoctorsCacheKey({ limit: parsedLimit, department });
+    const cached = await getJson(cacheKey);
+    if (cached) {
+      return res.json(cached);
+    }
+
     const where = { verified: true };
     if (department) where.department = department;
     const options = {
@@ -89,11 +105,12 @@ export async function list(req, res) {
         { model: Clinic, as: 'Clinic', attributes: ['id', 'name', 'type', 'phone', 'email', 'addressLine', 'city', 'area', 'status', 'operatingHours'], required: false },
       ],
     };
-    const num = parseInt(limit, 10);
-    if (Number.isFinite(num) && num > 0) options.limit = Math.min(num, 100);
+    if (Number.isFinite(parsedLimit) && parsedLimit > 0) options.limit = Math.min(parsedLimit, 100);
     const doctors = await Doctor.findAll(options);
     const list = doctors.map((d) => formatDoctorResponse(d, d.User));
-    return res.json({ success: true, data: { doctors: list } });
+    const payload = { success: true, data: { doctors: list } };
+    await setJson(cacheKey, payload, PUBLIC_DOCTORS_CACHE_TTL_SECONDS);
+    return res.json(payload);
   } catch (err) {
     console.error('List doctors error:', err);
     return res.status(500).json({ success: false, message: err.message || 'Failed' });
