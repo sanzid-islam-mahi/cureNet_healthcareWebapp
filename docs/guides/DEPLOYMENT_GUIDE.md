@@ -14,7 +14,7 @@ It now also includes the basic operational notes needed for a viva submission an
 
 ## 1. What We Are Deploying
 
-The project runs as 6 services:
+The project runs as 5 services:
 
 1. `mysql`
 - stores the database
@@ -39,10 +39,6 @@ The project runs as 6 services:
   - `/api` to backend
   - `/docs` to backend
   - `/uploads` to backend
-
-6. `redis`
-- internal-only cache service
-- used for short-lived caching of repeated public landing-page reads
 
 ## 2. What Nginx Is Doing Here
 

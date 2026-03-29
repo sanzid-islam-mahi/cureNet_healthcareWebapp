@@ -102,14 +102,11 @@ Evidence:
 
 Status:
 
-- implemented on frontend through React Query and on the backend through Redis for selected public reads
+- implemented on frontend through React Query
 
 Evidence:
 
 - [frontend/src/App.tsx](/home/sanzid/playground/curenet/frontend/src/App.tsx)
-- [backend/src/lib/cache.js](/home/sanzid/playground/curenet/backend/src/lib/cache.js)
-- [backend/src/controllers/doctorsController.js](/home/sanzid/playground/curenet/backend/src/controllers/doctorsController.js)
-- [backend/src/controllers/ratingsController.js](/home/sanzid/playground/curenet/backend/src/controllers/ratingsController.js)
 - [PERFORMANCE_GUIDE.md](/home/sanzid/playground/curenet/docs/guides/PERFORMANCE_GUIDE.md)
 
 ### Optional page load under 3 seconds

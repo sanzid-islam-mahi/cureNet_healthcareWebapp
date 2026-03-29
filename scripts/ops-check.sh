@@ -18,10 +18,6 @@ echo "== API health =="
 curl -sk "${APP_BASE_URL:-https://localhost}/api/health" || true
 
 echo
-echo "== Redis health =="
-docker compose --env-file "$ENV_FILE" exec -T redis redis-cli ping || true
-
-echo
 echo
 echo "== Recent backend logs =="
 docker compose --env-file "$ENV_FILE" logs --tail=20 backend || true
@@ -29,7 +25,3 @@ docker compose --env-file "$ENV_FILE" logs --tail=20 backend || true
 echo
 echo "== Recent reminder-worker logs =="
 docker compose --env-file "$ENV_FILE" logs --tail=20 reminder-worker || true
-
-echo
-echo "== Recent redis logs =="
-docker compose --env-file "$ENV_FILE" logs --tail=20 redis || true

@@ -75,27 +75,6 @@ Rubric mapping:
 
 - `Implement caching strategies`: implemented via React Query on the frontend
 
-## 3.1 Redis Caching For Public Reads
-
-Current implementation:
-
-- Redis is used as a short-lived cache for repeated public read endpoints on the landing experience
-- current scope is intentionally small:
-  - `/api/doctors`
-  - `/api/ratings/doctor/:id`
-- TTL is `300 seconds`
-
-Why this helps:
-
-- reduces repeated database reads for public landing-page traffic
-- improves explainability for viva and deployment discussion
-- avoids caching private or user-specific medical data
-
-Failure behavior:
-
-- if Redis is unavailable, the backend falls back to direct database reads
-- correctness is preserved even without cache
-
 ## 4. Same-Origin Production Routing
 
 Relevant files:

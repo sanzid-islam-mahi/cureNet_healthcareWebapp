@@ -33,9 +33,6 @@ Application layers:
 - `database`
   - MySQL persistent storage
 
-- `cache`
-  - Redis for short-lived public read caching
-
 - `reverse proxy`
   - Nginx
   - HTTPS termination
@@ -128,7 +125,6 @@ Current performance-focused choices:
 
 - route-level lazy loading in the frontend
 - React Query caching for server state
-- Redis caching for repeated public landing-page reads
 - same-origin deployment routing through Nginx
 - separate reminder worker so background jobs do not block the API
 
@@ -149,7 +145,6 @@ Deployment stack:
 - `reminder-worker`
 - `frontend`
 - `nginx-proxy`
-- `redis`
 
 The app is designed to run locally on a PC within a LAN and to be deployed on an Azure VM using the same Docker-based structure.
 
