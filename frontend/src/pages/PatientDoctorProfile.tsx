@@ -146,7 +146,13 @@ export default function PatientDoctorProfile() {
               <div className="flex flex-col gap-5 lg:flex-row lg:items-start">
                 <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-3xl border border-white/70 bg-sky-100 shadow-sm">
                   {imgSrc ? (
-                    <img src={imgSrc} alt={name} className="h-full w-full object-cover object-top" />
+                    <img
+                      src={imgSrc}
+                      alt={name}
+                      className="h-full w-full object-cover object-top"
+                      loading="lazy"
+                      decoding="async"
+                    />
                   ) : (
                     <UserCircleIcon className="h-full w-full text-sky-300" />
                   )}

@@ -79,6 +79,8 @@ export default function PatientContextModal({
                           src={getAssetUrl(data.medical.profileImage) || undefined}
                           alt={`${data.user.firstName} ${data.user.lastName}`}
                           className="h-full w-full rounded-2xl object-cover"
+                          loading="lazy"
+                          decoding="async"
                         />
                       ) : (
                         <UserIcon className="h-8 w-8 text-slate-400" />

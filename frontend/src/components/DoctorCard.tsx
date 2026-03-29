@@ -53,6 +53,8 @@ export default function DoctorCard({
                         alt={name}
                         className="absolute inset-0 w-full h-full object-cover object-top
                        group-hover:scale-105 transition-transform duration-500 ease-out"
+                        loading="lazy"
+                        decoding="async"
                     />
                 ) : (
                     <UserCircleIcon className="relative z-10 w-24 h-24 text-white/70 mb-2" />

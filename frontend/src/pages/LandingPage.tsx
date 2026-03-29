@@ -116,6 +116,9 @@ export default function LandingPage() {
                 src={HERO_IMAGE}
                 className="w-full h-auto rounded-[3rem] shadow-2xl object-cover bg-white"
                 alt="Healthcare professionals"
+                loading="eager"
+                decoding="async"
+                fetchPriority="high"
               />
             </div>
           </div>
@@ -160,7 +163,13 @@ export default function LandingPage() {
                 <div className="bg-white rounded-3xl p-8 shadow-lg shadow-slate-200/50 border border-slate-100/80 hover:shadow-2xl hover:border-blue-200/60 hover:-translate-y-2 transition-all duration-500 w-full flex-1 flex flex-col items-center pt-10">
                   <div className="relative h-48 w-full flex items-center justify-center mb-8 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50/30 overflow-hidden group-hover:from-blue-100/50 group-hover:to-indigo-100/30 transition-colors duration-500">
                     <div className="absolute inset-0 bg-white/40 group-hover:bg-transparent transition-colors duration-500 backdrop-blur-[1px] group-hover:backdrop-blur-none"></div>
-                    <img src={image} alt={title} className="relative z-10 max-h-[85%] w-auto object-contain group-hover:scale-110 drop-shadow-md transition-transform duration-700 ease-out" />
+                    <img
+                      src={image}
+                      alt={title}
+                      className="relative z-10 max-h-[85%] w-auto object-contain group-hover:scale-110 drop-shadow-md transition-transform duration-700 ease-out"
+                      loading="lazy"
+                      decoding="async"
+                    />
                   </div>
                   <h3 className="text-2xl font-bold text-slate-900 mb-4 text-center group-hover:text-blue-600 transition-colors duration-300">{title}</h3>
                   <p className="text-slate-600 text-center leading-relaxed text-lg">{description}</p>

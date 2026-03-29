@@ -73,6 +73,26 @@ Why this helps:
 - the browser talks to the reverse proxy, so compression needs to exist there
 - this reduces transferred size for JS and CSS on real networks
 
+### 2.4 Browser Image Loading Strategy
+
+Relevant files:
+
+- [frontend/src/pages/LandingPage.tsx](/home/sanzid/playground/curenet/frontend/src/pages/LandingPage.tsx)
+- [frontend/src/components/Navbar.tsx](/home/sanzid/playground/curenet/frontend/src/components/Navbar.tsx)
+- [frontend/src/components/DoctorCard.tsx](/home/sanzid/playground/curenet/frontend/src/components/DoctorCard.tsx)
+
+Applied changes:
+
+- above-the-fold brand and hero images use explicit eager loading
+- secondary illustrations and card/profile images now use `loading=\"lazy\"`
+- image decoding is set to async where appropriate
+
+Why this helps:
+
+- the browser prioritizes the images the user sees first
+- off-screen and repeated images do not compete with critical content during first load
+- image decoding work is spread more efficiently
+
 ## 3. Build Evidence
 
 The production build currently shows:
@@ -113,6 +133,12 @@ If browser performance still feels weak, do these next in order:
 2. split the admin analytics bundle further if it is still too heavy
 3. review pages with many parallel API queries and collapse some of them into aggregate endpoints where appropriate
 4. place the VM behind a real domain and trusted TLS certificate if you are still using a self-signed certificate in testing
+
+Current large-image note:
+
+- the landing hero source image is still roughly `462 KB`
+- some auth and marketing images are still above `140 KB`
+- lazy loading improves browser behavior, but source compression is still the next high-impact step
 
 ## 6. Honest Viva Position
 

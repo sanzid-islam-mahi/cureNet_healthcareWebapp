@@ -106,7 +106,14 @@ const Navbar = () => {
     <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200/50 shadow-sm font-sans w-full transition-all relative">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-10 py-3 flex justify-between items-center">
         <Link to="/" className="flex items-center gap-2 shrink-0 group" onClick={closeMobileMenu}>
-          <img src={logo} className="w-32 md:w-36 object-contain group-hover:opacity-90 transition-opacity" alt="CureNET" />
+          <img
+            src={logo}
+            className="w-32 md:w-36 object-contain group-hover:opacity-90 transition-opacity"
+            alt="CureNET"
+            loading="eager"
+            decoding="async"
+            fetchPriority="high"
+          />
         </Link>
 
         {/* Desktop nav */}
@@ -158,6 +165,8 @@ const Navbar = () => {
                     alt={displayName}
                     onError={() => setProfileImageFailed(true)}
                     className="h-8 w-8 rounded-full object-cover ring-2 ring-slate-100 shadow-sm transition-all group-hover:shadow"
+                    loading="lazy"
+                    decoding="async"
                   />
                 ) : (
                   <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-sm group-hover:shadow transition-all">
@@ -256,6 +265,8 @@ const Navbar = () => {
                       alt={displayName}
                       onError={() => setProfileImageFailed(true)}
                       className="h-10 w-10 rounded-full object-cover shadow-md ring-2 ring-white shrink-0"
+                      loading="lazy"
+                      decoding="async"
                     />
                   ) : (
                     <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-bold shadow-md shrink-0">

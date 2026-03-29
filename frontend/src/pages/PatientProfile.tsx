@@ -177,6 +177,8 @@ export default function PatientProfile() {
                       src={previewUrl}
                       alt="Profile preview"
                       className="w-full h-full object-cover"
+                      loading="lazy"
+                      decoding="async"
                     />
                   ) : (
                     <UserCircleIcon className="w-24 h-24 text-slate-300" />
