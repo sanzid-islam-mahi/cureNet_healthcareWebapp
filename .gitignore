@@ -39,3 +39,4 @@ coverage/
 .env.deploy
 deploy/certs/*.key
 deploy/certs/*.crt
+private/
