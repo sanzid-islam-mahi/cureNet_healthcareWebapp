@@ -20,6 +20,7 @@ import reviewer1 from '../assets/reviewers/r1.png';
 import reviewer2 from '../assets/reviewers/r2.png';
 import reviewer3 from '../assets/reviewers/r3.png';
 import reviewer4 from '../assets/reviewers/r4.png';
+import reviewer5 from '../assets/reviewers/r5.png';
 
 const HERO_IMAGE = image390;
 const FEATURE_LEFT = image391;
@@ -53,7 +54,7 @@ const TESTIMONIALS = [
     name: 'Sadia Rahman',
     role: 'Patient',
     quote: 'Booking was quick, the reminders were clear, and I did not have to call the clinic even once.',
-    image: reviewer1,
+    image: reviewer5,
   },
   {
     name: 'Dr. Nadia Karim',
