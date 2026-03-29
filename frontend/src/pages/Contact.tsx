@@ -19,7 +19,6 @@ export default function Contact() {
               src={contactImage}
               alt="Contact illustration"
               className="w-full h-auto object-contain"
-              loading="lazy"
               decoding="async"
             />
           </div>

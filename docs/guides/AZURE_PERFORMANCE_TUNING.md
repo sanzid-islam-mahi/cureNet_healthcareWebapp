@@ -84,13 +84,15 @@ Relevant files:
 Applied changes:
 
 - above-the-fold brand and hero images use explicit eager loading
-- secondary illustrations and card/profile images now use `loading=\"lazy\"`
+- only clearly non-critical landing section illustrations use `loading=\"lazy\"`
+- profile, card, and modal images were moved back to normal browser priority after testing because aggressive lazy loading made visible images feel slower
 - image decoding is set to async where appropriate
 
 Why this helps:
 
 - the browser prioritizes the images the user sees first
-- off-screen and repeated images do not compete with critical content during first load
+- only genuinely secondary landing illustrations are deferred
+- visible avatars, cards, and context images are no longer delayed by over-aggressive lazy loading
 - image decoding work is spread more efficiently
 
 ## 3. Build Evidence

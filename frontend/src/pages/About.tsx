@@ -21,7 +21,6 @@ export default function About() {
               src={doctorImage}
               alt="Healthcare professionals"
               className="w-full h-auto object-contain"
-              loading="lazy"
               decoding="async"
             />
           </div>

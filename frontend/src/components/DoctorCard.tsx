@@ -53,7 +53,6 @@ export default function DoctorCard({
                         alt={name}
                         className="absolute inset-0 w-full h-full object-cover object-top
                        group-hover:scale-105 transition-transform duration-500 ease-out"
-                        loading="lazy"
                         decoding="async"
                     />
                 ) : (

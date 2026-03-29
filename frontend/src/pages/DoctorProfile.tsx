@@ -361,7 +361,6 @@ export default function DoctorProfile() {
                       src={previewUrl}
                       alt="Profile preview"
                       className="w-full h-full object-cover"
-                      loading="lazy"
                       decoding="async"
                     />
                   ) : (

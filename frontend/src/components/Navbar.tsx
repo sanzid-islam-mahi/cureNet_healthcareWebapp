@@ -165,7 +165,6 @@ const Navbar = () => {
                     alt={displayName}
                     onError={() => setProfileImageFailed(true)}
                     className="h-8 w-8 rounded-full object-cover ring-2 ring-slate-100 shadow-sm transition-all group-hover:shadow"
-                    loading="lazy"
                     decoding="async"
                   />
                 ) : (
@@ -265,7 +264,6 @@ const Navbar = () => {
                       alt={displayName}
                       onError={() => setProfileImageFailed(true)}
                       className="h-10 w-10 rounded-full object-cover shadow-md ring-2 ring-white shrink-0"
-                      loading="lazy"
                       decoding="async"
                     />
                   ) : (
