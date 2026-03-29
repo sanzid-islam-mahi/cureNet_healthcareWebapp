@@ -1,6 +1,6 @@
 # CureNet Performance Guide
 
-This guide documents the performance-related design choices currently present in CureNet. It is written for viva readiness, so it focuses on evidence that can be shown directly from the codebase and deployment setup.
+This guide documents the performance-related design choices currently present in CureNet. It focuses on evidence that can be shown directly from the codebase and deployment setup.
 
 ## 1. Performance Positioning
 
@@ -160,7 +160,7 @@ The current project should avoid claiming without measurement:
 - guaranteed API response time under 500ms
 - benchmarked database tuning
 
-## 9. What To Say In The Viva
+## 9. Performance Summary
 
 Suggested answer:
 

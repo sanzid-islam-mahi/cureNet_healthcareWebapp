@@ -1,6 +1,6 @@
 # CureNet User Guide
 
-This is a short role-based user guide for demonstrating the platform in the viva.
+This is a short role-based user guide for demonstrating the platform.
 
 ## 1. Patient Flow
 
@@ -90,7 +90,7 @@ Demo accounts are documented in:
 
 - [DEMO_CREDENTIALS.md](/home/sanzid/playground/curenet/docs/guides/DEMO_CREDENTIALS.md)
 
-For the viva, keep one prepared account for each role:
+For a smooth demo, keep one prepared account for each role:
 
 - patient
 - doctor

@@ -112,7 +112,7 @@ Assessment note:
 
 - route-boundary validation exists and is used in the main high-risk flows
 - validation is not yet centralized in a single schema system such as Zod or Joi across the whole API
-- for viva purposes, this should be presented as `implemented with room for standardization`
+- this should be presented as `implemented with room for standardization`
 
 Rubric mapping:
 
@@ -278,9 +278,9 @@ Remaining production improvements:
 - consider centralized validation schemas
 - add stronger operational monitoring and alerting
 
-## 11. Viva Talking Points
+## 11. Security Summary
 
-If asked in the viva:
+If asked for a concise summary:
 
 - JWT authentication is implemented and enforced by middleware
 - passwords use bcrypt hashing with salt

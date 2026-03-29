@@ -19,13 +19,6 @@ Core system, deployment, and operational guides live in:
 - [guides/BACKUP_AND_RECOVERY_PLAN.md](/home/sanzid/playground/curenet/docs/guides/BACKUP_AND_RECOVERY_PLAN.md)
 - [guides/MONITORING_AND_LOGGING_GUIDE.md](/home/sanzid/playground/curenet/docs/guides/MONITORING_AND_LOGGING_GUIDE.md)
 
-## Viva Pack
-
-Submission-focused documentation lives in:
-
-- [viva/VIVA_REPORT.md](/home/sanzid/playground/curenet/docs/viva/VIVA_REPORT.md)
-- [viva/VIVA_REQUIREMENT_MAPPING.md](/home/sanzid/playground/curenet/docs/viva/VIVA_REQUIREMENT_MAPPING.md)
-
 ## Screenshots
 
 Screenshot placeholders and later real screenshots live in:

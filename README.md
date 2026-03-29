@@ -2,20 +2,17 @@
 
 CureNet is a full-stack healthcare platform for patients, doctors, receptionists, and administrators. It provides authentication, role-based dashboards, doctor discovery, clinic-based appointment booking, prescription handling, reminders, medical history, and imaging workflows.
 
-## Viva Summary
+## Documentation Summary
 
-This repository is structured to support both development and viva submission. In addition to the application code, it now includes:
+This repository includes the application code together with:
 
-- a master viva report
 - role-based user documentation
 - subsystem guides for auth, reminders, notifications, and uploads
-- deployment, backup, and monitoring documentation
-- a requirement-to-evidence mapping for the rubric
+- deployment, backup, monitoring, and security documentation
+- a central docs index
 
-Primary viva references:
+Primary documentation reference:
 
-- [VIVA_REPORT.md](/home/sanzid/playground/curenet/docs/viva/VIVA_REPORT.md)
-- [VIVA_REQUIREMENT_MAPPING.md](/home/sanzid/playground/curenet/docs/viva/VIVA_REQUIREMENT_MAPPING.md)
 - [docs/README.md](/home/sanzid/playground/curenet/docs/README.md)
 
 ## Requirement Snapshot
@@ -66,8 +63,6 @@ Primary deployment references:
 
 The repo now includes feature/system guides for learning the codebase:
 
-- [VIVA_REPORT.md](/home/sanzid/playground/curenet/docs/viva/VIVA_REPORT.md)
-- [VIVA_REQUIREMENT_MAPPING.md](/home/sanzid/playground/curenet/docs/viva/VIVA_REQUIREMENT_MAPPING.md)
 - [SECURITY_GUIDE.md](/home/sanzid/playground/curenet/docs/guides/SECURITY_GUIDE.md)
 - [PERFORMANCE_GUIDE.md](/home/sanzid/playground/curenet/docs/guides/PERFORMANCE_GUIDE.md)
 - [AZURE_PERFORMANCE_TUNING.md](/home/sanzid/playground/curenet/docs/guides/AZURE_PERFORMANCE_TUNING.md)

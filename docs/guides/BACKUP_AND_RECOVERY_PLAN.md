@@ -30,7 +30,7 @@ Recommended operational approach:
 - keep backups outside the running containers
 - retain multiple dated backups
 
-For viva/demo scope, CureNet now includes helper scripts:
+For demo and operational use, CureNet includes helper scripts:
 
 - [scripts/backup-mysql.sh](/home/sanzid/playground/curenet/scripts/backup-mysql.sh)
 - [scripts/restore-mysql.sh](/home/sanzid/playground/curenet/scripts/restore-mysql.sh)
@@ -141,7 +141,7 @@ Suggested production improvement:
 - store backups off-VM in a second location
 - for example Azure Storage, a secure backup disk, or a private offsite backup target
 
-## 9. Minimum Backup Policy For Viva
+## 9. Minimum Backup Policy
 
 For the evaluation, the project can credibly describe this policy:
 

@@ -10,7 +10,7 @@ This guide is for getting CureNet running with:
 
 It is written for the case where you are new to Docker and Nginx and want a practical path first.
 
-It now also includes the basic operational notes needed for a viva submission and for an Azure VM deployment path.
+It now also includes the basic operational notes needed for demos, reviews, and an Azure VM deployment path.
 
 ## 1. What We Are Deploying
 
@@ -356,7 +356,7 @@ Why this matters:
 
 ## 15. Recovery Notes
 
-For viva and operational readiness, the deployment story now includes:
+For demos and operational readiness, the deployment story now includes:
 
 - MySQL dump and restore script
 - uploads backup and restore script

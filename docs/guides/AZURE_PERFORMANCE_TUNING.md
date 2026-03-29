@@ -159,7 +159,7 @@ Current note:
 - the worst PNG-heavy assets were replaced in deployed usage with lighter WebP versions
 - if performance still feels weak after redeploy, the next likely bottleneck is JavaScript bundle weight rather than those specific images
 
-## 7. Honest Viva Position
+## 7. Honest Position
 
 What you can say now:
 

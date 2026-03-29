@@ -1,6 +1,6 @@
 # CureNet Monitoring And Logging Guide
 
-This guide documents the operational visibility currently available in CureNet and how it should be presented during the viva.
+This guide documents the operational visibility currently available in CureNet and how it can be presented during a demo or evaluation.
 
 ## 1. Monitoring Scope
 
@@ -122,7 +122,7 @@ This script prints:
 - the most recent backend logs
 - the most recent reminder-worker logs
 
-This makes the operational story easier to demo in the viva.
+This makes the operational story easier to demonstrate clearly.
 
 ## 7. What Exists Today vs Next Production Step
 
@@ -142,7 +142,7 @@ What would be next in a stronger production setup:
 - uptime monitoring
 - anomaly and security event alerting
 
-## 8. Viva Talking Points
+## 8. Monitoring Summary
 
 Suggested answer:
 
