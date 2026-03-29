@@ -16,6 +16,10 @@ import image390 from '../assets/image_390.webp';
 import image391 from '../assets/image_391.png';
 import image392 from '../assets/image_392.png';
 import image393 from '../assets/image_393.png';
+import reviewer1 from '../assets/reviewers/r1.png';
+import reviewer2 from '../assets/reviewers/r2.png';
+import reviewer3 from '../assets/reviewers/r3.png';
+import reviewer4 from '../assets/reviewers/r4.png';
 
 const HERO_IMAGE = image390;
 const FEATURE_LEFT = image391;
@@ -35,6 +39,52 @@ const SPECIALTIES = [
   { name: 'Neurologist', icon: CpuChipIcon },
   { name: 'Gynecologist', icon: HeartIcon },
   { name: 'General', icon: AcademicCapIcon },
+];
+
+const TRUST_METRICS = [
+  { value: '120+', label: 'Trusted doctors' },
+  { value: '1,000+', label: 'Patients served' },
+  { value: '15+', label: 'Active clinic departments' },
+  { value: '98%', label: 'Positive experience score' },
+];
+
+const TESTIMONIALS = [
+  {
+    name: 'Sadia Rahman',
+    role: 'Patient',
+    quote: 'Booking was quick, the reminders were clear, and I did not have to call the clinic even once.',
+    image: reviewer1,
+  },
+  {
+    name: 'Dr. Nadia Karim',
+    role: 'Cardiology',
+    quote: 'The workflow keeps appointments, prescriptions, and patient context in one place without feeling cluttered.',
+    image: reviewer2,
+  },
+  {
+    name: 'Rashed Hossain',
+    role: 'Patient',
+    quote: 'I could see my appointments, prescription updates, and imaging history from the same account.',
+    image: reviewer3,
+  },
+  {
+    name: 'Dr. Farhan Ahmed',
+    role: 'Neurology',
+    quote: 'The clinic-based flow is practical. Reception can manage the queue while I stay focused on the consultation.',
+    image: reviewer4,
+  },
+  {
+    name: 'Nabil Hasan',
+    role: 'Patient',
+    quote: 'The interface feels calm and professional, which matters when you are already stressed about health issues.',
+    image: reviewer1,
+  },
+  {
+    name: 'Dr. Asha Sultana',
+    role: 'General Medicine',
+    quote: 'It is easier to manage follow-ups when reminders and previous records are visible in the same system.',
+    image: reviewer3,
+  },
 ];
 
 interface DoctorItem {
@@ -77,23 +127,32 @@ export default function LandingPage() {
     },
     enabled: doctors.length > 0,
   });
+
+  const marqueeCards = [...TESTIMONIALS, ...TESTIMONIALS];
+
   return (
     <div className="flex flex-col bg-slate-50 min-h-screen font-sans">
+      <style>{`
+        @keyframes landing-marquee {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+      `}</style>
       {/* ================= HERO ================= */}
-      <section className="relative overflow-hidden bg-white pt-12 pb-16 md:pt-16 md:pb-20 border-b border-slate-200">
+      <section className="relative overflow-hidden bg-white pt-10 pb-10 md:pt-12 md:pb-12 border-b border-slate-200">
         <div className="absolute inset-0 bg-blue-50/50 -skew-y-3 transform origin-top-left -z-10" />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-12">
-            <div className="flex-1 text-center md:text-left">
-              <span className="inline-block py-1 px-3 rounded-full bg-blue-100 text-blue-700 text-sm font-semibold tracking-wide mb-6">
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 xl:grid-cols-[1.05fr_0.95fr] items-center gap-8 xl:gap-10">
+            <div className="text-center md:text-left">
+              <span className="inline-block py-1 px-3 rounded-full bg-blue-100 text-blue-700 text-sm font-semibold tracking-wide mb-4">
                 Modern Healthcare Platform
               </span>
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-slate-900 leading-tight mb-6">
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-slate-900 leading-tight mb-5">
                 Healthcare, <br className="hidden md:block" />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Simplified for Everyone</span>
               </h1>
-              <p className="text-lg md:text-xl text-slate-600 mb-10 max-w-2xl mx-auto md:mx-0 leading-relaxed">
-                Connect with top-rated medical professionals. Browse profiles, check availability, and schedule your appointment hassle-free.
+              <p className="text-lg md:text-xl text-slate-600 mb-7 max-w-2xl mx-auto md:mx-0 leading-relaxed">
+                Find specialists, book appointments, and manage follow-up care in one calm, clinic-ready experience.
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center md:justify-start gap-4">
                 <Link
@@ -110,7 +169,7 @@ export default function LandingPage() {
                 </Link>
               </div>
             </div>
-            <div className="flex-1 w-full max-w-lg md:max-w-none relative">
+            <div className="w-full max-w-xl md:max-w-none relative">
               <div className="absolute inset-0 bg-gradient-to-tr from-blue-200 to-indigo-100 rounded-[3rem] transform rotate-3 scale-105 -z-10 opacity-70" />
               <img
                 src={HERO_IMAGE}
@@ -120,33 +179,38 @@ export default function LandingPage() {
                 decoding="async"
                 fetchPriority="high"
               />
+              <div className="mt-5 grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {TRUST_METRICS.map(({ value, label }) => (
+                  <div key={label} className="rounded-2xl border border-slate-200 bg-white/95 px-4 py-3 text-left shadow-sm">
+                    <div className="text-xl md:text-2xl font-bold tracking-tight text-slate-900">{value}</div>
+                    <div className="mt-1 text-xs md:text-sm text-slate-500 leading-5">{label}</div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
       </section>
 
       {/* ================= PROVIDING THE BEST MEDICAL SERVICES ================= */}
-      <section className="relative py-12 md:py-16 bg-gradient-to-b from-slate-50 to-white overflow-hidden">
+      <section className="relative py-9 md:py-10 bg-gradient-to-b from-slate-50 to-white overflow-hidden">
         {/* Decorative background elements */}
         <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
           <div className="absolute -top-24 -left-24 w-96 h-96 rounded-full bg-blue-100/50 blur-3xl opacity-60"></div>
           <div className="absolute top-1/2 right-0 transform translate-x-1/3 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-indigo-50/50 blur-3xl opacity-60"></div>
         </div>
 
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto mb-12 fade-in-up">
-            <span className="inline-block py-1 px-3 rounded-full bg-indigo-50 text-indigo-600 text-sm font-bold tracking-widest uppercase mb-4">
-              Our Process
-            </span>
-            <h2 className="text-4xl md:text-5xl font-extrabold text-slate-900 mb-6 tracking-tight">
-              Providing the Best <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Medical Services</span>
+        <div className="relative z-10 max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-3xl mx-auto mb-8 fade-in-up">
+            <h2 className="text-3xl md:text-4xl font-extrabold text-slate-900 mb-3 tracking-tight">
+              Search, book, and stay on track.
             </h2>
-            <p className="text-xl text-slate-600 leading-relaxed">
-              We streamline your healthcare journey with a seamless experience from finding the right specialist to successful consultations.
+            <p className="text-lg text-slate-600 leading-relaxed">
+              A simpler flow from finding the right doctor to successful follow-up care.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12 relative">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 lg:gap-6 relative">
             {/* Connecting line for desktop */}
             <div className="hidden md:block absolute top-[120px] left-[16%] right-[16%] h-0.5 bg-gradient-to-r from-blue-100 via-indigo-200 to-blue-100 -z-10"></div>
 
@@ -160,8 +224,8 @@ export default function LandingPage() {
                   {idx + 1}
                 </div>
 
-                <div className="bg-white rounded-3xl p-8 shadow-lg shadow-slate-200/50 border border-slate-100/80 hover:shadow-2xl hover:border-blue-200/60 hover:-translate-y-2 transition-all duration-500 w-full flex-1 flex flex-col items-center pt-10">
-                  <div className="relative h-48 w-full flex items-center justify-center mb-8 rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50/30 overflow-hidden group-hover:from-blue-100/50 group-hover:to-indigo-100/30 transition-colors duration-500">
+                <div className="bg-white rounded-3xl p-5 shadow-lg shadow-slate-200/40 border border-slate-100/80 hover:shadow-xl hover:border-slate-200 transition-all duration-500 w-full flex-1 flex flex-col items-center pt-9">
+                  <div className="relative h-36 w-full flex items-center justify-center mb-5 rounded-2xl bg-gradient-to-br from-slate-50 to-blue-50/40 overflow-hidden transition-colors duration-500">
                     <div className="absolute inset-0 bg-white/40 group-hover:bg-transparent transition-colors duration-500 backdrop-blur-[1px] group-hover:backdrop-blur-none"></div>
                     <img
                       src={image}
@@ -171,8 +235,8 @@ export default function LandingPage() {
                       decoding="async"
                     />
                   </div>
-                  <h3 className="text-2xl font-bold text-slate-900 mb-4 text-center group-hover:text-blue-600 transition-colors duration-300">{title}</h3>
-                  <p className="text-slate-600 text-center leading-relaxed text-lg">{description}</p>
+                  <h3 className="text-xl font-bold text-slate-900 mb-2 text-center">{title}</h3>
+                  <p className="text-slate-600 text-center leading-relaxed">{description}</p>
                 </div>
               </div>
             ))}
@@ -180,24 +244,70 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ================= PATIENT STORIES ================= */}
+      <section className="py-8 md:py-10 bg-white border-y border-slate-200 overflow-hidden">
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 mb-5">
+          <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-3">
+            <div className="max-w-3xl">
+              <h2 className="text-2xl md:text-3xl font-bold text-slate-900">
+                Experience preview
+              </h2>
+            </div>
+
+          </div>
+        </div>
+
+        <div className="relative">
+          <div className="pointer-events-none absolute inset-y-0 left-0 w-16 md:w-24 bg-gradient-to-r from-white to-transparent z-10" />
+          <div className="pointer-events-none absolute inset-y-0 right-0 w-16 md:w-24 bg-gradient-to-l from-white to-transparent z-10" />
+          <div
+            className="flex w-max gap-4 px-4 sm:px-6 lg:px-8 motion-reduce:[animation:none]"
+            style={{ animation: 'landing-marquee 36s linear infinite' }}
+          >
+            {marqueeCards.map((item, index) => (
+              <article
+                key={`${item.name}-${index}`}
+                className="w-[270px] md:w-[310px] shrink-0 rounded-[2rem] border border-slate-200 bg-gradient-to-br from-white to-slate-50 p-5 shadow-[0_18px_50px_-30px_rgba(15,23,42,0.45)]"
+              >
+                <div className="flex items-center gap-4">
+                  <img
+                    src={item.image}
+                    alt={item.name}
+                    className="h-14 w-14 rounded-2xl object-cover ring-1 ring-slate-200"
+                    decoding="async"
+                  />
+                  <div>
+                    <h3 className="text-base font-semibold text-slate-900">{item.name}</h3>
+                    <p className="text-sm text-blue-700 font-medium">{item.role}</p>
+                  </div>
+                </div>
+                <p className="mt-4 text-[15px] leading-6 text-slate-600">
+                  “{item.quote}”
+                </p>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ================= FIND BY SPECIALITY ================= */}
-      <section className="py-12 md:py-16 bg-white relative">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row items-end justify-between mb-10 gap-8">
+      <section className="py-9 md:py-10 bg-white relative">
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row items-end justify-between mb-7 gap-6">
             <div className="max-w-2xl">
-              <span className="inline-block py-1 px-3 rounded-full bg-blue-50 text-blue-600 text-sm font-bold tracking-widest uppercase mb-4">
+              <span className="inline-block py-1 px-3 rounded-full bg-slate-100 text-slate-700 text-sm font-bold tracking-widest uppercase mb-3">
                 Departments
               </span>
-              <h2 className="text-4xl md:text-5xl font-extrabold text-slate-900 mb-6 tracking-tight">
+              <h2 className="text-3xl md:text-4xl font-extrabold text-slate-900 mb-3 tracking-tight">
                 Explore by Speciality
               </h2>
-              <p className="text-xl text-slate-600 leading-relaxed">
-                Browse through our comprehensive list of specialized medical departments and find the exact care you need.
+              <p className="text-lg text-slate-600 leading-relaxed">
+                Browse departments and find the care you need.
               </p>
             </div>
             <Link
               to="/doctors"
-              className="group inline-flex items-center gap-2 bg-slate-50 hover:bg-blue-50 text-blue-600 font-semibold py-3 px-6 rounded-2xl border border-slate-200 hover:border-blue-200 transition-all duration-300 whitespace-nowrap"
+              className="group inline-flex items-center gap-2 bg-slate-50 hover:bg-slate-100 text-slate-700 font-semibold py-3 px-6 rounded-2xl border border-slate-200 transition-all duration-300 whitespace-nowrap"
             >
               View all specialities
               <span className="inline-block w-6 h-6 rounded-full bg-white shadow-sm flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-colors">
@@ -206,17 +316,17 @@ export default function LandingPage() {
             </Link>
           </div>
 
-          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
+          <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
             {SPECIALTIES.map(({ name, icon: Icon }) => (
               <Link
                 to={`/doctors?specialty=${name}`}
                 key={name}
-                className="group relative overflow-hidden flex flex-col items-center justify-center gap-5 bg-white rounded-[2rem] p-8 border border-slate-100 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_30px_-4px_rgba(57,144,215,0.15)] hover:border-blue-100 hover:-translate-y-1.5 transition-all duration-500"
+                className="group relative overflow-hidden flex flex-col items-center justify-center gap-4 bg-white rounded-[2rem] p-6 border border-slate-100 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_30px_-4px_rgba(57,144,215,0.12)] hover:border-slate-200 hover:-translate-y-1 transition-all duration-500"
               >
                 {/* Abstract background shape on hover */}
                 <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-blue-50 to-indigo-50/50 rounded-bl-[100px] -z-10 translate-x-12 -translate-y-12 group-hover:translate-x-0 group-hover:-translate-y-0 transition-transform duration-500 ease-out"></div>
 
-                <div className="relative w-16 h-16 flex items-center justify-center rounded-2xl bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white group-hover:shadow-lg group-hover:shadow-blue-200 transition-all duration-500">
+                <div className="relative w-14 h-14 flex items-center justify-center rounded-2xl bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white group-hover:shadow-lg group-hover:shadow-blue-200 transition-all duration-500">
                   <Icon className="w-8 h-8 relative z-10" />
                   {/* Pulse ring on hover */}
                   <div className="absolute inset-0 rounded-2xl border-2 border-blue-600 opacity-0 group-hover:animate-[ping_1.5s_cubic-bezier(0,0,0.2,1)_infinite]"></div>
@@ -230,15 +340,15 @@ export default function LandingPage() {
       </section>
 
       {/* ================= TOP DOCTORS TO BOOK ================= */}
-      <section className="py-12 md:py-16 bg-slate-50 border-t border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-10">
+      <section className="py-9 md:py-10 bg-slate-50 border-t border-slate-200">
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-7">
             <span className="text-sm font-bold tracking-wider text-blue-600 uppercase mb-2 block">Our Specialists</span>
             <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
               Top Rated Doctors
             </h2>
             <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-              Book appointments with highly qualified and experienced medical professionals.
+              Connect with experienced doctors across key specialties.
             </p>
           </div>
 
@@ -285,19 +395,19 @@ export default function LandingPage() {
       </section>
 
       {/* ================= CTA BANNER ================= */}
-      <section className="py-12 md:py-16 bg-white">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="relative rounded-[2.5rem] overflow-hidden bg-gradient-to-br from-blue-600 to-indigo-700 shadow-2xl py-12 px-6 md:px-12 text-center lg:text-left flex flex-col lg:flex-row items-center justify-between gap-10">
+      <section className="py-8 md:py-9 bg-white">
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="relative rounded-[2rem] overflow-hidden bg-gradient-to-br from-blue-600 to-indigo-700 shadow-2xl py-8 px-6 md:px-10 text-center lg:text-left flex flex-col lg:flex-row items-center justify-between gap-6">
             {/* Background decorative bubbles */}
             <div className="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 rounded-full bg-white opacity-10 blur-3xl"></div>
             <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-80 h-80 rounded-full bg-blue-400 opacity-20 blur-3xl"></div>
 
             <div className="relative z-10 max-w-2xl">
-              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-6 leading-tight">
+              <h2 className="text-2xl md:text-3xl lg:text-3xl font-bold text-white mb-3 leading-tight">
                 Ready to take control of your health?
               </h2>
-              <p className="text-blue-100 text-lg md:text-xl mb-0">
-                Join thousands of patients who have already simplified their healthcare journey. Book your first appointment today.
+              <p className="text-blue-100 text-base md:text-lg mb-0">
+                Book your first appointment and manage care from one place.
               </p>
             </div>
 
@@ -305,14 +415,14 @@ export default function LandingPage() {
               {user ? (
                 <Link
                   to={user.role === 'patient' ? '/app/patient-dashboard' : user.role === 'doctor' ? '/app/doctor-dashboard' : user.role === 'receptionist' ? '/app/receptionist-dashboard' : '/app/admin-dashboard'}
-                  className="inline-flex items-center justify-center bg-white text-blue-700 text-lg font-bold py-4 px-10 rounded-full shadow-xl hover:bg-slate-50 hover:scale-105 transition-all duration-300 whitespace-nowrap"
+                  className="inline-flex items-center justify-center bg-white text-blue-700 text-base font-bold py-3 px-8 rounded-full shadow-xl hover:bg-slate-50 hover:scale-105 transition-all duration-300 whitespace-nowrap"
                 >
                   Go to Dashboard
                 </Link>
               ) : (
                 <Link
                   to="/register"
-                  className="inline-flex items-center justify-center bg-white text-blue-700 text-lg font-bold py-4 px-10 rounded-full shadow-xl hover:bg-slate-50 hover:scale-105 transition-all duration-300 whitespace-nowrap"
+                  className="inline-flex items-center justify-center bg-white text-blue-700 text-base font-bold py-3 px-8 rounded-full shadow-xl hover:bg-slate-50 hover:scale-105 transition-all duration-300 whitespace-nowrap"
                 >
                   Create Free Account
                 </Link>
