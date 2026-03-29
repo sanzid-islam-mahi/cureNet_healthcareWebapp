@@ -312,8 +312,8 @@ This means:
 
 Recovery references:
 
-- [BACKUP_AND_RECOVERY_PLAN.md](/home/sanzid/playground/curenet/BACKUP_AND_RECOVERY_PLAN.md)
-- [DOCKER_COMMANDS.md](/home/sanzid/playground/curenet/DOCKER_COMMANDS.md)
+- [BACKUP_AND_RECOVERY_PLAN.md](/home/sanzid/playground/curenet/docs/guides/BACKUP_AND_RECOVERY_PLAN.md)
+- [DOCKER_COMMANDS.md](/home/sanzid/playground/curenet/docs/guides/DOCKER_COMMANDS.md)
 
 ## 13. Environment Management Notes
 
@@ -364,7 +364,7 @@ For viva and operational readiness, the deployment story now includes:
 
 References:
 
-- [BACKUP_AND_RECOVERY_PLAN.md](/home/sanzid/playground/curenet/BACKUP_AND_RECOVERY_PLAN.md)
+- [BACKUP_AND_RECOVERY_PLAN.md](/home/sanzid/playground/curenet/docs/guides/BACKUP_AND_RECOVERY_PLAN.md)
 - [scripts/backup-mysql.sh](/home/sanzid/playground/curenet/scripts/backup-mysql.sh)
 - [scripts/restore-mysql.sh](/home/sanzid/playground/curenet/scripts/restore-mysql.sh)
 - [scripts/backup-uploads.sh](/home/sanzid/playground/curenet/scripts/backup-uploads.sh)
@@ -573,7 +573,7 @@ That is the whole deployment story.
 
 For day-to-day commands and rebuild helpers, also use:
 
-- [DOCKER_COMMANDS.md](/home/sanzid/playground/curenet/DOCKER_COMMANDS.md)
+- [DOCKER_COMMANDS.md](/home/sanzid/playground/curenet/docs/guides/DOCKER_COMMANDS.md)
 
 For the helper scripts:
 

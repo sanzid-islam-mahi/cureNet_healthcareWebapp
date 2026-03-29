@@ -116,8 +116,8 @@ Important honesty note:
 
 Supporting references:
 
-- [SECURITY_GUIDE.md](/home/sanzid/playground/curenet/SECURITY_GUIDE.md)
-- [AUTH_SYSTEM_GUIDE.md](/home/sanzid/playground/curenet/AUTH_SYSTEM_GUIDE.md)
+- [SECURITY_GUIDE.md](/home/sanzid/playground/curenet/docs/guides/SECURITY_GUIDE.md)
+- [AUTH_SYSTEM_GUIDE.md](/home/sanzid/playground/curenet/docs/guides/AUTH_SYSTEM_GUIDE.md)
 
 ## 6. Performance Implementation
 
@@ -134,7 +134,7 @@ Important honesty note:
 
 Supporting reference:
 
-- [PERFORMANCE_GUIDE.md](/home/sanzid/playground/curenet/PERFORMANCE_GUIDE.md)
+- [PERFORMANCE_GUIDE.md](/home/sanzid/playground/curenet/docs/guides/PERFORMANCE_GUIDE.md)
 
 ## 7. Deployment Architecture And Environment Management
 
@@ -156,8 +156,8 @@ Environment management:
 
 Supporting references:
 
-- [DEPLOYMENT_GUIDE.md](/home/sanzid/playground/curenet/DEPLOYMENT_GUIDE.md)
-- [DOCKER_COMMANDS.md](/home/sanzid/playground/curenet/DOCKER_COMMANDS.md)
+- [DEPLOYMENT_GUIDE.md](/home/sanzid/playground/curenet/docs/guides/DEPLOYMENT_GUIDE.md)
+- [DOCKER_COMMANDS.md](/home/sanzid/playground/curenet/docs/guides/DOCKER_COMMANDS.md)
 
 ## 8. Backup And Recovery Plan
 
@@ -168,7 +168,7 @@ The project now includes a documented backup and restore workflow plus helper sc
 
 Supporting reference:
 
-- [BACKUP_AND_RECOVERY_PLAN.md](/home/sanzid/playground/curenet/BACKUP_AND_RECOVERY_PLAN.md)
+- [BACKUP_AND_RECOVERY_PLAN.md](/home/sanzid/playground/curenet/docs/guides/BACKUP_AND_RECOVERY_PLAN.md)
 
 ## 9. Monitoring And Logging Setup
 
@@ -181,7 +181,7 @@ Current operational visibility:
 
 Supporting reference:
 
-- [MONITORING_AND_LOGGING_GUIDE.md](/home/sanzid/playground/curenet/MONITORING_AND_LOGGING_GUIDE.md)
+- [MONITORING_AND_LOGGING_GUIDE.md](/home/sanzid/playground/curenet/docs/guides/MONITORING_AND_LOGGING_GUIDE.md)
 
 ## 10. API Documentation Summary
 
@@ -197,7 +197,7 @@ This provides:
 
 Role-based walkthroughs are documented in:
 
-- [USER_GUIDE.md](/home/sanzid/playground/curenet/USER_GUIDE.md)
+- [USER_GUIDE.md](/home/sanzid/playground/curenet/docs/guides/USER_GUIDE.md)
 
 System-level learning docs are also available for:
 
@@ -244,7 +244,7 @@ Before submission, fill these in with the real values:
 
 Use the prepared demo accounts documented in:
 
-- [DEMO_CREDENTIALS.md](/home/sanzid/playground/curenet/DEMO_CREDENTIALS.md)
+- [DEMO_CREDENTIALS.md](/home/sanzid/playground/curenet/docs/guides/DEMO_CREDENTIALS.md)
 
 ## 16. Suggested Video / Viva Demo Script
 
@@ -276,16 +276,16 @@ Use the prepared demo accounts documented in:
 
 Supporting documents:
 
-- [SECURITY_GUIDE.md](/home/sanzid/playground/curenet/SECURITY_GUIDE.md)
-- [PERFORMANCE_GUIDE.md](/home/sanzid/playground/curenet/PERFORMANCE_GUIDE.md)
-- [BACKUP_AND_RECOVERY_PLAN.md](/home/sanzid/playground/curenet/BACKUP_AND_RECOVERY_PLAN.md)
-- [MONITORING_AND_LOGGING_GUIDE.md](/home/sanzid/playground/curenet/MONITORING_AND_LOGGING_GUIDE.md)
-- [USER_GUIDE.md](/home/sanzid/playground/curenet/USER_GUIDE.md)
-- [VIVA_REQUIREMENT_MAPPING.md](/home/sanzid/playground/curenet/VIVA_REQUIREMENT_MAPPING.md)
-- [AUTH_SYSTEM_GUIDE.md](/home/sanzid/playground/curenet/AUTH_SYSTEM_GUIDE.md)
-- [REMINDER_SYSTEM_GUIDE.md](/home/sanzid/playground/curenet/REMINDER_SYSTEM_GUIDE.md)
-- [NOTIFICATION_SYSTEM_GUIDE.md](/home/sanzid/playground/curenet/NOTIFICATION_SYSTEM_GUIDE.md)
-- [IMAGE_UPLOADS_GUIDE.md](/home/sanzid/playground/curenet/IMAGE_UPLOADS_GUIDE.md)
-- [DEPLOYMENT_GUIDE.md](/home/sanzid/playground/curenet/DEPLOYMENT_GUIDE.md)
-- [DOCKER_COMMANDS.md](/home/sanzid/playground/curenet/DOCKER_COMMANDS.md)
-- [DEMO_CREDENTIALS.md](/home/sanzid/playground/curenet/DEMO_CREDENTIALS.md)
+- [SECURITY_GUIDE.md](/home/sanzid/playground/curenet/docs/guides/SECURITY_GUIDE.md)
+- [PERFORMANCE_GUIDE.md](/home/sanzid/playground/curenet/docs/guides/PERFORMANCE_GUIDE.md)
+- [BACKUP_AND_RECOVERY_PLAN.md](/home/sanzid/playground/curenet/docs/guides/BACKUP_AND_RECOVERY_PLAN.md)
+- [MONITORING_AND_LOGGING_GUIDE.md](/home/sanzid/playground/curenet/docs/guides/MONITORING_AND_LOGGING_GUIDE.md)
+- [USER_GUIDE.md](/home/sanzid/playground/curenet/docs/guides/USER_GUIDE.md)
+- [VIVA_REQUIREMENT_MAPPING.md](/home/sanzid/playground/curenet/docs/viva/VIVA_REQUIREMENT_MAPPING.md)
+- [AUTH_SYSTEM_GUIDE.md](/home/sanzid/playground/curenet/docs/guides/AUTH_SYSTEM_GUIDE.md)
+- [REMINDER_SYSTEM_GUIDE.md](/home/sanzid/playground/curenet/docs/guides/REMINDER_SYSTEM_GUIDE.md)
+- [NOTIFICATION_SYSTEM_GUIDE.md](/home/sanzid/playground/curenet/docs/guides/NOTIFICATION_SYSTEM_GUIDE.md)
+- [IMAGE_UPLOADS_GUIDE.md](/home/sanzid/playground/curenet/docs/guides/IMAGE_UPLOADS_GUIDE.md)
+- [DEPLOYMENT_GUIDE.md](/home/sanzid/playground/curenet/docs/guides/DEPLOYMENT_GUIDE.md)
+- [DOCKER_COMMANDS.md](/home/sanzid/playground/curenet/docs/guides/DOCKER_COMMANDS.md)
+- [DEMO_CREDENTIALS.md](/home/sanzid/playground/curenet/docs/guides/DEMO_CREDENTIALS.md)

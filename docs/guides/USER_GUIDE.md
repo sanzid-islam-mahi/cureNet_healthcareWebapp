@@ -88,7 +88,7 @@ Suggested walkthrough:
 
 Demo accounts are documented in:
 
-- [DEMO_CREDENTIALS.md](/home/sanzid/playground/curenet/DEMO_CREDENTIALS.md)
+- [DEMO_CREDENTIALS.md](/home/sanzid/playground/curenet/docs/guides/DEMO_CREDENTIALS.md)
 
 For the viva, keep one prepared account for each role:
 

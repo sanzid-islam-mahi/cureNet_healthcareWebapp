@@ -367,8 +367,8 @@ So use:
 - [backend/Dockerfile](/home/sanzid/playground/curenet/backend/Dockerfile)
 - [frontend/Dockerfile](/home/sanzid/playground/curenet/frontend/Dockerfile)
 - [deploy/nginx/default.conf](/home/sanzid/playground/curenet/deploy/nginx/default.conf)
-- [DEPLOYMENT_GUIDE.md](/home/sanzid/playground/curenet/DEPLOYMENT_GUIDE.md)
-- [DEPLOYMENT_RUN_LOG.md](/home/sanzid/playground/curenet/DEPLOYMENT_RUN_LOG.md)
+- [DEPLOYMENT_GUIDE.md](/home/sanzid/playground/curenet/docs/guides/DEPLOYMENT_GUIDE.md)
+- [DEPLOYMENT_RUN_LOG.md](/home/sanzid/playground/curenet/docs/guides/DEPLOYMENT_RUN_LOG.md)
 
 ## 15. Recommended Daily Commands
 

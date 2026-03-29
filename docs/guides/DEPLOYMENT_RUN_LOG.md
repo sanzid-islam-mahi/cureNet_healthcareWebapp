@@ -198,7 +198,7 @@ Important deployment files:
 - [backend/Dockerfile](/home/sanzid/playground/curenet/backend/Dockerfile)
 - [frontend/Dockerfile](/home/sanzid/playground/curenet/frontend/Dockerfile)
 - [deploy/nginx/default.conf](/home/sanzid/playground/curenet/deploy/nginx/default.conf)
-- [DEPLOYMENT_GUIDE.md](/home/sanzid/playground/curenet/DEPLOYMENT_GUIDE.md)
+- [DEPLOYMENT_GUIDE.md](/home/sanzid/playground/curenet/docs/guides/DEPLOYMENT_GUIDE.md)
 
 ## 7. What You Should Remember
 

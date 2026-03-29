@@ -22,7 +22,7 @@ Relevant files:
 - [backend/src/controllers/authController.js](/home/sanzid/playground/curenet/backend/src/controllers/authController.js)
 - [backend/src/middleware/auth.js](/home/sanzid/playground/curenet/backend/src/middleware/auth.js)
 - [backend/src/config/security.js](/home/sanzid/playground/curenet/backend/src/config/security.js)
-- [AUTH_SYSTEM_GUIDE.md](/home/sanzid/playground/curenet/AUTH_SYSTEM_GUIDE.md)
+- [AUTH_SYSTEM_GUIDE.md](/home/sanzid/playground/curenet/docs/guides/AUTH_SYSTEM_GUIDE.md)
 
 Current implementation:
 
@@ -124,7 +124,7 @@ Relevant files:
 
 - [docker-compose.yml](/home/sanzid/playground/curenet/docker-compose.yml)
 - [deploy/nginx/default.conf](/home/sanzid/playground/curenet/deploy/nginx/default.conf)
-- [DEPLOYMENT_GUIDE.md](/home/sanzid/playground/curenet/DEPLOYMENT_GUIDE.md)
+- [DEPLOYMENT_GUIDE.md](/home/sanzid/playground/curenet/docs/guides/DEPLOYMENT_GUIDE.md)
 
 Current implementation:
 

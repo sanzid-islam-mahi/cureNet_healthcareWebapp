@@ -86,7 +86,7 @@ What each is useful for:
 
 Reference:
 
-- [DOCKER_COMMANDS.md](/home/sanzid/playground/curenet/DOCKER_COMMANDS.md)
+- [DOCKER_COMMANDS.md](/home/sanzid/playground/curenet/docs/guides/DOCKER_COMMANDS.md)
 
 ## 5. Audit Logging
 

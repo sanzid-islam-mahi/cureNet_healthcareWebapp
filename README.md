@@ -14,8 +14,9 @@ This repository is structured to support both development and viva submission. I
 
 Primary viva references:
 
-- [VIVA_REPORT.md](/home/sanzid/playground/curenet/VIVA_REPORT.md)
-- [VIVA_REQUIREMENT_MAPPING.md](/home/sanzid/playground/curenet/VIVA_REQUIREMENT_MAPPING.md)
+- [VIVA_REPORT.md](/home/sanzid/playground/curenet/docs/viva/VIVA_REPORT.md)
+- [VIVA_REQUIREMENT_MAPPING.md](/home/sanzid/playground/curenet/docs/viva/VIVA_REQUIREMENT_MAPPING.md)
+- [docs/README.md](/home/sanzid/playground/curenet/docs/README.md)
 
 ## Requirement Snapshot
 
@@ -56,29 +57,29 @@ The app is deployment-ready for Azure VM style hosting using:
 
 Primary deployment references:
 
-- [DEPLOYMENT_GUIDE.md](/home/sanzid/playground/curenet/DEPLOYMENT_GUIDE.md)
-- [DOCKER_COMMANDS.md](/home/sanzid/playground/curenet/DOCKER_COMMANDS.md)
-- [BACKUP_AND_RECOVERY_PLAN.md](/home/sanzid/playground/curenet/BACKUP_AND_RECOVERY_PLAN.md)
-- [MONITORING_AND_LOGGING_GUIDE.md](/home/sanzid/playground/curenet/MONITORING_AND_LOGGING_GUIDE.md)
+- [DEPLOYMENT_GUIDE.md](/home/sanzid/playground/curenet/docs/guides/DEPLOYMENT_GUIDE.md)
+- [DOCKER_COMMANDS.md](/home/sanzid/playground/curenet/docs/guides/DOCKER_COMMANDS.md)
+- [BACKUP_AND_RECOVERY_PLAN.md](/home/sanzid/playground/curenet/docs/guides/BACKUP_AND_RECOVERY_PLAN.md)
+- [MONITORING_AND_LOGGING_GUIDE.md](/home/sanzid/playground/curenet/docs/guides/MONITORING_AND_LOGGING_GUIDE.md)
 
 ## System Guides
 
 The repo now includes feature/system guides for learning the codebase:
 
-- [VIVA_REPORT.md](/home/sanzid/playground/curenet/VIVA_REPORT.md)
-- [VIVA_REQUIREMENT_MAPPING.md](/home/sanzid/playground/curenet/VIVA_REQUIREMENT_MAPPING.md)
-- [SECURITY_GUIDE.md](/home/sanzid/playground/curenet/SECURITY_GUIDE.md)
-- [PERFORMANCE_GUIDE.md](/home/sanzid/playground/curenet/PERFORMANCE_GUIDE.md)
-- [BACKUP_AND_RECOVERY_PLAN.md](/home/sanzid/playground/curenet/BACKUP_AND_RECOVERY_PLAN.md)
-- [MONITORING_AND_LOGGING_GUIDE.md](/home/sanzid/playground/curenet/MONITORING_AND_LOGGING_GUIDE.md)
-- [USER_GUIDE.md](/home/sanzid/playground/curenet/USER_GUIDE.md)
-- [AUTH_SYSTEM_GUIDE.md](/home/sanzid/playground/curenet/AUTH_SYSTEM_GUIDE.md)
-- [DEMO_CREDENTIALS.md](/home/sanzid/playground/curenet/DEMO_CREDENTIALS.md)
-- [REMINDER_SYSTEM_GUIDE.md](/home/sanzid/playground/curenet/REMINDER_SYSTEM_GUIDE.md)
-- [NOTIFICATION_SYSTEM_GUIDE.md](/home/sanzid/playground/curenet/NOTIFICATION_SYSTEM_GUIDE.md)
-- [IMAGE_UPLOADS_GUIDE.md](/home/sanzid/playground/curenet/IMAGE_UPLOADS_GUIDE.md)
-- [DEPLOYMENT_GUIDE.md](/home/sanzid/playground/curenet/DEPLOYMENT_GUIDE.md)
-- [DOCKER_COMMANDS.md](/home/sanzid/playground/curenet/DOCKER_COMMANDS.md)
+- [VIVA_REPORT.md](/home/sanzid/playground/curenet/docs/viva/VIVA_REPORT.md)
+- [VIVA_REQUIREMENT_MAPPING.md](/home/sanzid/playground/curenet/docs/viva/VIVA_REQUIREMENT_MAPPING.md)
+- [SECURITY_GUIDE.md](/home/sanzid/playground/curenet/docs/guides/SECURITY_GUIDE.md)
+- [PERFORMANCE_GUIDE.md](/home/sanzid/playground/curenet/docs/guides/PERFORMANCE_GUIDE.md)
+- [BACKUP_AND_RECOVERY_PLAN.md](/home/sanzid/playground/curenet/docs/guides/BACKUP_AND_RECOVERY_PLAN.md)
+- [MONITORING_AND_LOGGING_GUIDE.md](/home/sanzid/playground/curenet/docs/guides/MONITORING_AND_LOGGING_GUIDE.md)
+- [USER_GUIDE.md](/home/sanzid/playground/curenet/docs/guides/USER_GUIDE.md)
+- [AUTH_SYSTEM_GUIDE.md](/home/sanzid/playground/curenet/docs/guides/AUTH_SYSTEM_GUIDE.md)
+- [DEMO_CREDENTIALS.md](/home/sanzid/playground/curenet/docs/guides/DEMO_CREDENTIALS.md)
+- [REMINDER_SYSTEM_GUIDE.md](/home/sanzid/playground/curenet/docs/guides/REMINDER_SYSTEM_GUIDE.md)
+- [NOTIFICATION_SYSTEM_GUIDE.md](/home/sanzid/playground/curenet/docs/guides/NOTIFICATION_SYSTEM_GUIDE.md)
+- [IMAGE_UPLOADS_GUIDE.md](/home/sanzid/playground/curenet/docs/guides/IMAGE_UPLOADS_GUIDE.md)
+- [DEPLOYMENT_GUIDE.md](/home/sanzid/playground/curenet/docs/guides/DEPLOYMENT_GUIDE.md)
+- [DOCKER_COMMANDS.md](/home/sanzid/playground/curenet/docs/guides/DOCKER_COMMANDS.md)
 
 ## Overview
 
@@ -231,7 +232,7 @@ Optional demo users:
 npm run create-demo-users
 ```
 
-See [DEMO_CREDENTIALS.md](/home/sanzid/playground/curenet/DEMO_CREDENTIALS.md) for the default doctor and patient login details.
+See [DEMO_CREDENTIALS.md](/home/sanzid/playground/curenet/docs/guides/DEMO_CREDENTIALS.md) for the default doctor and patient login details.
 
 ### 2. Start the Frontend
 

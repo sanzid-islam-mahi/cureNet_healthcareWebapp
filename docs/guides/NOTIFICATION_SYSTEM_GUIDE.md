@@ -94,7 +94,7 @@ Why it exists:
 
 - [backend/src/lib/reminderWorker.js](/home/sanzid/playground/curenet/backend/src/lib/reminderWorker.js)
   - creates reminder-related notifications when doses are due or missed
-- [REMINDER_SYSTEM_GUIDE.md](/home/sanzid/playground/curenet/REMINDER_SYSTEM_GUIDE.md)
+- [REMINDER_SYSTEM_GUIDE.md](/home/sanzid/playground/curenet/docs/guides/REMINDER_SYSTEM_GUIDE.md)
   - detailed worker-side reminder explanation
 
 ## 4. The Data Model
