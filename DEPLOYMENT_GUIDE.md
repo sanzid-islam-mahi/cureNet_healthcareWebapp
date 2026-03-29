@@ -91,12 +91,6 @@ we do:
 docker compose --env-file .env.deploy up --build
 ```
 
-or on systems with the older command:
-
-```bash
-docker-compose --env-file .env.deploy up --build
-```
-
 ## 4. Files You Should Know
 
 These are the important deployment files:
@@ -123,14 +117,6 @@ docker --version
 docker compose version
 openssl version
 ```
-
-If `docker compose` does not work, try:
-
-```bash
-docker-compose --version
-```
-
-Some machines use `docker compose`, others still use `docker-compose`.
 
 ## 6. First-Time Setup
 
@@ -229,16 +215,8 @@ Browser note:
 
 Use one of these.
 
-If your system supports the modern syntax:
-
 ```bash
 docker compose --env-file .env.deploy up --build
-```
-
-If your system uses the old syntax:
-
-```bash
-docker-compose --env-file .env.deploy up --build
 ```
 
 What this does:
@@ -282,12 +260,6 @@ Or if you started it detached later:
 docker compose --env-file .env.deploy down
 ```
 
-or:
-
-```bash
-docker-compose --env-file .env.deploy down
-```
-
 ## 11. How To Run In The Background
 
 Use:
@@ -296,22 +268,10 @@ Use:
 docker compose --env-file .env.deploy up -d --build
 ```
 
-or:
-
-```bash
-docker-compose --env-file .env.deploy up -d --build
-```
-
 Then check logs:
 
 ```bash
 docker compose logs -f
-```
-
-or:
-
-```bash
-docker-compose logs -f
 ```
 
 ## 12. Useful Docker Commands
@@ -392,10 +352,10 @@ If it works on your PC but not on another device, most common reasons are:
 
 ### Problem: `docker compose` does not exist
 
-Try:
+Install the Docker Compose v2 plugin and verify:
 
 ```bash
-docker-compose --env-file .env.deploy up --build
+docker compose version
 ```
 
 ### Problem: Nginx fails because certs are missing
@@ -475,7 +435,7 @@ If you want the simplest real first run, do exactly this:
 4. run:
 
 ```bash
-docker-compose --env-file .env.deploy up --build
+docker compose --env-file .env.deploy up --build
 ```
 
 5. open:
@@ -498,3 +458,14 @@ If all this feels like a lot, keep this mental model:
 - Nginx sits in front and makes everything look like one HTTPS website
 
 That is the whole deployment story.
+
+## 19. Related Docs
+
+For day-to-day commands and rebuild helpers, also use:
+
+- [DOCKER_COMMANDS.md](/home/sanzid/playground/curenet/DOCKER_COMMANDS.md)
+
+For the helper scripts:
+
+- [scripts/docker-rebuild-service.sh](/home/sanzid/playground/curenet/scripts/docker-rebuild-service.sh)
+- [scripts/docker-refresh-stack.sh](/home/sanzid/playground/curenet/scripts/docker-refresh-stack.sh)

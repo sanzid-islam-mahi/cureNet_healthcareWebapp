@@ -2,6 +2,18 @@
 
 CureNet is a full-stack healthcare platform for patients, doctors, receptionists, and administrators. It provides authentication, role-based dashboards, doctor discovery, clinic-based appointment booking, prescription handling, reminders, medical history, and imaging workflows.
 
+## System Guides
+
+The repo now includes feature/system guides for learning the codebase:
+
+- [AUTH_SYSTEM_GUIDE.md](/home/sanzid/playground/curenet/AUTH_SYSTEM_GUIDE.md)
+- [DEMO_CREDENTIALS.md](/home/sanzid/playground/curenet/DEMO_CREDENTIALS.md)
+- [REMINDER_SYSTEM_GUIDE.md](/home/sanzid/playground/curenet/REMINDER_SYSTEM_GUIDE.md)
+- [NOTIFICATION_SYSTEM_GUIDE.md](/home/sanzid/playground/curenet/NOTIFICATION_SYSTEM_GUIDE.md)
+- [IMAGE_UPLOADS_GUIDE.md](/home/sanzid/playground/curenet/IMAGE_UPLOADS_GUIDE.md)
+- [DEPLOYMENT_GUIDE.md](/home/sanzid/playground/curenet/DEPLOYMENT_GUIDE.md)
+- [DOCKER_COMMANDS.md](/home/sanzid/playground/curenet/DOCKER_COMMANDS.md)
+
 ## Overview
 
 The repository contains two applications:
@@ -147,6 +159,14 @@ Backend endpoints:
 - Swagger UI: `http://localhost:5000/docs`
 - Raw OpenAPI JSON: `http://localhost:5000/openapi.json`
 
+Optional demo users:
+
+```bash
+npm run create-demo-users
+```
+
+See [DEMO_CREDENTIALS.md](/home/sanzid/playground/curenet/DEMO_CREDENTIALS.md) for the default doctor and patient login details.
+
 ### 2. Start the Frontend
 
 ```bash
@@ -258,6 +278,42 @@ The same stack can be reused on an Azure VM:
 3. create `.env.deploy`
 4. provide TLS certs under `deploy/certs/`
 5. run `docker compose --env-file .env.deploy up -d --build`
+
+## Screenshot Placeholders
+
+These are placeholder visuals for the README. You can replace them later with real screenshots while keeping the same file names.
+
+### Public Landing Page
+
+![Landing page placeholder](docs/screenshots/landing-page-placeholder.svg)
+
+### Patient Dashboard
+
+![Patient dashboard placeholder](docs/screenshots/patient-dashboard-placeholder.svg)
+
+### Doctor Appointment Desk
+
+![Doctor appointment desk placeholder](docs/screenshots/doctor-appointments-placeholder.svg)
+
+### Receptionist Queue
+
+![Receptionist queue placeholder](docs/screenshots/receptionist-queue-placeholder.svg)
+
+### Admin Clinic Management
+
+![Admin clinic management placeholder](docs/screenshots/admin-clinics-placeholder.svg)
+
+### Patient Medical History
+
+![Medical history placeholder](docs/screenshots/medical-history-placeholder.svg)
+
+### Notification Center
+
+![Notification center placeholder](docs/screenshots/notification-center-placeholder.svg)
+
+### Medical Imaging
+
+![Medical imaging placeholder](docs/screenshots/medical-imaging-placeholder.svg)
 
 When you have a real domain, replace the self-signed cert with a real certificate and set:
 

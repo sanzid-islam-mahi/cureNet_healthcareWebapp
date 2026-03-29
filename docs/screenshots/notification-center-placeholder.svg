@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-label="Notification center screenshot placeholder">
+  <rect width="1280" height="720" fill="#e0f2fe"/>
+  <rect x="28" y="24" width="1224" height="80" rx="22" fill="#ffffff"/>
+  <rect x="816" y="132" width="420" height="532" rx="28" fill="#ffffff"/>
+  <text x="1026" y="320" text-anchor="middle" font-size="40" font-family="Arial, sans-serif" fill="#0f172a">Notification Center</text>
+  <text x="1026" y="368" text-anchor="middle" font-size="22" font-family="Arial, sans-serif" fill="#475569">Replace this placeholder with the live notification modal</text>
+</svg>

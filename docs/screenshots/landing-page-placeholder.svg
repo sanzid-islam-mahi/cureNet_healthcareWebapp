@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-label="Landing page screenshot placeholder">
+  <rect width="1280" height="720" fill="#e2e8f0"/>
+  <rect x="36" y="28" width="1208" height="72" rx="18" fill="#ffffff"/>
+  <rect x="36" y="132" width="1208" height="552" rx="28" fill="#f8fafc"/>
+  <text x="640" y="320" text-anchor="middle" font-size="44" font-family="Arial, sans-serif" fill="#0f172a">Landing Page Screenshot</text>
+  <text x="640" y="372" text-anchor="middle" font-size="24" font-family="Arial, sans-serif" fill="#475569">Replace this placeholder with a real CureNet landing page capture</text>
+</svg>

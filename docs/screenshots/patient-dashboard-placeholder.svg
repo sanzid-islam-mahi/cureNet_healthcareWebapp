@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-label="Patient dashboard screenshot placeholder">
+  <rect width="1280" height="720" fill="#dbeafe"/>
+  <rect x="28" y="24" width="250" height="672" rx="24" fill="#0f172a"/>
+  <rect x="304" y="24" width="948" height="96" rx="24" fill="#ffffff"/>
+  <rect x="304" y="144" width="948" height="552" rx="28" fill="#f8fafc"/>
+  <text x="778" y="320" text-anchor="middle" font-size="44" font-family="Arial, sans-serif" fill="#0f172a">Patient Dashboard Screenshot</text>
+  <text x="778" y="372" text-anchor="middle" font-size="24" font-family="Arial, sans-serif" fill="#475569">Replace this placeholder with a patient-facing dashboard view</text>
+</svg>
