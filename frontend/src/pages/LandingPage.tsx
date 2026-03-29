@@ -12,7 +12,7 @@ import {
 import { api } from '../context/AuthContext';
 import DoctorCard from '../components/DoctorCard';
 import { getAssetUrl } from '../lib/runtimeConfig';
-import image390 from '../assets/image_390.png';
+import image390 from '../assets/image_390.webp';
 import image391 from '../assets/image_391.png';
 import image392 from '../assets/image_392.png';
 import image393 from '../assets/image_393.png';

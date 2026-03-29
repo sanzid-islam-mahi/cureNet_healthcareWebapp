@@ -8,7 +8,7 @@ import type { RegisterData } from '../context/AuthContext';
 import { MEDICAL_DEPARTMENTS } from '../utils/departments';
 import { APP_NAME } from '../utils/constants';
 import { validatePassword } from '../utils/passwordValidation';
-import registerPageImage from '../assets/register_page_image.png';
+import registerPageImage from '../assets/register_page_image.webp';
 type Role = 'patient' | 'doctor';
 
 interface RegisterForm extends RegisterData {

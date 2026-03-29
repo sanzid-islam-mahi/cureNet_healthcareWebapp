@@ -105,7 +105,25 @@ The production build currently shows:
 
 That means the current improvements help materially, but image and bundle optimization still matter.
 
-## 4. What To Do On The Azure VM
+## 4. Image Compression Pass
+
+The heaviest marketing/auth images were converted from PNG to WebP for deployment use.
+
+Examples:
+
+- `image_390` from about `452 KB` to `28 KB`
+- `image_395` from about `205 KB` to `13 KB`
+- `curenet_logo` from about `185 KB` to `45 KB`
+- `login_page_image` from about `141 KB` to `16 KB`
+- `register_page_image` from about `136 KB` to `21 KB`
+
+Why this helps:
+
+- these files are used in the landing, auth, navbar, footer, and contact flows
+- shrinking them reduces first-load transfer size much more than browser-loading hints alone
+- the browser can render visible imagery faster on real networks
+
+## 5. What To Do On The Azure VM
 
 After these config changes, rebuild and restart the affected services:
 
@@ -127,7 +145,7 @@ Then verify:
 - log in and open one patient dashboard page
 - open a doctor or receptionist page and compare repeat navigation speed
 
-## 5. Next Improvements If It Is Still Slow
+## 6. Next Improvements If It Is Still Slow
 
 If browser performance still feels weak, do these next in order:
 
@@ -136,13 +154,12 @@ If browser performance still feels weak, do these next in order:
 3. review pages with many parallel API queries and collapse some of them into aggregate endpoints where appropriate
 4. place the VM behind a real domain and trusted TLS certificate if you are still using a self-signed certificate in testing
 
-Current large-image note:
+Current note:
 
-- the landing hero source image is still roughly `462 KB`
-- some auth and marketing images are still above `140 KB`
-- lazy loading improves browser behavior, but source compression is still the next high-impact step
+- the worst PNG-heavy assets were replaced in deployed usage with lighter WebP versions
+- if performance still feels weak after redeploy, the next likely bottleneck is JavaScript bundle weight rather than those specific images
 
-## 6. Honest Viva Position
+## 7. Honest Viva Position
 
 What you can say now:
 

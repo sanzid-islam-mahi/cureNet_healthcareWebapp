@@ -3,6 +3,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { Op } from 'sequelize';
 import { serializeMedicalImagingRecord } from '../lib/medicalImaging.js';
+import { optimizeProfileImage } from '../lib/profileImages.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const { User, Doctor, Appointment, Rating, Prescription, Patient, PatientMedicalHistory, MedicationReminderPlan, Clinic, MedicalImagingRecord } = db;
@@ -172,7 +173,8 @@ export async function uploadImage(req, res) {
     if (!req.file || !req.file.filename) {
       return res.status(400).json({ success: false, message: 'No image file uploaded' });
     }
-    const imageUrl = `/uploads/${req.file.filename}`;
+    const optimizedImage = await optimizeProfileImage(req.file, { prefix: 'doctor' });
+    const imageUrl = optimizedImage.imageUrl;
     const doctor = await Doctor.findByPk(user.doctorId);
     if (!doctor) {
       return res.status(404).json({ success: false, message: 'Doctor profile not found' });

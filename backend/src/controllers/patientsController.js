@@ -1,6 +1,7 @@
 import db from '../models/index.js';
 import { Op } from 'sequelize';
 import { serializeMedicalImagingRecord } from '../lib/medicalImaging.js';
+import { optimizeProfileImage } from '../lib/profileImages.js';
 import {
   buildEmergencyReadiness,
   buildMedicalHistorySummary,
@@ -61,7 +62,8 @@ export async function updateProfile(req, res) {
     // Check for uploaded file
     let profileImage;
     if (req.file) {
-      profileImage = `/uploads/${req.file.filename}`;
+      const optimizedImage = await optimizeProfileImage(req.file, { prefix: 'patient' });
+      profileImage = optimizedImage.imageUrl;
     }
 
     const patient = await Patient.findByPk(user.patientId);

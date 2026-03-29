@@ -5,7 +5,7 @@ import { Bars3Icon, BellIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../context/AuthContext';
-import logo from '../assets/curenet_logo.png';
+import logo from '../assets/curenet_logo.webp';
 import NotificationCenterModal from './NotificationCenterModal';
 import { getApiBase, getApiOrigin } from '../lib/runtimeConfig';
 

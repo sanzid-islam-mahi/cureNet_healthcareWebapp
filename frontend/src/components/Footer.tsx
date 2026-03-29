@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import logo from '../assets/curenet_logo.png';
+import logo from '../assets/curenet_logo.webp';
 
 const Footer = () => {
   return (

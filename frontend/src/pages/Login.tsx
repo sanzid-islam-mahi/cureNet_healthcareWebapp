@@ -5,7 +5,7 @@ import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { APP_NAME } from '../utils/constants';
-import loginPageImage from '../assets/login_page_image.png';
+import loginPageImage from '../assets/login_page_image.webp';
 
 interface LoginForm {
   emailOrPhone: string;

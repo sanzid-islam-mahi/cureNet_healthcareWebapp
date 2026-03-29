@@ -129,6 +129,7 @@ Why this matters:
 
 Profile images use:
 - [backend/src/config/multerConfig.js](/home/sanzid/playground/curenet/backend/src/config/multerConfig.js)
+- [backend/src/lib/profileImages.js](/home/sanzid/playground/curenet/backend/src/lib/profileImages.js)
 
 Rules:
 - allowed extensions:
@@ -149,6 +150,21 @@ Filename behavior:
 Why role prefixes help:
 - easier debugging in the uploads folder
 - quick visual distinction between profile-image categories
+
+Optimization behavior:
+
+- the raw uploaded file is first written by Multer
+- the backend then normalizes the image with `sharp`
+- the final stored profile picture is converted to `webp`
+- the image is resized to fit within `512x512`
+- image data is re-encoded in optimized form
+- the original raw upload is removed after the optimized version is created
+
+Why this helps:
+
+- profile images load faster throughout the app
+- avatar-heavy screens such as navbar, doctor lists, and profile pages transfer fewer bytes
+- storage use is lower for repeated profile-image access
 
 ## 5.1 Patient profile image flow
 

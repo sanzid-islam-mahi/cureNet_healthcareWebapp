@@ -4,7 +4,7 @@ import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-do
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
 import { APP_NAME } from '../utils/constants';
-import loginPageImage from '../assets/login_page_image.png';
+import loginPageImage from '../assets/login_page_image.webp';
 
 interface VerifyEmailForm {
   code: string;
