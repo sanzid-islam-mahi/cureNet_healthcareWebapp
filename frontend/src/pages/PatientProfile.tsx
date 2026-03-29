@@ -44,7 +44,8 @@ export default function PatientProfile() {
   const [localPreviewUrl, setLocalPreviewUrl] = useState<string | null>(null);
 
   const { data: profileData } = useQuery({
-    queryKey: ['patients', 'profile'],
+    queryKey: ['patients', 'profile', user?.id],
+    enabled: !!user?.id,
     queryFn: async () => {
       const { data } = await api.get<{
         success: boolean;
@@ -106,6 +107,10 @@ export default function PatientProfile() {
       });
     }
   }, [patient, medicalForm]);
+
+  useEffect(() => {
+    setLocalPreviewUrl(null);
+  }, [user?.id]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {

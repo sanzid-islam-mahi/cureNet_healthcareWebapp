@@ -167,7 +167,8 @@ export default function DoctorProfile() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const { data: profileData } = useQuery({
-    queryKey: ['doctors', 'profile'],
+    queryKey: ['doctors', 'profile', user?.id],
+    enabled: !!user?.id,
     queryFn: async () => {
       const { data } = await api.get<{ success: boolean; data: { doctor: DoctorForm & { profileImage?: string, verified?: boolean, averageRating?: number } } }>(
         '/doctors/profile'
@@ -219,6 +220,8 @@ export default function DoctorProfile() {
       setUnavailableDates(Array.isArray(doctor.unavailableDates) ? doctor.unavailableDates : []);
       if (doctor.profileImage) {
         setPreviewUrl(doctor.profileImage.startsWith('http') ? doctor.profileImage : `${API_ORIGIN}${doctor.profileImage}`);
+      } else {
+        setPreviewUrl(null);
       }
     }
   }, [doctor, form]);
