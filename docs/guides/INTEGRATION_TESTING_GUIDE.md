@@ -67,43 +67,55 @@ The JWT is returned inside the `Set-Cookie` header as `curenet_auth=...`.
 
 These commands log in and extract the cookie token directly into shell variables.
 
+The header-only pattern below is the most reliable one:
+
+- `-D -` prints response headers
+- `-o /dev/null` discards the JSON body
+- the regex extracts the `curenet_auth` cookie value
+
+If you are testing locally, use `http://localhost:5000`.
+If you are testing the deployed site, replace the base URL with `https://curenet.app`.
+
 ### Patient token
 
 ```fish
-set PATIENT_TOKEN (curl -s -i -X POST http://localhost:5000/api/auth/login \
+set PATIENT_TOKEN (curl -s -D - -o /dev/null -X POST http://localhost:5000/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{
     "email": "patient.nabil@curenet.local",
     "password": "Patient123"
   }' \
-  | string match -r 'Set-Cookie: curenet_auth=([^;]+)' \
-  | string replace -r 'Set-Cookie: curenet_auth=' '')
+  | string match -r '.*curenet_auth=([^;]+).*' \
+  | string replace -r '.*curenet_auth=' '' \
+  | string replace -r ';.*' '')
 ```
 
 ### Doctor token
 
 ```fish
-set DOCTOR_TOKEN (curl -s -i -X POST http://localhost:5000/api/auth/login \
+set DOCTOR_TOKEN (curl -s -D - -o /dev/null -X POST http://localhost:5000/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{
     "email": "doctor.asha@curenet.local",
     "password": "Doctor123"
   }' \
-  | string match -r 'Set-Cookie: curenet_auth=([^;]+)' \
-  | string replace -r 'Set-Cookie: curenet_auth=' '')
+  | string match -r '.*curenet_auth=([^;]+).*' \
+  | string replace -r '.*curenet_auth=' '' \
+  | string replace -r ';.*' '')
 ```
 
 ### Receptionist token
 
 ```fish
-set RECEPTIONIST_TOKEN (curl -s -i -X POST http://localhost:5000/api/auth/login \
+set RECEPTIONIST_TOKEN (curl -s -D - -o /dev/null -X POST http://localhost:5000/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{
     "email": "receptionist.maya@curenet.local",
     "password": "Reception123"
   }' \
-  | string match -r 'Set-Cookie: curenet_auth=([^;]+)' \
-  | string replace -r 'Set-Cookie: curenet_auth=' '')
+  | string match -r '.*curenet_auth=([^;]+).*' \
+  | string replace -r '.*curenet_auth=' '' \
+  | string replace -r ';.*' '')
 ```
 
 ## 4. Verify A Token
