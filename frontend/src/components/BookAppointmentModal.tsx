@@ -1,8 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
-import { api } from '../context/AuthContext';
+import { api, useAuth } from '../context/AuthContext';
 
 const RED_FLAG_TERMS = [
   'chest pain',
@@ -30,6 +30,17 @@ interface BookAppointmentModalProps {
   prefilledDoctorId?: number;
   hasExistingAppointments?: boolean;
   lockDoctor?: boolean;
+  mode?: 'create' | 'reschedule';
+  appointmentToReschedule?: {
+    id: number;
+    doctorId: number;
+    appointmentDate: string;
+    window?: string | null;
+    timeBlock?: string | null;
+    type?: string | null;
+    reason?: string | null;
+    symptoms?: string | null;
+  } | null;
   onClose: () => void;
 }
 
@@ -68,18 +79,34 @@ export default function BookAppointmentModal({
   prefilledDoctorId,
   hasExistingAppointments,
   lockDoctor = false,
+  mode = 'create',
+  appointmentToReschedule = null,
   onClose,
 }: BookAppointmentModalProps) {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [doctorId, setDoctorId] = useState<number | ''>(prefilledDoctorId ?? '');
-  const [date, setDate] = useState('');
-  const [selectedWindow, setSelectedWindow] = useState('');
-  const [type, setType] = useState('in_person');
-  const [reason, setReason] = useState('');
-  const [symptoms, setSymptoms] = useState('');
+  const isReschedule = mode === 'reschedule' && !!appointmentToReschedule;
+  const [doctorId, setDoctorId] = useState<number | ''>(appointmentToReschedule?.doctorId ?? prefilledDoctorId ?? '');
+  const [date, setDate] = useState(appointmentToReschedule?.appointmentDate ?? '');
+  const [selectedWindow, setSelectedWindow] = useState(appointmentToReschedule?.window ?? '');
+  const [type, setType] = useState(appointmentToReschedule?.type ?? 'in_person');
+  const [reason, setReason] = useState(appointmentToReschedule?.reason ?? '');
+  const [symptoms, setSymptoms] = useState(appointmentToReschedule?.symptoms ?? '');
   const [triageConfirmed, setTriageConfirmed] = useState(false);
   const [profileBlockingFields, setProfileBlockingFields] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (!appointmentToReschedule) return;
+    setDoctorId(appointmentToReschedule.doctorId);
+    setDate(appointmentToReschedule.appointmentDate);
+    setSelectedWindow(appointmentToReschedule.window ?? '');
+    setType(appointmentToReschedule.type ?? 'in_person');
+    setReason(appointmentToReschedule.reason ?? '');
+    setSymptoms(appointmentToReschedule.symptoms ?? '');
+    setTriageConfirmed(false);
+    setProfileBlockingFields([]);
+  }, [appointmentToReschedule]);
 
   const combinedNotes = `${reason} ${symptoms}`.toLowerCase();
   const matchedRedFlags = RED_FLAG_TERMS.filter((term) => combinedNotes.includes(term));
@@ -106,7 +133,7 @@ export default function BookAppointmentModal({
       );
       return res.data?.appointments ?? [];
     },
-    enabled: hasExistingAppointments == null,
+    enabled: user?.role === 'patient' && !isReschedule && hasExistingAppointments == null,
   });
 
   const { data: patientProfile, isLoading: profileLoading } = useQuery({
@@ -128,6 +155,7 @@ export default function BookAppointmentModal({
       }>('/patients/profile');
       return data.data?.patient;
     },
+    enabled: user?.role === 'patient' && !isReschedule,
   });
 
   const { data: windowData, isLoading: windowsLoading } = useQuery({
@@ -162,7 +190,7 @@ export default function BookAppointmentModal({
   const selectedClinicAddress = [selectedDoctor?.clinic?.addressLine, selectedDoctor?.clinic?.area, selectedDoctor?.clinic?.city]
     .filter(Boolean)
     .join(', ');
-  const resolvedHasExistingAppointments = hasExistingAppointments ?? appointments.length > 0;
+  const resolvedHasExistingAppointments = isReschedule ? true : (hasExistingAppointments ?? appointments.length > 0);
   const profileMissingFields = useMemo(() => {
     if (resolvedHasExistingAppointments || !patientProfile) return [];
     return FIRST_BOOKING_REQUIRED_FIELDS.filter((field) => {
@@ -188,11 +216,16 @@ export default function BookAppointmentModal({
       reason?: string;
       symptoms?: string;
       triageConfirmed?: boolean;
-    }) => api.post('/appointments', body),
+    }) => (
+      isReschedule && appointmentToReschedule
+        ? api.put(`/appointments/${appointmentToReschedule.id}/reschedule`, body)
+        : api.post('/appointments', body)
+    ),
     onSuccess: () => {
-      toast.success('Appointment requested');
+      toast.success(isReschedule ? 'Appointment rescheduled' : 'Appointment requested');
       onClose();
       queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      queryClient.invalidateQueries({ queryKey: ['receptionist', 'clinic-queue'] });
       queryClient.invalidateQueries({ queryKey: ['patients'] });
       queryClient.invalidateQueries({ queryKey: ['available-slots'] });
     },
@@ -212,7 +245,7 @@ export default function BookAppointmentModal({
         toast.error(payload.message ?? 'Review the triage warning before continuing');
         return;
       }
-      toast.error(payload?.message ?? 'Failed to book');
+      toast.error(payload?.message ?? (isReschedule ? 'Failed to reschedule' : 'Failed to book'));
     },
   });
 
@@ -251,8 +284,14 @@ export default function BookAppointmentModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-white shadow-lg">
         <div className="p-6">
-          <h3 className="mb-1 text-lg font-semibold text-gray-900">Request Appointment</h3>
-          <p className="mb-4 text-sm text-gray-500">Share enough detail so your doctor can triage your request safely.</p>
+          <h3 className="mb-1 text-lg font-semibold text-gray-900">
+            {isReschedule ? 'Reschedule Appointment' : 'Request Appointment'}
+          </h3>
+          <p className="mb-4 text-sm text-gray-500">
+            {isReschedule
+              ? 'Pick a new date and window for this appointment. Approved appointments return to requested so the new slot can be confirmed.'
+              : 'Share enough detail so your doctor can triage your request safely.'}
+          </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className={`rounded-2xl border px-4 py-3 ${needsProfileCompletion ? 'border-amber-200 bg-amber-50' : 'border-emerald-200 bg-emerald-50'}`}>
@@ -260,14 +299,18 @@ export default function BookAppointmentModal({
                 <div>
                   <p className={`text-sm font-semibold ${needsProfileCompletion ? 'text-amber-900' : 'text-emerald-900'}`}>
                     {resolvedHasExistingAppointments
-                      ? 'Booking profile ready'
+                      ? isReschedule
+                        ? 'Reschedule ready'
+                        : 'Booking profile ready'
                       : needsProfileCompletion
                         ? 'Complete your profile before your first appointment'
                         : 'First-booking profile check passed'}
                   </p>
                   <p className={`mt-1 text-sm ${needsProfileCompletion ? 'text-amber-800' : 'text-emerald-800'}`}>
                     {resolvedHasExistingAppointments
-                      ? 'You already have appointment history, so you can continue directly.'
+                      ? isReschedule
+                        ? 'This flow keeps the same appointment record and moves it to a new slot.'
+                        : 'You already have appointment history, so you can continue directly.'
                       : 'We verify core health and contact details before the first appointment request is accepted.'}
                   </p>
                   {!resolvedHasExistingAppointments && effectiveProfileBlockingFields.length > 0 ? (
@@ -517,7 +560,7 @@ export default function BookAppointmentModal({
                 disabled={createMutation.isPending || !selectedWindow || needsProfileCompletion || (hasRedFlags && !triageConfirmed)}
                 className="flex-1 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50"
               >
-                {createMutation.isPending ? 'Booking...' : 'Request appointment'}
+                {createMutation.isPending ? 'Saving...' : isReschedule ? 'Save new slot' : 'Request appointment'}
               </button>
             </div>
           </form>

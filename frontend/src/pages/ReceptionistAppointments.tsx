@@ -13,6 +13,7 @@ import {
 } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import AppPageHeader from '../components/AppPageHeader';
+import BookAppointmentModal from '../components/BookAppointmentModal';
 import { api, useAuth } from '../context/AuthContext';
 import AppointmentImagingModal from '../components/AppointmentImagingModal';
 
@@ -20,16 +21,19 @@ type QueueStatus = 'all' | 'requested' | 'approved' | 'in_progress' | 'completed
 
 interface QueueAppointment {
   id: number;
+  doctorId: number;
   clinicId?: number | null;
   appointmentDate: string;
   status: string;
   type: string;
+  requiresReschedule?: boolean;
+  rescheduleReason?: string | null;
   reason?: string | null;
   symptoms?: string | null;
   window?: string | null;
   serial?: number | null;
   patient?: { user?: { firstName?: string; lastName?: string; phone?: string } } | null;
-  doctor?: { user?: { firstName?: string; lastName?: string }; department?: string | null } | null;
+  doctor?: { id?: number; user?: { firstName?: string; lastName?: string }; department?: string | null } | null;
   clinic?: { name?: string | null; addressLine?: string | null; area?: string | null; city?: string | null } | null;
 }
 
@@ -65,6 +69,15 @@ function statusPillClasses(status: string) {
   return 'bg-slate-100 text-slate-600';
 }
 
+function rescheduleReasonLabel(reason?: string | null) {
+  const labels: Record<string, string> = {
+    doctor_unavailable_on_date: 'Doctor unavailable on the current date',
+    window_removed: 'Window removed from the doctor schedule',
+    window_capacity_reduced: 'Window capacity reduced below this serial',
+  };
+  return reason ? (labels[reason] ?? 'Doctor schedule changed') : 'Doctor schedule changed';
+}
+
 function sortAppointments(appointments: QueueAppointment[]) {
   const rank: Record<string, number> = {
     requested: 0,
@@ -88,6 +101,7 @@ export default function ReceptionistAppointments() {
   const [status, setStatus] = useState<QueueStatus>('all');
   const [date, setDate] = useState('');
   const [imagingAppointmentId, setImagingAppointmentId] = useState<number | null>(null);
+  const [appointmentToReschedule, setAppointmentToReschedule] = useState<QueueAppointment | null>(null);
 
   const { data } = useQuery({
     queryKey: ['receptionist', 'clinic-queue', { status, date }],
@@ -194,6 +208,8 @@ export default function ReceptionistAppointments() {
               const patientName = `${appointment.patient?.user?.firstName || ''} ${appointment.patient?.user?.lastName || ''}`.trim() || 'Patient';
               const doctorName = `${appointment.doctor?.user?.firstName || ''} ${appointment.doctor?.user?.lastName || ''}`.trim() || 'Doctor';
               const clinicAddress = [appointment.clinic?.addressLine, appointment.clinic?.area, appointment.clinic?.city].filter(Boolean).join(', ');
+              const canReschedule =
+                ['requested', 'approved'].includes(appointment.status) || appointment.requiresReschedule === true;
 
               return (
                 <article key={appointment.id} className="px-5 py-5">
@@ -204,6 +220,11 @@ export default function ReceptionistAppointments() {
                         <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${statusPillClasses(appointment.status)}`}>
                           {appointment.status.replace('_', ' ')}
                         </span>
+                        {appointment.requiresReschedule ? (
+                          <span className="inline-flex rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-800">
+                            Reschedule required
+                          </span>
+                        ) : null}
                       </div>
 
                       <div className="mt-4 grid gap-3 lg:grid-cols-2">
@@ -232,6 +253,9 @@ export default function ReceptionistAppointments() {
                           <div className="mt-2 space-y-2 text-sm text-slate-600">
                             <p><span className="font-medium text-slate-700">Reason:</span> {appointment.reason || 'Not added'}</p>
                             <p><span className="font-medium text-slate-700">Symptoms:</span> {appointment.symptoms || 'Not added'}</p>
+                            {appointment.requiresReschedule ? (
+                              <p><span className="font-medium text-slate-700">Reschedule:</span> {rescheduleReasonLabel(appointment.rescheduleReason)}</p>
+                            ) : null}
                           </div>
                         </div>
                         <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
@@ -263,6 +287,15 @@ export default function ReceptionistAppointments() {
                         <p className="text-xs leading-5 text-slate-500">
                           Confirm the patient details and doctor assignment before clearing the request.
                         </p>
+                        {canReschedule ? (
+                          <button
+                            type="button"
+                            onClick={() => setAppointmentToReschedule(appointment)}
+                            className="inline-flex items-center justify-center gap-2 rounded-xl border border-indigo-300 bg-indigo-50 px-4 py-2.5 text-sm font-medium text-indigo-700 hover:bg-indigo-100"
+                          >
+                            Reschedule
+                          </button>
+                        ) : null}
                       </div>
                     ) : (
                       <div className="shrink-0 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-600 xl:w-52">
@@ -281,6 +314,15 @@ export default function ReceptionistAppointments() {
                                   ? 'Rejected at the front desk.'
                                 : 'No immediate desk action needed.'}
                         </p>
+                        {canReschedule ? (
+                          <button
+                            type="button"
+                            onClick={() => setAppointmentToReschedule(appointment)}
+                            className="mt-3 w-full rounded-xl border border-indigo-300 bg-indigo-50 px-3 py-2 text-sm font-medium text-indigo-700 hover:bg-indigo-100"
+                          >
+                            Reschedule
+                          </button>
+                        ) : null}
                         {['approved', 'in_progress', 'completed'].includes(appointment.status) ? (
                           <button
                             type="button"
@@ -305,6 +347,16 @@ export default function ReceptionistAppointments() {
           scope="appointment"
           appointmentId={imagingAppointmentId}
           onClose={() => setImagingAppointmentId(null)}
+        />
+      ) : null}
+
+      {appointmentToReschedule ? (
+        <BookAppointmentModal
+          mode="reschedule"
+          appointmentToReschedule={appointmentToReschedule}
+          prefilledDoctorId={appointmentToReschedule.doctorId}
+          lockDoctor
+          onClose={() => setAppointmentToReschedule(null)}
         />
       ) : null}
     </div>

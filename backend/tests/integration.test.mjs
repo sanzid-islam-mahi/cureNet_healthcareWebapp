@@ -155,6 +155,105 @@ test('appointment create and status transitions', async (t) => {
   assert.equal(complete.response.status, 200);
 });
 
+test('patient can reschedule requested appointment', async (t) => {
+  if (!RUN_INTEGRATION) return t.skip('Set RUN_BACKEND_INTEGRATION=1 to run integration tests');
+  const patientToken = process.env.TEST_PATIENT_TOKEN;
+  const doctorId = process.env.TEST_DOCTOR_ID;
+  const appointmentDate = process.env.TEST_APPOINTMENT_DATE;
+  const rescheduleDate = process.env.TEST_RESCHEDULE_DATE;
+  const window = process.env.TEST_APPOINTMENT_WINDOW || 'morning';
+  const rescheduleWindow = process.env.TEST_RESCHEDULE_WINDOW || 'evening';
+  if (!patientToken || !doctorId || !appointmentDate || !rescheduleDate) {
+    return t.skip('Set TEST_PATIENT_TOKEN, TEST_DOCTOR_ID, TEST_APPOINTMENT_DATE, TEST_RESCHEDULE_DATE');
+  }
+
+  const create = await request('/api/appointments', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${patientToken}`,
+    },
+    body: JSON.stringify({
+      doctorId: Number(doctorId),
+      appointmentDate,
+      window,
+      type: 'in_person',
+      reason: 'reschedule test visit',
+    }),
+  });
+  assert.equal(create.response.status, 201);
+
+  const appointmentId = create.body?.data?.appointment?.id;
+  assert.ok(appointmentId);
+
+  const reschedule = await request(`/api/appointments/${appointmentId}/reschedule`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${patientToken}`,
+    },
+    body: JSON.stringify({
+      appointmentDate: rescheduleDate,
+      window: rescheduleWindow,
+      reason: 'updated timing',
+    }),
+  });
+  assert.equal(reschedule.response.status, 200);
+  assert.equal(reschedule.body?.data?.appointment?.appointmentDate, rescheduleDate);
+  assert.equal(reschedule.body?.data?.appointment?.window, rescheduleWindow);
+  assert.equal(reschedule.body?.data?.appointment?.status, 'requested');
+  assert.equal(reschedule.body?.data?.appointment?.requiresReschedule, false);
+});
+
+test('receptionist can reschedule clinic appointment', async (t) => {
+  if (!RUN_INTEGRATION) return t.skip('Set RUN_BACKEND_INTEGRATION=1 to run integration tests');
+  const patientToken = process.env.TEST_PATIENT_TOKEN;
+  const receptionistToken = process.env.TEST_RECEPTIONIST_TOKEN;
+  const doctorId = process.env.TEST_DOCTOR_ID;
+  const appointmentDate = process.env.TEST_APPOINTMENT_DATE;
+  const rescheduleDate = process.env.TEST_RESCHEDULE_DATE;
+  const window = process.env.TEST_APPOINTMENT_WINDOW || 'morning';
+  const rescheduleWindow = process.env.TEST_RESCHEDULE_WINDOW || 'evening';
+  if (!patientToken || !receptionistToken || !doctorId || !appointmentDate || !rescheduleDate) {
+    return t.skip('Set TEST_PATIENT_TOKEN, TEST_RECEPTIONIST_TOKEN, TEST_DOCTOR_ID, TEST_APPOINTMENT_DATE, TEST_RESCHEDULE_DATE');
+  }
+
+  const create = await request('/api/appointments', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${patientToken}`,
+    },
+    body: JSON.stringify({
+      doctorId: Number(doctorId),
+      appointmentDate,
+      window,
+      type: 'in_person',
+      reason: 'receptionist reschedule test',
+    }),
+  });
+  assert.equal(create.response.status, 201);
+  const appointmentId = create.body?.data?.appointment?.id;
+  assert.ok(appointmentId);
+
+  const reschedule = await request(`/api/appointments/${appointmentId}/reschedule`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${receptionistToken}`,
+    },
+    body: JSON.stringify({
+      appointmentDate: rescheduleDate,
+      window: rescheduleWindow,
+      symptoms: 'timing updated by clinic desk',
+    }),
+  });
+  assert.equal(reschedule.response.status, 200);
+  assert.equal(reschedule.body?.data?.appointment?.appointmentDate, rescheduleDate);
+  assert.equal(reschedule.body?.data?.appointment?.window, rescheduleWindow);
+  assert.equal(reschedule.body?.data?.appointment?.requiresReschedule, false);
+});
+
 test('duplicate booking prevention scenario', async (t) => {
   if (!RUN_INTEGRATION) return t.skip('Set RUN_BACKEND_INTEGRATION=1 to run integration tests');
   const patientToken = process.env.TEST_PATIENT_TOKEN;

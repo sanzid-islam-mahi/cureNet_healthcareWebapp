@@ -11,6 +11,7 @@ router.get('/', authorizeRoles('patient'), appointmentsController.listForPatient
 router.get('/clinic-queue', authorizeRoles('receptionist'), appointmentsController.listForReceptionist);
 router.get('/:id', appointmentsController.getOne);
 router.put('/:id/cancel', appointmentsController.cancel);
+router.put('/:id/reschedule', authorizeRoles('patient', 'receptionist'), appointmentsController.reschedule);
 
 router.put('/:id/approve', authorizeRoles('doctor', 'receptionist'), appointmentsController.approve);
 router.put('/:id/reject', authorizeRoles('doctor', 'receptionist'), appointmentsController.reject);

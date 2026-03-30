@@ -162,6 +162,47 @@ export const operationsPaths = {
       },
     },
   },
+  '/appointments/{id}/reschedule': {
+    put: {
+      tags: ['Appointments'],
+      summary: 'Reschedule an appointment as the patient or assigned clinic receptionist',
+      security: authSecurity,
+      parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'integer' } }],
+      requestBody: {
+        required: true,
+        content: json({
+          type: 'object',
+          properties: {
+            appointmentDate: { type: 'string', format: 'date' },
+            window: { type: 'string', nullable: true },
+            timeBlock: { type: 'string', nullable: true },
+            reason: { type: 'string', nullable: true },
+            symptoms: { type: 'string', nullable: true },
+          },
+          required: ['appointmentDate'],
+        }),
+      },
+      responses: {
+        200: successResponse('Appointment rescheduled', {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            data: {
+              type: 'object',
+              properties: {
+                appointment: { $ref: '#/components/schemas/AppointmentRecord' },
+              },
+            },
+          },
+        }),
+        400: errorResponse('Appointment cannot be rescheduled or the requested slot is invalid'),
+        403: errorResponse('Not authorized for this appointment'),
+        404: errorResponse('Appointment not found'),
+        409: errorResponse('Booking conflict or doctor unavailable'),
+        500: errorResponse('Failed'),
+      },
+    },
+  },
   '/appointments/{id}/approve': {
     put: {
       tags: ['Appointments'],

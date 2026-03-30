@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 import { Op } from 'sequelize';
 import { serializeMedicalImagingRecord } from '../lib/medicalImaging.js';
 import { optimizeProfileImage } from '../lib/profileImages.js';
+import { flagDoctorScheduleConflicts } from './appointmentsController.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const { User, Doctor, Appointment, Rating, Prescription, Patient, PatientMedicalHistory, MedicationReminderPlan, Clinic, MedicalImagingRecord } = db;
@@ -77,6 +78,10 @@ function ensureDoctorAccess(req, res, doctorId) {
   return true;
 }
 
+function sameJsonValue(a, b) {
+  return JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+}
+
 export async function list(req, res) {
   try {
     const { department, limit } = req.query;
@@ -147,7 +152,14 @@ export async function updateProfile(req, res) {
     if (updates.unavailableDates !== undefined) {
       updates.unavailableDates = normalizeUnavailableDates(updates.unavailableDates);
     }
+    const availabilityChanged =
+      (updates.chamberWindows !== undefined && !sameJsonValue(updates.chamberWindows, doctor.chamberWindows)) ||
+      (updates.unavailableDates !== undefined && !sameJsonValue(updates.unavailableDates, doctor.unavailableDates));
+
     await doctor.update(updates);
+    if (availabilityChanged) {
+      await flagDoctorScheduleConflicts(doctor);
+    }
     const updated = await Doctor.findByPk(doctor.id, {
       include: [
         { model: User, as: 'User', attributes: { exclude: ['password'] } },

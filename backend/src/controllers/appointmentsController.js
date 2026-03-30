@@ -3,8 +3,13 @@ import { Op } from 'sequelize';
 import { logAudit } from '../lib/auditLog.js';
 import sequelize from '../config/database.js';
 import { createNotification } from '../lib/notifications.js';
+import {
+  getAppointmentScheduleConflictReason,
+  isValidDateString,
+  resolveAppointmentSlot,
+} from '../lib/appointmentScheduling.js';
 
-const { Appointment, Doctor, Patient, User, Clinic } = db;
+const { Appointment, Doctor, Patient, User, Clinic, Receptionist } = db;
 const RED_FLAG_TERMS = [
   'chest pain',
   'shortness of breath',
@@ -21,11 +26,165 @@ function getClientIp(req) {
   return req.ip || req.headers['x-forwarded-for']?.split(',')[0]?.trim() || null;
 }
 
-const WEEKDAY_NAMES = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+function formatAppointmentSlot(appointment) {
+  if (appointment.window) {
+    const label = appointment.window.charAt(0).toUpperCase() + appointment.window.slice(1);
+    return appointment.serial ? `${label} (Serial ${appointment.serial})` : label;
+  }
+  return appointment.timeBlock || 'unspecified slot';
+}
 
-function getWeekday(dateStr) {
-  const d = new Date(dateStr + 'T12:00:00');
-  return WEEKDAY_NAMES[d.getDay()];
+function formatConflictReason(reason) {
+  const labels = {
+    doctor_unavailable_on_date: 'Doctor unavailable on that date',
+    window_removed: 'Doctor no longer accepts appointments in that window',
+    window_capacity_reduced: 'Doctor reduced the slot capacity for that window',
+  };
+  return labels[reason] || 'Doctor schedule changed';
+}
+
+async function getClinicReceptionistUserIds(clinicId) {
+  if (!clinicId) return [];
+  const rows = await Receptionist.findAll({
+    where: { clinicId, isActive: true },
+    attributes: ['userId'],
+  });
+  return rows.map((row) => row.userId).filter(Boolean);
+}
+
+async function notifyAppointmentRescheduled(appointmentId, actorRole, previousSnapshot) {
+  const appointment = await Appointment.findByPk(appointmentId, {
+    include: [
+      {
+        model: Doctor,
+        as: 'Doctor',
+        include: [{ model: User, as: 'User', attributes: ['id', 'firstName', 'lastName'] }],
+      },
+      {
+        model: Patient,
+        as: 'Patient',
+        include: [{ model: User, as: 'User', attributes: ['id', 'firstName', 'lastName'] }],
+      },
+    ],
+  });
+  if (!appointment) return;
+
+  const plain = appointment.get({ plain: true });
+  const doctorName = plain.Doctor?.User
+    ? `Dr. ${plain.Doctor.User.firstName} ${plain.Doctor.User.lastName}`.trim()
+    : 'The doctor';
+  const previousSlot = formatAppointmentSlot(previousSnapshot);
+  const nextSlot = formatAppointmentSlot(plain);
+  const patientTarget = plain.Patient?.User?.id;
+  const receptionistTargets = await getClinicReceptionistUserIds(plain.clinicId);
+
+  if (actorRole === 'receptionist' && patientTarget) {
+    await createNotification({
+      userId: patientTarget,
+      type: 'appointment_rescheduled',
+      title: 'Appointment rescheduled',
+      message: `${doctorName} appointment moved from ${previousSnapshot.appointmentDate} (${previousSlot}) to ${plain.appointmentDate} (${nextSlot}).`,
+      link: '/app/patient-appointments',
+      metadata: {
+        appointmentId: plain.id,
+        doctorId: plain.doctorId,
+        patientId: plain.patientId,
+        oldDate: previousSnapshot.appointmentDate,
+        oldWindow: previousSnapshot.window,
+        oldSerial: previousSnapshot.serial,
+        newDate: plain.appointmentDate,
+        newWindow: plain.window,
+        newSerial: plain.serial,
+      },
+    });
+    return;
+  }
+
+  const targets = [...new Set([plain.Doctor?.User?.id, ...receptionistTargets].filter(Boolean))];
+  await Promise.all(
+    targets.map((userId) =>
+      createNotification({
+        userId,
+        type: 'appointment_rescheduled',
+        title: 'Appointment rescheduled',
+        message: `A patient moved ${doctorName} appointment from ${previousSnapshot.appointmentDate} (${previousSlot}) to ${plain.appointmentDate} (${nextSlot}).`,
+        link: plain.Doctor?.User?.id === userId ? '/app/doctor-appointments' : '/app/receptionist-appointments',
+        metadata: {
+          appointmentId: plain.id,
+          doctorId: plain.doctorId,
+          patientId: plain.patientId,
+          oldDate: previousSnapshot.appointmentDate,
+          oldWindow: previousSnapshot.window,
+          oldSerial: previousSnapshot.serial,
+          newDate: plain.appointmentDate,
+          newWindow: plain.window,
+          newSerial: plain.serial,
+        },
+      })
+    )
+  );
+}
+
+export async function flagDoctorScheduleConflicts(doctor) {
+  if (!doctor?.id) return 0;
+
+  const today = new Date().toISOString().slice(0, 10);
+  const appointments = await Appointment.findAll({
+    where: {
+      doctorId: doctor.id,
+      appointmentDate: { [Op.gte]: today },
+      status: { [Op.in]: ['requested', 'approved'] },
+    },
+  });
+  if (appointments.length === 0) return 0;
+
+  const receptionistTargets = await getClinicReceptionistUserIds(doctor.clinicId);
+  let flaggedCount = 0;
+
+  for (const appointment of appointments) {
+    const reason = getAppointmentScheduleConflictReason(appointment, doctor);
+    if (!reason) continue;
+
+    const shouldNotify =
+      appointment.requiresReschedule !== true || appointment.rescheduleReason !== reason;
+
+    await appointment.update({
+      requiresReschedule: true,
+      rescheduleReason: reason,
+    });
+    flaggedCount += 1;
+
+    if (!shouldNotify) continue;
+
+    const patient = await Patient.findByPk(appointment.patientId, {
+      include: [{ model: User, as: 'User', attributes: ['id'] }],
+    });
+    const patientUserId = patient?.User?.id;
+    const targets = [...new Set([patientUserId, ...receptionistTargets].filter(Boolean))];
+    await Promise.all(
+      targets.map((userId) =>
+        createNotification({
+          userId,
+          type: 'appointment_requires_reschedule',
+          title: 'Appointment needs rescheduling',
+          message: `The appointment on ${appointment.appointmentDate} (${formatAppointmentSlot(appointment)}) now needs rescheduling. ${formatConflictReason(reason)}.`,
+          link: userId === patientUserId ? '/app/patient-appointments' : '/app/receptionist-appointments',
+          metadata: {
+            appointmentId: appointment.id,
+            doctorId: appointment.doctorId,
+            patientId: appointment.patientId,
+            clinicId: appointment.clinicId,
+            appointmentDate: appointment.appointmentDate,
+            window: appointment.window,
+            serial: appointment.serial,
+            rescheduleReason: reason,
+          },
+        })
+      )
+    );
+  }
+
+  return flaggedCount;
 }
 
 async function notifyAppointmentTransition(appointmentId, nextStatus, actorRole) {
@@ -125,7 +284,7 @@ export async function create(req, res) {
     if (!Number.isInteger(docId) || docId <= 0) {
       return res.status(400).json({ success: false, message: 'Valid doctorId required' });
     }
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(appointmentDate)) {
+    if (!isValidDateString(appointmentDate)) {
       return res.status(400).json({ success: false, message: 'Valid appointmentDate (YYYY-MM-DD) required' });
     }
 
@@ -146,15 +305,6 @@ export async function create(req, res) {
         transaction,
         lock: transaction.LOCK.UPDATE,
       });
-      if (!doctor) return { error: { status: 404, message: 'Doctor not found' } };
-      if (!doctor.clinicId) {
-        return { error: { status: 409, message: 'This doctor is not assigned to an active clinic yet' } };
-      }
-      const doctorUnavailableDates = Array.isArray(doctor.unavailableDates) ? doctor.unavailableDates : [];
-      if (doctorUnavailableDates.includes(appointmentDate)) {
-        return { error: { status: 409, message: 'Doctor is unavailable on this date' } };
-      }
-
       // Require patient safety profile before first booking.
       const totalAppointments = await Appointment.count({
         where: { patientId: user.patientId },
@@ -183,71 +333,32 @@ export async function create(req, res) {
         }
       }
 
-      let windowName = null;
-      let serialNum = null;
-
-      if (window) {
-        const weekday = getWeekday(appointmentDate);
-        const chamberWindows = doctor.chamberWindows || {};
-        const dayWindows = chamberWindows[weekday] || {};
-        const winConfig = dayWindows[window];
-        if (!winConfig || !winConfig.enabled) {
-          return { error: { status: 400, message: `Window "${window}" is not available for this doctor on this day` } };
-        }
-
-        const bookedCount = await Appointment.count({
-          where: {
-            doctorId: docId,
-            appointmentDate,
-            window,
-            status: { [Op.notIn]: ['cancelled', 'rejected'] },
-          },
-          transaction,
-        });
-        const maxPatients = winConfig.maxPatients || 0;
-        if (maxPatients > 0 && bookedCount >= maxPatients) {
-          return { error: { status: 409, message: 'Window is full' } };
-        }
-        serialNum = bookedCount + 1;
-        windowName = window;
-      } else if (timeBlock) {
-        const chamberTimes = doctor.chamberTimes || {};
-        const weekday = getWeekday(appointmentDate);
-        const daySlots = Array.isArray(chamberTimes[weekday]) ? chamberTimes[weekday] : [];
-        if (!daySlots.includes(timeBlock)) {
-          return { error: { status: 400, message: 'Time slot not available for this doctor on this day' } };
-        }
-        const existing = await Appointment.findOne({
-          where: {
-            doctorId: docId,
-            appointmentDate,
-            timeBlock,
-            status: { [Op.notIn]: ['cancelled', 'rejected'] },
-          },
-          transaction,
-        });
-        if (existing) {
-          return { error: { status: 409, message: 'Slot already booked' } };
-        }
-      } else {
-        return { error: { status: 400, message: 'Either window or timeBlock required' } };
-      }
+      const slot = await resolveAppointmentSlot({
+        Appointment,
+        doctor,
+        doctorId: docId,
+        appointmentDate,
+        window,
+        timeBlock,
+        transaction,
+      });
+      if (slot.error) return slot;
 
       const created = await Appointment.create({
         patientId: user.patientId,
         doctorId: docId,
-        clinicId: doctor.clinicId,
+        clinicId: slot.clinicId,
         appointmentDate,
-        window: windowName,
-        serial: serialNum,
-        timeBlock: timeBlock || null,
+        window: slot.windowName,
+        serial: slot.serialNum,
+        timeBlock: slot.legacyTimeBlock,
         type: type || 'in_person',
         reason: reason || null,
         symptoms: symptoms || null,
         status: 'requested',
       }, { transaction });
 
-      return { created, windowName, serialNum };
+      return { created, windowName: slot.windowName, serialNum: slot.serialNum };
     });
     if (appointment.error) {
       return res.status(appointment.error.status).json({
@@ -305,6 +416,8 @@ function formatAppointment(a) {
     reason: d.reason,
     symptoms: d.symptoms,
     status: d.status,
+    requiresReschedule: Boolean(d.requiresReschedule),
+    rescheduleReason: d.rescheduleReason ?? null,
     createdAt: d.createdAt,
     updatedAt: d.updatedAt,
     doctor: doctor.User ? { id: doctor.id, user: doctor.User } : { id: doctor.id },
@@ -317,6 +430,128 @@ function formatAppointment(a) {
     } : null,
     patient: patient.User ? { id: patient.id, user: patient.User } : { id: patient.id },
   };
+}
+
+export async function reschedule(req, res) {
+  try {
+    const user = req.user;
+    if (!['patient', 'receptionist'].includes(user.role)) {
+      return res.status(403).json({ success: false, message: 'Not authorized to reschedule appointments' });
+    }
+
+    const id = parseInt(req.params.id, 10);
+    const appointment = await Appointment.findByPk(id);
+    if (!appointment) {
+      return res.status(404).json({ success: false, message: 'Appointment not found' });
+    }
+
+    const isPatient = user.role === 'patient' && user.patientId === appointment.patientId;
+    const isReceptionist = user.role === 'receptionist' && user.clinicId && user.clinicId === appointment.clinicId;
+    if (!isPatient && !isReceptionist) {
+      return res.status(403).json({ success: false, message: 'Not authorized for this appointment' });
+    }
+
+    const manuallyReschedulable =
+      ['requested', 'approved'].includes(appointment.status) || appointment.requiresReschedule === true;
+    if (!manuallyReschedulable) {
+      return res.status(400).json({
+        success: false,
+        message: 'Only requested, approved, or flagged appointments can be rescheduled',
+      });
+    }
+    if (['completed', 'cancelled', 'rejected', 'in_progress'].includes(appointment.status)) {
+      return res.status(400).json({ success: false, message: 'This appointment cannot be rescheduled' });
+    }
+
+    const { appointmentDate, window, timeBlock, reason, symptoms } = req.body;
+    if (!isValidDateString(appointmentDate)) {
+      return res.status(400).json({ success: false, message: 'Valid appointmentDate (YYYY-MM-DD) required' });
+    }
+
+    const previousSnapshot = appointment.get({ plain: true });
+    const outcome = await sequelize.transaction(async (transaction) => {
+      const lockedAppointment = await Appointment.findByPk(id, {
+        transaction,
+        lock: transaction.LOCK.UPDATE,
+      });
+      if (!lockedAppointment) {
+        return { error: { status: 404, message: 'Appointment not found' } };
+      }
+
+      const doctor = await Doctor.findByPk(lockedAppointment.doctorId, {
+        transaction,
+        lock: transaction.LOCK.UPDATE,
+      });
+      const slot = await resolveAppointmentSlot({
+        Appointment,
+        doctor,
+        doctorId: lockedAppointment.doctorId,
+        appointmentDate,
+        window,
+        timeBlock,
+        excludeAppointmentId: lockedAppointment.id,
+        transaction,
+      });
+      if (slot.error) return slot;
+
+      const nextStatus = lockedAppointment.status === 'approved' ? 'requested' : lockedAppointment.status;
+      await lockedAppointment.update(
+        {
+          appointmentDate,
+          clinicId: slot.clinicId,
+          window: slot.windowName,
+          serial: slot.serialNum,
+          timeBlock: slot.legacyTimeBlock,
+          type: lockedAppointment.type,
+          reason: reason !== undefined ? reason || null : lockedAppointment.reason,
+          symptoms: symptoms !== undefined ? symptoms || null : lockedAppointment.symptoms,
+          status: nextStatus,
+          requiresReschedule: false,
+          rescheduleReason: null,
+        },
+        { transaction }
+      );
+
+      return { appointment: lockedAppointment, nextStatus };
+    });
+
+    if (outcome.error) {
+      return res.status(outcome.error.status).json({ success: false, message: outcome.error.message });
+    }
+
+    await notifyAppointmentRescheduled(outcome.appointment.id, user.role, previousSnapshot);
+    logAudit({
+      action: 'appointment_rescheduled',
+      userId: user.id,
+      entityType: 'appointment',
+      entityId: String(outcome.appointment.id),
+      details: {
+        appointmentId: outcome.appointment.id,
+        actorRole: user.role,
+        oldDate: previousSnapshot.appointmentDate,
+        oldWindow: previousSnapshot.window,
+        oldSerial: previousSnapshot.serial,
+        oldStatus: previousSnapshot.status,
+        newDate: outcome.appointment.appointmentDate,
+        newWindow: outcome.appointment.window,
+        newSerial: outcome.appointment.serial,
+        newStatus: outcome.nextStatus,
+      },
+      ip: getClientIp(req),
+    }).catch(() => {});
+
+    const withAssocs = await Appointment.findByPk(outcome.appointment.id, {
+      include: [
+        { model: Doctor, as: 'Doctor', include: [{ model: User, as: 'User', attributes: ['id', 'firstName', 'lastName'] }] },
+        { model: Clinic, as: 'Clinic' },
+        { model: Patient, as: 'Patient', include: [{ model: User, as: 'User', attributes: ['id', 'firstName', 'lastName'] }] },
+      ],
+    });
+    return res.json({ success: true, data: { appointment: formatAppointment(withAssocs) } });
+  } catch (err) {
+    console.error('Reschedule appointment error:', err);
+    return res.status(500).json({ success: false, message: err.message || 'Failed' });
+  }
 }
 
 export async function listForPatient(req, res) {

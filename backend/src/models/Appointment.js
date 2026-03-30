@@ -64,6 +64,15 @@ const Appointment = sequelize.define(
       allowNull: false,
       defaultValue: 'requested',
     },
+    requiresReschedule: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+    },
+    rescheduleReason: {
+      type: DataTypes.STRING(80),
+      allowNull: true,
+    },
   },
   {
     tableName: 'appointments',

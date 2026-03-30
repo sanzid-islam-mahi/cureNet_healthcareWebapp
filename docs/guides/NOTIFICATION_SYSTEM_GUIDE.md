@@ -34,6 +34,8 @@ One notification is one user-facing event.
 
 Example meanings:
 - appointment status changed
+- appointment was rescheduled
+- appointment requires a new slot after a doctor schedule change
 - medication reminder became due
 - a medication dose was marked missed
 
@@ -126,6 +128,8 @@ Why it matters:
 Machine-readable notification category.
 
 Examples already used:
+- `appointment_rescheduled`
+- `appointment_requires_reschedule`
 - `medication_reminder_due`
 - `medication_dose_missed`
 
@@ -356,7 +360,53 @@ It only really needs:
 
 That is why the summary query is cheap and separate from the full modal list.
 
-## 7. How Reminder Notifications Fit In
+## 7. Notification Types In Use
+
+### `appointment_rescheduled`
+Created when an existing appointment is moved to a new date or window without creating a new appointment record.
+
+Meaning:
+- the same appointment row was updated with a new date/window
+- the receiving user needs to act on the updated slot, not a replacement record
+
+Typical recipients:
+- if the patient reschedules, the doctor and clinic receptionists are notified
+- if the receptionist reschedules, the patient is notified
+
+Typical metadata:
+- `appointmentId`
+- `doctorId`
+- `patientId`
+- `oldDate`
+- `oldWindow`
+- `oldSerial`
+- `newDate`
+- `newWindow`
+- `newSerial`
+
+### `appointment_requires_reschedule`
+Created when a doctor changes `chamberWindows` or `unavailableDates` and an existing future appointment no longer fits the updated schedule.
+
+Meaning:
+- the appointment is still stored and visible
+- the appointment is flagged with `requiresReschedule=true`
+- the user should pick a new slot rather than assume the original booking still holds
+
+Typical recipients:
+- the affected patient
+- receptionists assigned to the same clinic
+
+Typical metadata:
+- `appointmentId`
+- `doctorId`
+- `patientId`
+- `clinicId`
+- `appointmentDate`
+- `window`
+- `serial`
+- `rescheduleReason`
+
+## 8. How Reminder Notifications Fit In
 
 The reminder worker creates two important notification types:
 
@@ -378,7 +428,7 @@ These are created through the same shared `createNotification()` helper, so they
 - update the bell badge
 - arrive live if the user is connected
 
-## 8. Why This Design Works
+## 9. Why This Design Works
 
 The design is intentionally simple:
 
@@ -395,7 +445,7 @@ The design is intentionally simple:
 ### User-scoped event names
 - clean separation between users
 
-## 9. Common Debugging Paths
+## 10. Common Debugging Paths
 
 ### Problem: no notification appears in the modal
 Check:

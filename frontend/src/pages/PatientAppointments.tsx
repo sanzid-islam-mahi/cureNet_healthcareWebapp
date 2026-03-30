@@ -17,6 +17,8 @@ interface AppointmentItem {
   serial?: number;
   type: string;
   status: string;
+  requiresReschedule?: boolean;
+  rescheduleReason?: string | null;
   reason?: string;
   symptoms?: string;
   doctor?: { id: number; user?: { firstName: string; lastName: string } };
@@ -59,6 +61,15 @@ function doctorNameFor(apt: AppointmentItem): string {
     : `Doctor #${apt.doctor?.id ?? ''}`;
 }
 
+function rescheduleReasonLabel(reason?: string | null): string {
+  const labels: Record<string, string> = {
+    doctor_unavailable_on_date: 'Doctor is unavailable on the current date.',
+    window_removed: 'The doctor no longer accepts appointments in this window.',
+    window_capacity_reduced: 'The window capacity was reduced and this serial no longer fits.',
+  };
+  return reason ? (labels[reason] ?? 'This appointment needs a new slot because the doctor schedule changed.') : 'This appointment needs a new slot.';
+}
+
 interface AppointmentsSectionProps {
   title: string;
   subtitle: string;
@@ -69,6 +80,7 @@ interface AppointmentsSectionProps {
   ratingsByAppointmentId: Record<number, PatientRatingItem>;
   showPrescription: boolean;
   onCancel: (appointmentId: number) => void;
+  onReschedule: (appointment: AppointmentItem) => void;
   cancelPending: boolean;
 }
 
@@ -82,6 +94,7 @@ function AppointmentsSection({
   ratingsByAppointmentId,
   showPrescription,
   onCancel,
+  onReschedule,
   cancelPending,
 }: AppointmentsSectionProps) {
   return (
@@ -97,6 +110,7 @@ function AppointmentsSection({
         <div className="divide-y divide-gray-100">
           {items.map((apt) => {
             const canCancel = ['requested', 'approved'].includes(apt.status);
+            const canReschedule = ['requested', 'approved'].includes(apt.status) || apt.requiresReschedule === true;
             const canRate = apt.status === 'completed';
             const existingRating = ratingsByAppointmentId[apt.id];
 
@@ -138,6 +152,11 @@ function AppointmentsSection({
                         <span className="font-medium text-gray-900">Reason:</span> {apt.reason}
                       </p>
                     ) : null}
+                    {apt.requiresReschedule ? (
+                      <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+                        <span className="font-medium">Reschedule required:</span> {rescheduleReasonLabel(apt.rescheduleReason)}
+                      </p>
+                    ) : null}
                     {apt.symptoms ? (
                       <p className="rounded-lg border border-red-100 bg-red-50 px-3 py-2 text-sm text-red-800">
                         <span className="font-medium text-red-900">Symptoms:</span> {apt.symptoms}
@@ -172,6 +191,16 @@ function AppointmentsSection({
                       </button>
                     ) : null}
 
+                    {canReschedule ? (
+                      <button
+                        type="button"
+                        onClick={() => onReschedule(apt)}
+                        className="rounded-lg border border-indigo-300 bg-indigo-50 px-3 py-1.5 text-sm font-medium text-indigo-700 hover:bg-indigo-100"
+                      >
+                        Reschedule
+                      </button>
+                    ) : null}
+
                     {canCancel ? (
                       <button
                         type="button"
@@ -198,6 +227,7 @@ export default function PatientAppointments() {
   const bookDoctorId = searchParams.get('book');
   const [statusFilter, setStatusFilter] = useState('');
   const [showBookModal, setShowBookModal] = useState(Boolean(bookDoctorId));
+  const [appointmentToReschedule, setAppointmentToReschedule] = useState<AppointmentItem | null>(null);
   const [prescriptionAppointmentId, setPrescriptionAppointmentId] = useState<number | null>(null);
   const [ratingFor, setRatingFor] = useState<{ appointmentId: number; doctorId: number } | null>(null);
   const queryClient = useQueryClient();
@@ -261,6 +291,7 @@ export default function PatientAppointments() {
 
   const closeBookModal = () => {
     setShowBookModal(false);
+    setAppointmentToReschedule(null);
     if (bookDoctorId) setSearchParams({});
     queryClient.invalidateQueries({ queryKey: ['appointments'] });
     queryClient.invalidateQueries({ queryKey: ['patients'] });
@@ -270,6 +301,11 @@ export default function PatientAppointments() {
     const confirmed = window.confirm('Cancel this appointment request?');
     if (!confirmed) return;
     cancelMutation.mutate(id);
+  };
+
+  const onRescheduleAppointment = (appointment: AppointmentItem) => {
+    setAppointmentToReschedule(appointment);
+    setShowBookModal(true);
   };
 
   return (
@@ -339,6 +375,7 @@ export default function PatientAppointments() {
             ratingsByAppointmentId={ratingsByAppointmentId}
             showPrescription={false}
             onCancel={onCancelAppointment}
+            onReschedule={onRescheduleAppointment}
             cancelPending={cancelMutation.isPending}
           />
 
@@ -352,6 +389,7 @@ export default function PatientAppointments() {
             ratingsByAppointmentId={ratingsByAppointmentId}
             showPrescription
             onCancel={onCancelAppointment}
+            onReschedule={onRescheduleAppointment}
             cancelPending={cancelMutation.isPending}
           />
 
@@ -366,6 +404,7 @@ export default function PatientAppointments() {
               ratingsByAppointmentId={ratingsByAppointmentId}
               showPrescription
               onCancel={onCancelAppointment}
+              onReschedule={onRescheduleAppointment}
               cancelPending={cancelMutation.isPending}
             />
           ) : null}
@@ -374,8 +413,11 @@ export default function PatientAppointments() {
 
       {showBookModal ? (
         <BookAppointmentModal
-          prefilledDoctorId={bookDoctorId ? parseInt(bookDoctorId, 10) : undefined}
+          prefilledDoctorId={appointmentToReschedule?.doctorId ?? (bookDoctorId ? parseInt(bookDoctorId, 10) : undefined)}
           hasExistingAppointments={appointments.length > 0}
+          mode={appointmentToReschedule ? 'reschedule' : 'create'}
+          appointmentToReschedule={appointmentToReschedule}
+          lockDoctor={Boolean(appointmentToReschedule)}
           onClose={closeBookModal}
         />
       ) : null}

@@ -358,6 +358,8 @@ export const schemas = {
       type: { type: 'string', enum: ['in_person', 'video', 'phone'] },
       reason: { type: 'string', nullable: true },
       symptoms: { type: 'string', nullable: true },
+      requiresReschedule: { type: 'boolean' },
+      rescheduleReason: { type: 'string', nullable: true },
       status: {
         type: 'string',
         enum: ['requested', 'approved', 'rejected', 'in_progress', 'completed', 'cancelled'],

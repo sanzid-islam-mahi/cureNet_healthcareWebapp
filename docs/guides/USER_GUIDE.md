@@ -10,6 +10,7 @@ Main features for patients:
 - log in and manage profile
 - browse doctors
 - book appointments
+- reschedule requested or approved appointments
 - view appointment history
 - view prescriptions
 - manage medication reminders
@@ -22,9 +23,10 @@ Suggested walkthrough:
 2. open the dashboard
 3. browse a doctor profile
 4. book an appointment
-5. show appointment history
-6. show prescription history and reminders
-7. show medical history and imaging
+5. reschedule an existing upcoming appointment
+6. show appointment history
+7. show prescription history and reminders
+8. show medical history and imaging
 
 ## 2. Doctor Flow
 
@@ -53,7 +55,7 @@ Main features for receptionists:
 
 - access clinic-scoped dashboard
 - review clinic appointment queue
-- approve or manage operational appointment flow
+- approve, reject, or reschedule operational appointment flow
 - view clinic doctor roster
 - support appointment-linked imaging workflows where allowed
 
@@ -62,8 +64,9 @@ Suggested walkthrough:
 1. log in as a receptionist
 2. open receptionist dashboard
 3. show clinic queue
-4. open clinic doctors view
-5. explain that access is limited to the receptionist’s assigned clinic
+4. reschedule one appointment to demonstrate clinic-scoped operational control
+5. open clinic doctors view
+6. explain that access is limited to the receptionist’s assigned clinic
 
 ## 4. Admin Flow
 
@@ -103,6 +106,7 @@ For a smooth demo, keep one prepared account for each role:
 - log in fresh for each role rather than switching too quickly
 - keep the story operational:
   - patient books
+  - patient or receptionist reschedules when needed
   - receptionist handles clinic queue
   - doctor treats and prescribes
   - admin manages the system
