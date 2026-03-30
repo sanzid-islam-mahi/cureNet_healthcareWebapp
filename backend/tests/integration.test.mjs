@@ -46,13 +46,15 @@ test('auth register/login/profile/forgot/reset-invalid flow', async (t) => {
   });
   assert.equal(registerRes.response.status, 201);
   assert.equal(registerRes.body?.success, true);
-  const registerCookie = getCookieHeader(registerRes.response);
-  assert.ok(registerCookie);
+  assert.equal(registerRes.body?.data?.verificationRequired, true);
+  assert.equal(registerRes.body?.data?.email, email);
 
+  const seededEmail = process.env.TEST_LOGIN_EMAIL || 'patient.nabil@curenet.local';
+  const seededPassword = process.env.TEST_LOGIN_PASSWORD || 'Patient123';
   const loginRes = await request('/api/auth/login', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ email: seededEmail, password: seededPassword }),
   });
   assert.equal(loginRes.response.status, 200);
   assert.equal(loginRes.body?.success, true);
@@ -83,7 +85,7 @@ test('auth register/login/profile/forgot/reset-invalid flow', async (t) => {
   const forgotRes = await request('/api/auth/forgot-password', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email }),
+    body: JSON.stringify({ email: seededEmail }),
   });
   assert.equal(forgotRes.response.status, 200);
   assert.equal(forgotRes.body?.success, true);
@@ -254,7 +256,7 @@ test('receptionist can reschedule clinic appointment', async (t) => {
   assert.equal(reschedule.body?.data?.appointment?.requiresReschedule, false);
 });
 
-test('duplicate booking prevention scenario', async (t) => {
+test('concurrent window bookings receive distinct serials', async (t) => {
   if (!RUN_INTEGRATION) return t.skip('Set RUN_BACKEND_INTEGRATION=1 to run integration tests');
   const patientToken = process.env.TEST_PATIENT_TOKEN;
   const doctorId = process.env.TEST_DOCTOR_ID;
@@ -281,7 +283,12 @@ test('duplicate booking prevention scenario', async (t) => {
     request('/api/appointments', { method: 'POST', headers, body: JSON.stringify(payload) }),
   ]);
   const statuses = [a.response.status, b.response.status].sort();
-  // One request should succeed while the other should be rejected as full/conflict/validation.
-  assert.equal(statuses[1], 201);
-  assert.ok([400, 409].includes(statuses[0]));
+  assert.deepEqual(statuses, [201, 201]);
+
+  const serials = [
+    a.body?.data?.appointment?.serial,
+    b.body?.data?.appointment?.serial,
+  ];
+  assert.ok(serials.every((value) => Number.isInteger(value)));
+  assert.notEqual(serials[0], serials[1]);
 });
