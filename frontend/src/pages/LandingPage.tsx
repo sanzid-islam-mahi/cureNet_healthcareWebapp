@@ -97,7 +97,7 @@ interface DoctorItem {
 }
 
 export default function LandingPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { data: doctors = [], isLoading: loadingDoctors } = useQuery({
     queryKey: ['doctors', 'landing', 5],
     queryFn: async () => {
@@ -130,6 +130,7 @@ export default function LandingPage() {
   });
 
   const marqueeCards = [...TESTIMONIALS, ...TESTIMONIALS];
+  const bookingMode = authLoading ? 'loading' : user?.role === 'patient' ? 'patient' : user ? 'other-role' : 'guest';
 
   return (
     <div className="flex flex-col bg-slate-50 min-h-screen font-sans">
@@ -377,7 +378,7 @@ export default function LandingPage() {
                     averageRating={rating.averageRating}
                     totalRatings={rating.totalRatings}
                     consultationFee={doc.consultationFee}
-                    isPatient={false}
+                    bookingMode={bookingMode}
                   />
                 );
               })}

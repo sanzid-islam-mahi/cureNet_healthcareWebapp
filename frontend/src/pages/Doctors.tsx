@@ -17,8 +17,9 @@ interface DoctorListItem {
 }
 
 export default function Doctors() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const isPatient = user?.role === 'patient';
+  const bookingMode = loading ? 'loading' : isPatient ? 'patient' : user ? 'other-role' : 'guest';
 
   // URL Params parsing
   const searchParams = new URLSearchParams(window.location.search);
@@ -220,7 +221,7 @@ export default function Doctors() {
                     averageRating={rating.averageRating}
                     totalRatings={rating.totalRatings}
                     consultationFee={doc.consultationFee}
-                    isPatient={isPatient}
+                    bookingMode={bookingMode}
                     onBookNow={(doctorId) => setBookDoctorId(doctorId)}
                   />
                 );

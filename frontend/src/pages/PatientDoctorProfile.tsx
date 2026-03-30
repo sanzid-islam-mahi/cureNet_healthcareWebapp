@@ -64,7 +64,7 @@ interface UpcomingSlot {
 export default function PatientDoctorProfile() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const isPatient = user?.role === 'patient';
   const [showBookModal, setShowBookModal] = useState(false);
 
@@ -232,7 +232,7 @@ export default function PatientDoctorProfile() {
               <div className="mt-4 grid gap-2 sm:grid-cols-3 xl:grid-cols-1">
                 <div className="rounded-2xl border border-white/10 bg-white/5 px-3 py-2">
                   <p className="text-[11px] uppercase tracking-[0.14em] text-slate-400">Status</p>
-                  <p className="mt-1 text-sm font-semibold text-white">{isPatient ? 'Bookable online' : 'Sign in required'}</p>
+                  <p className="mt-1 text-sm font-semibold text-white">{isPatient ? 'Bookable online' : 'Availability visible'}</p>
                 </div>
                 <div className="rounded-2xl border border-white/10 bg-white/5 px-3 py-2">
                   <p className="text-[11px] uppercase tracking-[0.14em] text-slate-400">Reviews</p>
@@ -351,35 +351,35 @@ export default function PatientDoctorProfile() {
                 <h2 className="text-lg font-semibold text-slate-950">Available times</h2>
               </div>
 
-              {isPatient ? (
-                <div className="space-y-4">
-                  <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
-                    <div className="flex items-center gap-2">
-                      <CalendarDaysIcon className="h-5 w-5 text-sky-600" />
-                      <p className="text-sm font-semibold text-slate-900">Upcoming schedule</p>
-                    </div>
-                    {availabilityPreview.length > 0 ? (
-                      <div className="mt-3 grid gap-2 sm:grid-cols-2">
-                        {availabilityPreview.map((slot) => (
-                          <div key={slot.date} className="rounded-xl border border-slate-200 bg-white px-3 py-3">
-                            <p className="text-sm font-semibold text-slate-900">
-                              {slot.dayName}, {slot.date}
-                            </p>
-                            <div className="mt-2 flex flex-wrap gap-2">
-                              {slot.windows.map((window) => (
-                                <span key={`${slot.date}-${window.window}`} className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">
-                                  {window.label}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="mt-3 text-sm text-slate-500">Schedule updates soon.</p>
-                    )}
+              <div className="space-y-4">
+                <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4">
+                  <div className="flex items-center gap-2">
+                    <CalendarDaysIcon className="h-5 w-5 text-sky-600" />
+                    <p className="text-sm font-semibold text-slate-900">Upcoming schedule</p>
                   </div>
+                  {availabilityPreview.length > 0 ? (
+                    <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                      {availabilityPreview.map((slot) => (
+                        <div key={slot.date} className="rounded-xl border border-slate-200 bg-white px-3 py-3">
+                          <p className="text-sm font-semibold text-slate-900">
+                            {slot.dayName}, {slot.date}
+                          </p>
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            {slot.windows.map((window) => (
+                              <span key={`${slot.date}-${window.window}`} className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">
+                                {window.label}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="mt-3 text-sm text-slate-500">Schedule updates soon.</p>
+                  )}
+                </div>
 
+                {isPatient ? (
                   <div>
                     <button
                       type="button"
@@ -389,6 +389,23 @@ export default function PatientDoctorProfile() {
                       Book appointment
                     </button>
                   </div>
+                ) : authLoading ? (
+                <div className="pt-2">
+                  <p className="mb-4 text-sm text-gray-600">
+                    Checking your session before showing appointment actions.
+                  </p>
+                  <span className="block w-full rounded-xl border-2 border-slate-200 px-4 py-3.5 text-center text-base font-semibold text-slate-400">
+                    Checking session...
+                  </span>
+                </div>
+              ) : user ? (
+                <div className="pt-2">
+                  <p className="mb-4 text-sm text-gray-600">
+                    Only patient accounts can book appointments from the public doctor profile.
+                  </p>
+                  <span className="block w-full rounded-xl border-2 border-slate-200 bg-slate-50 px-4 py-3.5 text-center text-base font-semibold text-slate-500">
+                    Patient account required
+                  </span>
                 </div>
               ) : (
                 <div className="pt-2">
@@ -402,7 +419,8 @@ export default function PatientDoctorProfile() {
                     Sign in to book
                   </Link>
                 </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
         </div>

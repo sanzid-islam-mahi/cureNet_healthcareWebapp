@@ -10,7 +10,7 @@ interface DoctorCardProps {
     averageRating?: number;
     totalRatings?: number;
     consultationFee?: number;
-    isPatient?: boolean;
+    bookingMode?: 'patient' | 'guest' | 'other-role' | 'loading';
     onBookNow?: (doctorId: number) => void;
 }
 
@@ -21,7 +21,7 @@ export default function DoctorCard({
     imgSrc,
     averageRating = 0,
     totalRatings = 0,
-    isPatient = false,
+    bookingMode = 'guest',
     onBookNow,
 }: DoctorCardProps) {
     const navigate = useNavigate();
@@ -101,7 +101,7 @@ export default function DoctorCard({
 
                 {/* CTA button */}
                 <div className="mt-auto pt-3" onClick={(e) => e.stopPropagation()}>
-                    {isPatient ? (
+                    {bookingMode === 'patient' ? (
                         <button
                             type="button"
                             className="flex items-center justify-center gap-1.5 w-full text-center
@@ -117,7 +117,7 @@ export default function DoctorCard({
                             <CalendarDaysIcon className="w-3.5 h-3.5" />
                             Book Now
                         </button>
-                    ) : (
+                    ) : bookingMode === 'guest' ? (
                         <Link
                             to="/login?redirect=/doctors"
                             className="block w-full text-center rounded-full border-2 border-[#3990D7]
@@ -127,6 +127,20 @@ export default function DoctorCard({
                         >
                             Sign in to book
                         </Link>
+                    ) : bookingMode === 'loading' ? (
+                        <span
+                            className="block w-full rounded-full border-2 border-slate-200
+                         py-2 px-3 text-center text-xs font-semibold text-slate-400"
+                        >
+                            Checking session...
+                        </span>
+                    ) : (
+                        <span
+                            className="block w-full rounded-full border-2 border-slate-200
+                         py-2 px-3 text-center text-xs font-semibold text-slate-500 bg-slate-50"
+                        >
+                            Patient account required
+                        </span>
                     )}
                 </div>
             </div>
