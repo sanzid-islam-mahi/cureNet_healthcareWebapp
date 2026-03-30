@@ -342,7 +342,7 @@ export default function DoctorProfile() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8">
+    <div className="space-y-8">
 
       {/* ================= HERO BANNER ================= */}
 

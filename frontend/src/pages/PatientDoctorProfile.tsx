@@ -129,7 +129,7 @@ export default function PatientDoctorProfile() {
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(56,189,248,0.12),_transparent_28%),linear-gradient(180deg,_#f8fbff_0%,_#f8fafc_100%)]">
-      <div className="mx-auto max-w-7xl px-4 py-5">
+      <div className="mx-auto max-w-[1600px] px-3 py-5 sm:px-4 lg:px-6">
         <button
           type="button"
           onClick={() => navigate(-1)}

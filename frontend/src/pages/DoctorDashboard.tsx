@@ -240,7 +240,7 @@ export default function DoctorDashboard() {
   });
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto">
+    <div className="space-y-8">
       <AppPageHeader
         eyebrow="Doctor Dashboard"
         title={`Dr. ${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim()}

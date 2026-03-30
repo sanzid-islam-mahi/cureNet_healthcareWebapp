@@ -84,7 +84,7 @@ export default function Doctors() {
       {/* ================= HEADER HERO ================= */}
       <section className="relative overflow-hidden bg-white pt-12 pb-16 border-b border-slate-200">
         <div className="absolute inset-0 bg-blue-50/30 -z-10" />
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-[1600px] mx-auto px-3 sm:px-4 lg:px-6">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8">
             <div className="max-w-2xl">
               <span className="inline-block py-1 px-3 rounded-full bg-blue-100 text-blue-700 text-sm font-semibold tracking-wide mb-4">
@@ -152,7 +152,7 @@ export default function Doctors() {
 
       {/* ================= DOCTOR GRID ================= */}
       <section className="flex-1 py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-[1600px] mx-auto px-3 sm:px-4 lg:px-6">
           {/* Active Filters Summary */}
           {(department || searchQuery) && (
             <div className="mb-8 flex items-center gap-2 flex-wrap">

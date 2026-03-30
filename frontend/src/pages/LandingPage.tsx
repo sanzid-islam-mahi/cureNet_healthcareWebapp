@@ -143,7 +143,7 @@ export default function LandingPage() {
       {/* ================= HERO ================= */}
       <section className="relative overflow-hidden bg-white pt-10 pb-10 md:pt-12 md:pb-12 border-b border-slate-200">
         <div className="absolute inset-0 bg-blue-50/50 -skew-y-3 transform origin-top-left -z-10" />
-        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-[1600px] mx-auto px-3 sm:px-4 lg:px-6">
           <div className="grid grid-cols-1 xl:grid-cols-[1.05fr_0.95fr] items-center gap-8 xl:gap-10">
             <div className="text-center md:text-left">
               <span className="inline-block py-1 px-3 rounded-full bg-blue-100 text-blue-700 text-sm font-semibold tracking-wide mb-4">
@@ -202,7 +202,7 @@ export default function LandingPage() {
           <div className="absolute top-1/2 right-0 transform translate-x-1/3 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-indigo-50/50 blur-3xl opacity-60"></div>
         </div>
 
-        <div className="relative z-10 max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="relative z-10 max-w-[1600px] mx-auto px-3 sm:px-4 lg:px-6">
           <div className="text-center max-w-3xl mx-auto mb-8 fade-in-up">
             <h2 className="text-3xl md:text-4xl font-extrabold text-slate-900 mb-3 tracking-tight">
               Search, book, and stay on track.
@@ -248,7 +248,7 @@ export default function LandingPage() {
 
       {/* ================= PATIENT STORIES ================= */}
       <section className="py-8 md:py-10 bg-white border-y border-slate-200 overflow-hidden">
-        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 mb-5">
+        <div className="max-w-[1600px] mx-auto px-3 sm:px-4 lg:px-6 mb-5">
           <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-3">
             <div className="max-w-3xl">
               <h2 className="text-2xl md:text-3xl font-bold text-slate-900">
@@ -263,7 +263,7 @@ export default function LandingPage() {
           <div className="pointer-events-none absolute inset-y-0 left-0 w-16 md:w-24 bg-gradient-to-r from-white to-transparent z-10" />
           <div className="pointer-events-none absolute inset-y-0 right-0 w-16 md:w-24 bg-gradient-to-l from-white to-transparent z-10" />
           <div
-            className="flex w-max gap-4 px-4 sm:px-6 lg:px-8 motion-reduce:[animation:none]"
+            className="flex w-max gap-4 px-3 sm:px-4 lg:px-6 motion-reduce:[animation:none]"
             style={{ animation: 'landing-marquee 36s linear infinite' }}
           >
             {marqueeCards.map((item, index) => (
@@ -294,7 +294,7 @@ export default function LandingPage() {
 
       {/* ================= FIND BY SPECIALITY ================= */}
       <section className="py-9 md:py-10 bg-white relative">
-        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-[1600px] mx-auto px-3 sm:px-4 lg:px-6">
           <div className="flex flex-col md:flex-row items-end justify-between mb-7 gap-6">
             <div className="max-w-2xl">
               <span className="inline-block py-1 px-3 rounded-full bg-slate-100 text-slate-700 text-sm font-bold tracking-widest uppercase mb-3">
@@ -343,7 +343,7 @@ export default function LandingPage() {
 
       {/* ================= TOP DOCTORS TO BOOK ================= */}
       <section className="py-9 md:py-10 bg-slate-50 border-t border-slate-200">
-        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-[1600px] mx-auto px-3 sm:px-4 lg:px-6">
           <div className="text-center mb-7">
             <span className="text-sm font-bold tracking-wider text-blue-600 uppercase mb-2 block">Our Specialists</span>
             <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
@@ -398,7 +398,7 @@ export default function LandingPage() {
 
       {/* ================= CTA BANNER ================= */}
       <section className="py-8 md:py-9 bg-white">
-        <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-[1600px] mx-auto px-3 sm:px-4 lg:px-6">
           <div className="relative rounded-[2rem] overflow-hidden bg-gradient-to-br from-blue-600 to-indigo-700 shadow-2xl py-8 px-6 md:px-10 text-center lg:text-left flex flex-col lg:flex-row items-center justify-between gap-6">
             {/* Background decorative bubbles */}
             <div className="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 rounded-full bg-white opacity-10 blur-3xl"></div>

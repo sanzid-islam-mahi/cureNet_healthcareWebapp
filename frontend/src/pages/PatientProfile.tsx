@@ -160,7 +160,7 @@ export default function PatientProfile() {
   const isProfileComplete = patient?.bloodType && patient?.emergencyContact && personal?.phone;
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
+    <div className="space-y-6">
       {/* Layout Grid */}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

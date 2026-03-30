@@ -114,7 +114,7 @@ export default function AppShell() {
 
   return (
     <div className="bg-slate-50">
-      <div className="mx-auto flex min-h-[calc(100vh-72px)] w-full max-w-7xl gap-6 px-4 py-6 sm:px-6 lg:px-8">
+      <div className="mx-auto flex min-h-[calc(100vh-72px)] w-full max-w-[1600px] gap-5 px-3 py-6 sm:px-4 lg:px-6">
         <aside className="hidden w-80 shrink-0 xl:block">
           <div className="sticky top-24 overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
             <div className="border-b border-slate-200 bg-gradient-to-br from-slate-900 via-slate-800 to-sky-900 px-5 py-6 text-white">
