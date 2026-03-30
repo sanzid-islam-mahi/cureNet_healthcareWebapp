@@ -348,6 +348,19 @@ Refresh the full stack:
 ./scripts/docker-refresh-stack.sh
 ```
 
+Refresh the full stack with the current LAN IP or host:
+
+```bash
+./scripts/docker-refresh-stack.sh 192.168.0.108
+./scripts/docker-refresh-stack.sh curenet.app
+```
+
+Notes:
+
+- if you pass `192.168.0.108`, the script treats it as `https://192.168.0.108`
+- the override is applied through a temporary env file at runtime
+- your main [\.env.deploy](/home/sanzid/playground/curenet/.env.deploy) is not modified
+
 ## 13. Current Ports In This Project
 
 Current host mapping from [docker-compose.yml](/home/sanzid/playground/curenet/docker-compose.yml):
