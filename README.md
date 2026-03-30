@@ -9,6 +9,7 @@ This repository includes the application code together with:
 - role-based user documentation
 - subsystem guides for auth, reminders, notifications, and uploads
 - deployment, backup, monitoring, and security documentation
+- database setup and operations documentation
 - a central docs index
 
 Primary documentation reference:
@@ -58,6 +59,7 @@ Primary deployment references:
 - [DOCKER_COMMANDS.md](/home/sanzid/playground/curenet/docs/guides/DOCKER_COMMANDS.md)
 - [BACKUP_AND_RECOVERY_PLAN.md](/home/sanzid/playground/curenet/docs/guides/BACKUP_AND_RECOVERY_PLAN.md)
 - [MONITORING_AND_LOGGING_GUIDE.md](/home/sanzid/playground/curenet/docs/guides/MONITORING_AND_LOGGING_GUIDE.md)
+- [DATABASE_SETUP_GUIDE.md](/home/sanzid/playground/curenet/docs/guides/DATABASE_SETUP_GUIDE.md)
 
 ## System Guides
 
@@ -74,6 +76,7 @@ The repo now includes feature/system guides for learning the codebase:
 - [REMINDER_SYSTEM_GUIDE.md](/home/sanzid/playground/curenet/docs/guides/REMINDER_SYSTEM_GUIDE.md)
 - [NOTIFICATION_SYSTEM_GUIDE.md](/home/sanzid/playground/curenet/docs/guides/NOTIFICATION_SYSTEM_GUIDE.md)
 - [IMAGE_UPLOADS_GUIDE.md](/home/sanzid/playground/curenet/docs/guides/IMAGE_UPLOADS_GUIDE.md)
+- [DATABASE_SETUP_GUIDE.md](/home/sanzid/playground/curenet/docs/guides/DATABASE_SETUP_GUIDE.md)
 - [DEPLOYMENT_GUIDE.md](/home/sanzid/playground/curenet/docs/guides/DEPLOYMENT_GUIDE.md)
 - [DOCKER_COMMANDS.md](/home/sanzid/playground/curenet/docs/guides/DOCKER_COMMANDS.md)
 

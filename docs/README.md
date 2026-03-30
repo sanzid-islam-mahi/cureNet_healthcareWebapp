@@ -10,6 +10,7 @@ Core system, deployment, and operational guides live in:
 - [guides/REMINDER_SYSTEM_GUIDE.md](/home/sanzid/playground/curenet/docs/guides/REMINDER_SYSTEM_GUIDE.md)
 - [guides/NOTIFICATION_SYSTEM_GUIDE.md](/home/sanzid/playground/curenet/docs/guides/NOTIFICATION_SYSTEM_GUIDE.md)
 - [guides/IMAGE_UPLOADS_GUIDE.md](/home/sanzid/playground/curenet/docs/guides/IMAGE_UPLOADS_GUIDE.md)
+- [guides/DATABASE_SETUP_GUIDE.md](/home/sanzid/playground/curenet/docs/guides/DATABASE_SETUP_GUIDE.md)
 - [guides/SECURITY_GUIDE.md](/home/sanzid/playground/curenet/docs/guides/SECURITY_GUIDE.md)
 - [guides/PERFORMANCE_GUIDE.md](/home/sanzid/playground/curenet/docs/guides/PERFORMANCE_GUIDE.md)
 - [guides/USER_GUIDE.md](/home/sanzid/playground/curenet/docs/guides/USER_GUIDE.md)
