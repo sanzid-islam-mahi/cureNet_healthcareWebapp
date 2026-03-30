@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import logo from '../assets/curenet_logo.webp';
-
+import { contactInfo } from '../types/contactInfo';
 const Footer = () => {
   return (
     <div className="md:mx-10">
@@ -29,8 +29,8 @@ const Footer = () => {
         <div>
           <p className="text-xl font-medium mb-5 text-gray-900">GET IN TOUCH</p>
           <ul className="flex flex-col gap-2 text-gray-600">
-            <li>+012-456-7890</li>
-            <li>curenet@gmail.com</li>
+            <li>{contactInfo.phone}</li>
+            <li>{contactInfo.email}</li>
           </ul>
         </div>
       </div>

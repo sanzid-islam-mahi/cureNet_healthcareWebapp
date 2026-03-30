@@ -1,5 +1,5 @@
 import contactImage from '../assets/image_395.webp';
-
+import { contactInfo } from '../types/contactInfo';
 export default function Contact() {
   return (
     <div className="bg-white py-14 px-6">
@@ -32,14 +32,13 @@ export default function Contact() {
                 Our Office
               </h2>
               <p className="text-gray-600 text-sm leading-relaxed">
-                54709 Willms Station<br />
-                Suite 350, Chittagong, Bangladesh
+                {contactInfo.address}
               </p>
               <p className="text-gray-600 text-sm mt-3">
-                Tel: +012-456-7890
+                Tel: {contactInfo.phone}<br />
               </p>
               <p className="text-gray-600 text-sm">
-                Email: curenet@gmail.com
+                Email: {contactInfo.email}
               </p>
             </div>
 
