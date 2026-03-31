@@ -12,7 +12,8 @@
     "migrate": "node -e \"import('./src/migrate.js').then(m=>m.runMigrations()).then(()=>process.exit(0)).catch(e=>{console.error(e);process.exit(1);})\"",
     "generate-migrations": "node scripts/generate-migrations-from-models.mjs",
     "create-admin": "node scripts/create-admin.mjs",
-    "create-demo-users": "node scripts/create-demo-users.mjs"
+    "create-demo-users": "node scripts/create-demo-users.mjs",
+    "verify-existing-users": "node scripts/verify-existing-users.mjs"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

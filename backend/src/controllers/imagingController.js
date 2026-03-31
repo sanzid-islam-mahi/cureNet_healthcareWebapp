@@ -1,9 +1,12 @@
 import fs from 'fs';
 import path from 'path';
+import { Op } from 'sequelize';
 import db from '../models/index.js';
 import { MEDICAL_IMAGING_STUDY_TYPES, serializeMedicalImagingRecord } from '../lib/medicalImaging.js';
 import { getUploadsDir } from '../config/appPaths.js';
 const { MedicalImagingRecord, Patient, Appointment, User, Clinic } = db;
+
+const PATIENT_IMAGING_UPLOAD_LIMIT_PER_DAY = Math.max(0, parseInt(process.env.PATIENT_IMAGING_UPLOAD_LIMIT_PER_DAY || '5', 10) || 0);
 
 function uploadsRoot() {
   return getUploadsDir();
@@ -60,6 +63,28 @@ async function loadImagingRecordById(id) {
   });
 }
 
+function getDayBounds(date = new Date()) {
+  const start = new Date(date);
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 1);
+  return { start, end };
+}
+
+async function getPatientUploadCountToday(userId) {
+  const { start, end } = getDayBounds();
+  return MedicalImagingRecord.count({
+    where: {
+      uploadedByUserId: userId,
+      sourceType: 'external',
+      createdAt: {
+        [Op.gte]: start,
+        [Op.lt]: end,
+      },
+    },
+  });
+}
+
 export async function createImagingRecord(req, res) {
   try {
     const user = req.user;
@@ -104,6 +129,18 @@ export async function createImagingRecord(req, res) {
 
     let appointment = null;
     if (user.role === 'patient') {
+      if (PATIENT_IMAGING_UPLOAD_LIMIT_PER_DAY > 0) {
+        const uploadsToday = await getPatientUploadCountToday(user.id);
+        if (uploadsToday >= PATIENT_IMAGING_UPLOAD_LIMIT_PER_DAY) {
+          removeUploadedFile(`/uploads/${req.file.filename}`);
+          return res.status(429).json({
+            success: false,
+            code: 'PATIENT_IMAGING_UPLOAD_LIMIT_REACHED',
+            message: `Patient uploads are limited to ${PATIENT_IMAGING_UPLOAD_LIMIT_PER_DAY} imaging files per day`,
+            data: { limit: PATIENT_IMAGING_UPLOAD_LIMIT_PER_DAY, uploadsToday },
+          });
+        }
+      }
       if (appointmentId != null) {
         removeUploadedFile(`/uploads/${req.file.filename}`);
         return res.status(400).json({ success: false, message: 'Patient uploads must stay external and cannot be linked to an appointment' });

@@ -44,6 +44,7 @@ async function main() {
       lastName,
       role: 'admin',
       isActive: true,
+      emailVerifiedAt: new Date(),
     });
 
     console.log('Admin created:', user.email, '(id:', user.id, ')');
