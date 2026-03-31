@@ -6,6 +6,10 @@ import { operationsPaths } from './swagger/paths/operations.js';
 import { engagementPaths } from './swagger/paths/engagement.js';
 import { adminPaths } from './swagger/paths/admin.js';
 
+function isSwaggerEnabled() {
+  return process.env.SHOW_SWAGGER === 'true';
+}
+
 export const swaggerSpec = {
   openapi: '3.0.3',
   info: {
@@ -48,6 +52,10 @@ export const swaggerSpec = {
 };
 
 export function registerSwagger(app) {
+  if (!isSwaggerEnabled()) {
+    return;
+  }
+
   app.get('/openapi.json', (_req, res) => {
     res.json(swaggerSpec);
   });
