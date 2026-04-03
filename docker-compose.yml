@@ -39,6 +39,7 @@ services:
       AUTH_COOKIE_NAME: ${AUTH_COOKIE_NAME:-curenet_auth}
       AUTH_COOKIE_MAX_AGE_MS: ${AUTH_COOKIE_MAX_AGE_MS:-604800000}
       AUTH_ALLOW_UNVERIFIED_LOGIN: ${AUTH_ALLOW_UNVERIFIED_LOGIN:-false}
+      SHOW_SWAGGER: ${SHOW_SWAGGER:-false}
       APP_BASE_URL: ${APP_BASE_URL:-https://localhost}
       CORS_ORIGIN: ${CORS_ORIGIN:-https://localhost}
       TRUST_PROXY: ${TRUST_PROXY:-1}
