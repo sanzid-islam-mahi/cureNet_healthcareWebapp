@@ -9,6 +9,30 @@ if [[ ! -f "$ENV_FILE" ]]; then
   exit 1
 fi
 
+load_env_file() {
+  local env_file="$1"
+  local line
+  local key
+  local value
+
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    line="${line%$'\r'}"
+
+    if [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]]; then
+      continue
+    fi
+
+    if [[ "$line" != *=* ]]; then
+      echo "Invalid env entry in $env_file: $line" >&2
+      exit 1
+    fi
+
+    key="${line%%=*}"
+    value="${line#*=}"
+    export "$key=$value"
+  done < "$env_file"
+}
+
 if [[ $# -lt 1 ]]; then
   echo "Usage: $0 <sql-backup-file>" >&2
   exit 1
@@ -21,9 +45,7 @@ if [[ ! -f "$BACKUP_FILE" ]]; then
   exit 1
 fi
 
-set -a
-source "$ENV_FILE"
-set +a
+load_env_file "$ENV_FILE"
 
 docker compose --env-file "$ENV_FILE" exec -T mysql \
   mysql -u"${DB_USER}" -p"${DB_PASSWORD}" "${DB_NAME}" < "$BACKUP_FILE"

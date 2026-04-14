@@ -4,10 +4,32 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ENV_FILE="${ENV_FILE:-$ROOT_DIR/.env.deploy}"
 
+load_env_file() {
+  local env_file="$1"
+  local line
+  local key
+  local value
+
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    line="${line%$'\r'}"
+
+    if [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]]; then
+      continue
+    fi
+
+    if [[ "$line" != *=* ]]; then
+      echo "Invalid env entry in $env_file: $line" >&2
+      exit 1
+    fi
+
+    key="${line%%=*}"
+    value="${line#*=}"
+    export "$key=$value"
+  done < "$env_file"
+}
+
 if [[ -f "$ENV_FILE" ]]; then
-  set -a
-  source "$ENV_FILE"
-  set +a
+  load_env_file "$ENV_FILE"
 fi
 
 echo "== Docker services =="

@@ -62,7 +62,7 @@ Test a public endpoint such as doctor listing:
 ```bash
 node scripts/api-load-test.mjs \
   --base-url https://curenet.app \
-  --path /api/doctors?limit=5 \
+  --path '/api/doctors?limit=5' \
   --requests 100 \
   --concurrency 10 \
   --threshold-ms 500
@@ -101,7 +101,7 @@ node scripts/api-load-test.mjs \
 Use at least one public endpoint and one protected endpoint:
 
 - `/api/health`
-- `/api/doctors?limit=5`
+- `'/api/doctors?limit=5'`
 - `/api/auth/profile`
 
 This gives a more realistic performance story than testing only the simplest endpoint.
@@ -134,3 +134,31 @@ If the result fails:
   - database state
 - Run the test more than once and use the most representative result
 - Prefer testing against the deployed domain if the report is about production-like performance
+- If you are using `fish`, quote any `--path` value that contains `?`, `&`, or `*`, because those characters are treated as wildcards by the shell
+
+## Fish Shell Examples
+
+If you use `fish`, prefer quoting URL-style paths by default.
+
+Example:
+
+```fish
+node scripts/api-load-test.mjs \
+  --base-url https://curenet.app \
+  --path '/api/doctors?limit=5' \
+  --requests 100 \
+  --concurrency 10 \
+  --threshold-ms 500
+```
+
+Protected endpoint example in `fish`:
+
+```fish
+node scripts/api-load-test.mjs \
+  --base-url https://curenet.app \
+  --path '/api/auth/profile' \
+  --requests 50 \
+  --concurrency 5 \
+  --threshold-ms 500 \
+  --header "Authorization: Bearer $PATIENT_TOKEN"
+```
