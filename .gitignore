@@ -41,3 +41,5 @@ deploy/certs/*.key
 deploy/certs/*.crt
 private/
 docs/viva/
+
+backups/
